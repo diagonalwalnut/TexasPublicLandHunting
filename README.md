@@ -1,6 +1,8 @@
 # Texas Public Land Hunting
 
-Unofficial 2026–27 map of Texas Parks and Wildlife Department **Annual Public Hunting (APH)** walk-in units and dove/small-game leases. Filter by animal, method, region, county, and date range. Click a hunt region or unit on the map for details.
+Unofficial 2026–27 explorer for Texas Parks and Wildlife Department **Annual Public Hunting (APH)** walk-in units and dove/small-game leases.
+
+Use the **map** to click hunt regions and units, or open the **report** for a filterable list of where and when a hunt is legal. Example: **Whitetail + rifle** lists matching regions and units with county season dates.
 
 **This is not an official TPWD product.** Dates, methods, and boundaries change. Confirm every hunt with the [current unit PDF / Map Booklet](https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/) and the [Outdoor Annual](https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates) before you go.
 
@@ -34,7 +36,7 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 
 - `scripts/` — fetch and join TPWD sources
 - `data/` — compiled GeoJSON/JSON checked in for the static site
-- `web/` — Vite + React + MapLibre map
+- `web/` — Vite + React + MapLibre map and filterable hunt report
 - `.github/workflows/pages.yml` — GitHub Pages build
 
 ## License / attribution

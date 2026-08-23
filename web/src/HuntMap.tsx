@@ -15,6 +15,14 @@ const TEXAS_BOUNDS: maplibregl.LngLatBoundsLike = [
   [-93.3, 36.6],
 ];
 
+type UnitProps = { id?: string; lon?: number | null; lat?: number | null };
+type RegionProps = { name?: string; lon?: number; lat?: number };
+type FeatureLike = {
+  id?: string | number;
+  properties?: UnitProps & RegionProps;
+  geometry?: { type: string; coordinates: unknown };
+};
+
 function rasterStyle(satellite: boolean): maplibregl.StyleSpecification {
   const tiles = satellite
     ? ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]
@@ -30,6 +38,21 @@ function rasterStyle(satellite: boolean): maplibregl.StyleSpecification {
   };
 }
 
+function geometryBbox(coordinates: unknown): maplibregl.LngLatBounds | null {
+  const bounds = new maplibregl.LngLatBounds();
+  let any = false;
+  const walk = (value: unknown) => {
+    if (Array.isArray(value) && typeof value[0] === "number" && typeof value[1] === "number") {
+      bounds.extend([value[0], value[1]]);
+      any = true;
+      return;
+    }
+    if (Array.isArray(value)) value.forEach(walk);
+  };
+  walk(coordinates);
+  return any ? bounds : null;
+}
+
 export default function HuntMap({
   matchingIds,
   selectedId,
@@ -41,10 +64,13 @@ export default function HuntMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const featureIdsRef = useRef<string[]>([]);
+  const unitsRef = useRef<FeatureLike[]>([]);
+  const regionsRef = useRef<FeatureLike[]>([]);
   const readyRef = useRef(false);
   const matchingRef = useRef(matchingIds);
   const selectedRef = useRef(selectedId);
   const regionRef = useRef(regionFilter);
+  const fittedKeyRef = useRef<string | null>(null);
   const callbacks = useRef({ onSelectUnit, onSelectRegion });
   matchingRef.current = matchingIds;
   selectedRef.current = selectedId;
@@ -63,6 +89,31 @@ export default function HuntMap({
     const filter = region ? (["==", ["get", "name"], region] as maplibregl.FilterSpecification) : null;
     if (map.getLayer("regions-fill")) map.setFilter("regions-fill", filter);
     if (map.getLayer("regions-line")) map.setFilter("regions-line", filter);
+    if (map.getLayer("region-labels")) map.setFilter("region-labels", filter);
+  };
+
+  const fitToSelection = (map: maplibregl.Map) => {
+    const selected = selectedRef.current;
+    const region = regionRef.current;
+    const key = selected ? `unit:${selected}` : region ? `region:${region}` : "texas";
+    if (key === fittedKeyRef.current) return;
+    fittedKeyRef.current = key;
+    if (selected) {
+      const feature = unitsRef.current.find((f) => String(f.id ?? f.properties?.id ?? "") === selected);
+      const lon = feature?.properties?.lon;
+      const lat = feature?.properties?.lat;
+      if (lon != null && lat != null) {
+        map.flyTo({ center: [lon, lat], zoom: 10.2, duration: 700 });
+        return;
+      }
+    }
+    if (!region) {
+      map.fitBounds(TEXAS_BOUNDS, { padding: 40, duration: 700 });
+      return;
+    }
+    const feature = regionsRef.current.find((f) => f.properties?.name === region);
+    const bounds = feature?.geometry ? geometryBbox(feature.geometry.coordinates) : null;
+    if (bounds) map.fitBounds(bounds, { padding: 60, duration: 700, maxZoom: 8.5 });
   };
 
   useEffect(() => {
@@ -80,17 +131,29 @@ export default function HuntMap({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }));
     mapRef.current = map;
+    fittedKeyRef.current = null;
 
     map.on("load", async () => {
       const [units, regions] = await Promise.all([
         fetch("data/units.geojson").then((r) => r.json()),
         fetch("data/regions.geojson").then((r) => r.json()),
       ]);
-      featureIdsRef.current = (units.features as { properties?: { id?: string }; id?: string }[]).map(
-        (f) => String(f.id ?? f.properties?.id ?? ""),
-      );
+      unitsRef.current = units.features as FeatureLike[];
+      regionsRef.current = regions.features as FeatureLike[];
+      featureIdsRef.current = unitsRef.current.map((f) => String(f.id ?? f.properties?.id ?? ""));
       map.addSource("regions", { type: "geojson", data: regions });
       map.addSource("units", { type: "geojson", data: units, promoteId: "id" });
+      const regionPoints = {
+        type: "FeatureCollection",
+        features: regionsRef.current
+          .filter((f) => f.properties?.lon != null && f.properties?.lat != null)
+          .map((f) => ({
+            type: "Feature",
+            properties: f.properties,
+            geometry: { type: "Point", coordinates: [f.properties!.lon, f.properties!.lat] },
+          })),
+      };
+      map.addSource("region-labels", { type: "geojson", data: regionPoints as GeoJSON.FeatureCollection });
 
       map.addLayer({
         id: "regions-fill",
@@ -109,6 +172,24 @@ export default function HuntMap({
           "line-color": ["coalesce", ["get", "color"], "#2f6b4f"],
           "line-width": 1.5,
           "line-opacity": 0.7,
+        },
+      });
+      map.addLayer({
+        id: "region-labels",
+        type: "symbol",
+        source: "region-labels",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Open Sans Bold"],
+          "text-size": 13,
+          "text-letter-spacing": 0.04,
+          "text-allow-overlap": false,
+          "text-max-width": 10,
+        },
+        paint: {
+          "text-color": "#f4f1ea",
+          "text-halo-color": "rgba(16, 24, 16, 0.85)",
+          "text-halo-width": 1.4,
         },
       });
       map.addLayer({
@@ -153,16 +234,21 @@ export default function HuntMap({
       map.on("click", "units-fill", pickUnit);
       map.on("click", "units-line", pickUnit);
       map.on("click", "units-point", pickUnit);
-      map.on("click", "regions-fill", (e) => {
+      const pickRegion = (e: maplibregl.MapLayerMouseEvent) => {
         const unitHit = map.queryRenderedFeatures(e.point, {
           layers: ["units-fill", "units-point"],
         });
         if (unitHit.length) return;
         const name = e.features?.[0]?.properties?.name;
         if (name) callbacks.current.onSelectRegion(String(name));
+      };
+      map.on("click", "regions-fill", pickRegion);
+      map.on("click", "region-labels", (e) => {
+        const name = e.features?.[0]?.properties?.name;
+        if (name) callbacks.current.onSelectRegion(String(name));
       });
 
-      for (const layer of ["units-fill", "units-point", "regions-fill"]) {
+      for (const layer of ["units-fill", "units-point", "regions-fill", "region-labels"]) {
         map.on("mouseenter", layer, () => {
           map.getCanvas().style.cursor = "pointer";
         });
@@ -174,6 +260,8 @@ export default function HuntMap({
       readyRef.current = true;
       applyState(map);
       map.fitBounds(TEXAS_BOUNDS, { padding: 40, duration: 0 });
+      fittedKeyRef.current = "texas";
+      if (selectedRef.current || regionRef.current) fitToSelection(map);
     });
 
     return () => {
@@ -188,6 +276,12 @@ export default function HuntMap({
     if (!map || !readyRef.current) return;
     applyState(map);
   }, [matchingIds, selectedId, regionFilter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    fitToSelection(map);
+  }, [selectedId, regionFilter]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }
