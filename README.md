@@ -41,46 +41,6 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 - `.github/workflows/pages.yml` — GitHub Pages build
 - `.github/workflows/hostgator.yml` — optional FTP upload to HostGator
 
-## Deploy to HostGator
-
-**Target:** [https://huntpubliclandintexas.com/](https://huntpubliclandintexas.com/) already resolves to HostGator shared hosting (`192.185.41.29`), with a Let’s Encrypt certificate. Apache currently returns **403** on `/` because there is no `index.html` in the document root (`/index.html` is 404). FTP (Pure-FTPd, port 21, TLS) is open on that IP. `ftp.huntpubliclandintexas.com` has **no DNS record** — use the IP or the `gatorXXXX.hostgator.com` hostname from cPanel.
-
-This is a static site. Upload the **contents** of `web/dist` into `public_html` (or the addon-domain document root). The homepage file must be `index.html` at that root, not inside a nested `dist` folder.
-
-```bash
-cd web
-npm ci
-npm run build
-# web/dist now includes index.html, assets/, data/, and .htaccess
-```
-
-**Automatic (GitHub Actions):** in the GitHub repo, **Settings → Secrets and variables → Actions**, add:
-
-| Secret | Required | Value |
-|---|---|---|
-| `FTP_USER` | yes | HostGator extra FTP accounts need `name@domain`, e.g. `texashunt@huntpubliclandintexas.com` (the short name `texashunt` returns 530) |
-| `FTP_PASSWORD` | yes | that account’s password |
-| `FTP_HOST` | no | defaults to `192.185.41.29` |
-| `FTP_REMOTE_DIR` | no | `public_html` |
-| `FTP_PORT` | no | `21` |
-
-Then **Actions → Deploy to HostGator → Run workflow**. The job always builds a `hostgator-public-html` zip artifact (cPanel File Manager upload). FTP runs only when `FTP_USER` and `FTP_PASSWORD` are set. Vite `base` is `/` (domain root), not the GitHub Pages subpath.
-
-**From your machine:**
-
-```bash
-export FTP_USER=texashunt@huntpubliclandintexas.com
-export FTP_PASSWORD='…'
-# optional: export FTP_HOST=192.185.41.29
-python3 scripts/deploy-hostgator.py
-```
-
-Or use FileZilla / cPanel File Manager and copy everything inside `web/dist/` into `public_html`.
-
-`.htaccess` (copied from `web/public/.htaccess`) turns on HTTPS, JSON/GeoJSON MIME types, and a few security headers on Apache. AutoSSL is already active for this hostname.
-
-If the site lives in a subdirectory (for example `public_html/hunt/`), rebuild with `BASE_PATH=/hunt/` so asset URLs match that path.
-
 ## Accounts and saved units
 
 The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password, Google, or Microsoft) and **save units** for later. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work; the sign-in dialog explains that accounts are not configured yet.
