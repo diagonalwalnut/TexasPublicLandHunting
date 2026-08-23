@@ -135,7 +135,6 @@ export default function App() {
               setFilters(next);
               setSelectedId(null);
             }}
-            onPreset={() => setView("report")}
           />
           <p className="mt-4 text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
         </aside>
@@ -143,61 +142,71 @@ export default function App() {
         <main className="relative order-1 min-h-[46vh] min-w-0 flex-1 md:order-2">
           {error ? (
             <p className="p-6 text-red-800">{error}</p>
-          ) : view === "report" ? (
-            <HuntReport
-              units={units}
-              opportunities={opportunities}
-              filters={filters}
-              speciesLabels={speciesLabels}
-              onSelectUnit={openUnitOnMap}
-              onSelectRegion={(region) => {
-                setFilters((f) => ({ ...f, region }));
-                setSelectedId(null);
-                setView("map");
-              }}
-            />
           ) : (
             <>
-              <HuntMap
-                matchingIds={matchIds}
-                selectedId={selectedId}
-                regionFilter={filters.region}
-                satellite={satellite}
-                onSelectUnit={setSelectedId}
-                onSelectRegion={(region) => {
-                  setSelectedId(null);
-                  setFilters((f) => ({ ...f, region: f.region === region ? "" : region }));
-                }}
-              />
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-3">
-                <div className="pointer-events-auto max-w-xl rounded-md bg-white/90 px-3 py-2 text-sm shadow">
-                  <div className="font-semibold">{headline}</div>
-                  <div className="text-xs text-muted">Click a colored region or a hunt unit</div>
-                </div>
-                <button
-                  type="button"
-                  className="pointer-events-auto rounded-md bg-white/90 px-2 py-1 text-xs shadow"
-                  onClick={() => setSatellite((s) => !s)}
-                >
-                  {satellite ? "Map" : "Satellite"}
-                </button>
-              </div>
-              <div className="pointer-events-none absolute inset-x-0 bottom-8 z-10 flex flex-wrap justify-center gap-1 px-3">
-                {regionCounts.map((row) => (
+              <div className={`absolute inset-0 ${view === "map" ? "z-10" : "invisible pointer-events-none"}`}>
+                <HuntMap
+                  matchingIds={matchIds}
+                  selectedId={selectedId}
+                  regionFilter={filters.region}
+                  satellite={satellite}
+                  active={view === "map"}
+                  onSelectUnit={setSelectedId}
+                  onSelectRegion={(region) => {
+                    setSelectedId(null);
+                    setFilters((f) => ({ ...f, region: f.region === region ? "" : region }));
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-3">
+                  <div className="pointer-events-auto max-w-xl rounded-md bg-white/90 px-3 py-2 text-sm shadow">
+                    <div className="font-semibold">{headline}</div>
+                    <div className="text-xs text-muted">
+                      {matchIds.size === 0
+                        ? "No public hunt units match these filters"
+                        : matchIds.size === units.length
+                          ? "Click a colored region or a hunt unit"
+                          : `Showing ${matchIds.size} matching unit${matchIds.size === 1 ? "" : "s"}`}
+                    </div>
+                  </div>
                   <button
-                    key={row.region}
                     type="button"
-                    className={`pointer-events-auto rounded-full px-2 py-1 text-xs shadow ${
-                      filters.region === row.region ? "bg-moss text-white" : "bg-white/90"
-                    }`}
-                    onClick={() => {
-                      setSelectedId(null);
-                      setFilters((f) => ({ ...f, region: f.region === row.region ? "" : row.region }));
-                    }}
+                    className="pointer-events-auto rounded-md bg-white/90 px-2 py-1 text-xs shadow"
+                    onClick={() => setSatellite((s) => !s)}
                   >
-                    {row.region} · {row.count}
+                    {satellite ? "Map" : "Satellite"}
                   </button>
-                ))}
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-8 z-10 flex flex-wrap justify-center gap-1 px-3">
+                  {regionCounts.map((row) => (
+                    <button
+                      key={row.region}
+                      type="button"
+                      className={`pointer-events-auto rounded-full px-2 py-1 text-xs shadow ${
+                        filters.region === row.region ? "bg-moss text-white" : "bg-white/90"
+                      }`}
+                      onClick={() => {
+                        setSelectedId(null);
+                        setFilters((f) => ({ ...f, region: f.region === row.region ? "" : row.region }));
+                      }}
+                    >
+                      {row.region} · {row.count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
+                <HuntReport
+                  units={units}
+                  opportunities={opportunities}
+                  filters={filters}
+                  speciesLabels={speciesLabels}
+                  onSelectUnit={openUnitOnMap}
+                  onSelectRegion={(region) => {
+                    setFilters((f) => ({ ...f, region }));
+                    setSelectedId(null);
+                    setView("map");
+                  }}
+                />
               </div>
             </>
           )}
