@@ -58,7 +58,7 @@ npm run build
 
 | Secret | Required | Value |
 |---|---|---|
-| `FTP_USER` | yes | cPanel or FTP username (cPanel → FTP Accounts) |
+| `FTP_USER` | yes | HostGator extra FTP accounts need `name@domain`, e.g. `texashunt@huntpubliclandintexas.com` (the short name `texashunt` returns 530) |
 | `FTP_PASSWORD` | yes | that account’s password |
 | `FTP_HOST` | no | defaults to `192.185.41.29` |
 | `FTP_REMOTE_DIR` | no | `public_html` |
@@ -69,7 +69,7 @@ Then **Actions → Deploy to HostGator → Run workflow**. The job always builds
 **From your machine:**
 
 ```bash
-export FTP_USER=yourcpaneluser
+export FTP_USER=texashunt@huntpubliclandintexas.com
 export FTP_PASSWORD='…'
 # optional: export FTP_HOST=192.185.41.29
 python3 scripts/deploy-hostgator.py
