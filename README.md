@@ -39,6 +39,46 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 - `data/` — compiled GeoJSON/JSON checked in for the static site
 - `web/` — Vite + React + MapLibre map and filterable hunt report
 - `.github/workflows/pages.yml` — GitHub Pages build
+- `.github/workflows/hostgator.yml` — optional FTP upload to HostGator
+
+## Deploy to HostGator
+
+This is a static site. Upload the **contents** of `web/dist` into `public_html` (or the document root for your addon domain). The homepage file must be `index.html` at that root, not inside a nested `dist` folder.
+
+```bash
+cd web
+npm ci
+npm run build
+# web/dist now includes index.html, assets/, data/, and .htaccess
+```
+
+**Automatic (GitHub Actions):** in the GitHub repo, **Settings → Secrets and variables → Actions**, add:
+
+| Secret | Example |
+|---|---|
+| `FTP_HOST` | `ftp.yourdomain.com` (from cPanel → FTP Accounts) |
+| `FTP_USER` | cPanel or FTP username |
+| `FTP_PASSWORD` | that account’s password |
+| `FTP_REMOTE_DIR` | `public_html` (optional; this is the default) |
+| `FTP_PORT` | `21` (optional) |
+
+Then **Actions → Deploy to HostGator → Run workflow**. The workflow builds with Vite `base: '/'` (domain root), not the GitHub Pages subpath.
+
+**From your machine:**
+
+```bash
+export FTP_HOST=ftp.yourdomain.com
+export FTP_USER=yourcpaneluser
+export FTP_PASSWORD='…'
+# optional: export FTP_REMOTE_DIR=public_html
+python3 scripts/deploy-hostgator.py
+```
+
+Or use FileZilla / cPanel File Manager and copy everything inside `web/dist/` into `public_html`.
+
+`.htaccess` (copied from `web/public/.htaccess`) turns on HTTPS, JSON/GeoJSON MIME types, and a few security headers on Apache. If AutoSSL is not active yet, comment out the HTTPS rewrite block in that file.
+
+If the site lives in a subdirectory (for example `public_html/hunt/`), rebuild with `BASE_PATH=/hunt/` so asset URLs match that path.
 
 ## License / attribution
 

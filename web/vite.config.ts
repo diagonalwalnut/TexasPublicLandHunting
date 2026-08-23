@@ -11,7 +11,10 @@ const SECURITY_HEADERS = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: process.env.GITHUB_PAGES === "1" ? "/TexasPublicLandHunting/" : "/",
+  base:
+    process.env.GITHUB_PAGES === "1"
+      ? "/TexasPublicLandHunting/"
+      : process.env.BASE_PATH || "/",
   server: { headers: SECURITY_HEADERS },
   preview: { headers: SECURITY_HEADERS },
 });
