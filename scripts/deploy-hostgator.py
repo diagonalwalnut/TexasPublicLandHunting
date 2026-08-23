@@ -2,16 +2,17 @@
 """Upload web/dist to HostGator over FTP (TLS when the host supports it).
 
 Required environment:
-  FTP_HOST       e.g. ftp.yourdomain.com or your HostGator hostname
-  FTP_USER       cPanel username
-  FTP_PASSWORD   cPanel / FTP password
+  FTP_USER       cPanel or FTP username
+  FTP_PASSWORD   that account's password
 
 Optional:
+  FTP_HOST       default 192.185.41.29 (huntpubliclandintexas.com HostGator IP)
+                 ftp.huntpubliclandintexas.com has no DNS record
   FTP_PORT       default 21
   FTP_REMOTE_DIR default public_html
   FTP_TIMEOUT    default 60
 
-Does not print the password. Refuses to run without the three required vars.
+Does not print the password. Refuses to run without user and password.
 """
 
 from __future__ import annotations
@@ -24,11 +25,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "web" / "dist"
 
+# huntpubliclandintexas.com A record (HostGator shared). ftp.<domain> does not resolve.
+DEFAULT_HOST = "192.185.41.29"
+
+
+def env_or(name: str, default: str) -> str:
+    value = os.environ.get(name, "").strip()
+    return value or default
+
 
 def require_env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
-        print(f"Missing {name}. Set HostGator FTP credentials as environment variables or GitHub secrets.", file=sys.stderr)
+        print(
+            f"Missing {name}. HostGator already serves huntpubliclandintexas.com "
+            f"({DEFAULT_HOST}) but the document root has no index.html.\n"
+            "Set FTP_USER and FTP_PASSWORD (cPanel → FTP Accounts), then re-run.\n"
+            "GitHub: Settings → Secrets and variables → Actions.",
+            file=sys.stderr,
+        )
         sys.exit(2)
     return value
 
@@ -89,7 +104,7 @@ def upload_tree(ftp: FTP, local_dir: Path) -> int:
 
 
 def main() -> int:
-    host = require_env("FTP_HOST")
+    host = env_or("FTP_HOST", DEFAULT_HOST)
     user = require_env("FTP_USER")
     password = require_env("FTP_PASSWORD")
     port = int(os.environ.get("FTP_PORT") or "21")
@@ -100,12 +115,14 @@ def main() -> int:
         print("web/dist/index.html missing. Run: cd web && npm run build", file=sys.stderr)
         return 1
 
+    print(f"Uploading {DIST} → {user}@{host}:{port}/{remote_dir}")
     ftp = connect(host, user, password, port, timeout)
     try:
         chdir_remote(ftp, remote_dir)
         print(f"Remote directory: {ftp.pwd()}")
         n = upload_tree(ftp, DIST)
         print(f"Uploaded {n} files to {remote_dir}")
+        print("Site should be https://huntpubliclandintexas.com/")
     finally:
         try:
             ftp.quit()

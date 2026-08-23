@@ -26,8 +26,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install and build
         working-directory: web
-        env:
-          GITHUB_PAGES: "1"
+        # Custom domain huntpubliclandintexas.com is a site root, so asset
+        # URLs must be / not /TexasPublicLandHunting/.
         run: |
           npm ci
           npm run build

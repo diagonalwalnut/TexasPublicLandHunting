@@ -43,7 +43,9 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 
 ## Deploy to HostGator
 
-This is a static site. Upload the **contents** of `web/dist` into `public_html` (or the document root for your addon domain). The homepage file must be `index.html` at that root, not inside a nested `dist` folder.
+**Target:** [https://huntpubliclandintexas.com/](https://huntpubliclandintexas.com/) already resolves to HostGator shared hosting (`192.185.41.29`), with a Let’s Encrypt certificate. Apache currently returns **403** on `/` because there is no `index.html` in the document root (`/index.html` is 404). FTP (Pure-FTPd, port 21, TLS) is open on that IP. `ftp.huntpubliclandintexas.com` has **no DNS record** — use the IP or the `gatorXXXX.hostgator.com` hostname from cPanel.
+
+This is a static site. Upload the **contents** of `web/dist` into `public_html` (or the addon-domain document root). The homepage file must be `index.html` at that root, not inside a nested `dist` folder.
 
 ```bash
 cd web
@@ -54,29 +56,28 @@ npm run build
 
 **Automatic (GitHub Actions):** in the GitHub repo, **Settings → Secrets and variables → Actions**, add:
 
-| Secret | Example |
-|---|---|
-| `FTP_HOST` | `ftp.yourdomain.com` (from cPanel → FTP Accounts) |
-| `FTP_USER` | cPanel or FTP username |
-| `FTP_PASSWORD` | that account’s password |
-| `FTP_REMOTE_DIR` | `public_html` (optional; this is the default) |
-| `FTP_PORT` | `21` (optional) |
+| Secret | Required | Value |
+|---|---|---|
+| `FTP_USER` | yes | cPanel or FTP username (cPanel → FTP Accounts) |
+| `FTP_PASSWORD` | yes | that account’s password |
+| `FTP_HOST` | no | defaults to `192.185.41.29` |
+| `FTP_REMOTE_DIR` | no | `public_html` |
+| `FTP_PORT` | no | `21` |
 
-Then **Actions → Deploy to HostGator → Run workflow**. The workflow builds with Vite `base: '/'` (domain root), not the GitHub Pages subpath.
+Then **Actions → Deploy to HostGator → Run workflow**. The job always builds a `hostgator-public-html` zip artifact (cPanel File Manager upload). FTP runs only when `FTP_USER` and `FTP_PASSWORD` are set. Vite `base` is `/` (domain root), not the GitHub Pages subpath.
 
 **From your machine:**
 
 ```bash
-export FTP_HOST=ftp.yourdomain.com
 export FTP_USER=yourcpaneluser
 export FTP_PASSWORD='…'
-# optional: export FTP_REMOTE_DIR=public_html
+# optional: export FTP_HOST=192.185.41.29
 python3 scripts/deploy-hostgator.py
 ```
 
 Or use FileZilla / cPanel File Manager and copy everything inside `web/dist/` into `public_html`.
 
-`.htaccess` (copied from `web/public/.htaccess`) turns on HTTPS, JSON/GeoJSON MIME types, and a few security headers on Apache. If AutoSSL is not active yet, comment out the HTTPS rewrite block in that file.
+`.htaccess` (copied from `web/public/.htaccess`) turns on HTTPS, JSON/GeoJSON MIME types, and a few security headers on Apache. AutoSSL is already active for this hostname.
 
 If the site lives in a subdirectory (for example `public_html/hunt/`), rebuild with `BASE_PATH=/hunt/` so asset URLs match that path.
 
