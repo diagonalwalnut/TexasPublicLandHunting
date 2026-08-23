@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --color-pine: #1c3b2c;
+  --color-moss: #2f6b4f;
+  --color-gold: #c4a35a;
+  --color-sand: #f4efe4;
+  --color-ink: #1a1f1c;
+  --color-muted: #5c675f;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: #0f1c14;
+}
+
+.maplibregl-popup-content {
+  font-family: var(--font-sans);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #9aa89e transparent;
+}
