@@ -27,6 +27,7 @@ export type Unit = {
   hasEpostcard: boolean;
   hasRegularPermit: boolean;
   epostcardUrl: string;
+  countySlugs?: string[];
   lon: number | null;
   lat: number | null;
 };
@@ -40,8 +41,34 @@ export type Opportunity = {
   access: AccessId;
   start: string;
   end: string;
-  dateSource: "county_default" | "unit_pdf";
+  dateSource: "county_default" | "unit_pdf" | "county";
+  county?: string;
   notes: string;
+};
+
+export type CountySeason = {
+  title: string;
+  methods: MethodId[];
+  access: AccessId;
+  windows: { start: string; end: string }[];
+  rawDates: string;
+  notes: string;
+};
+
+export type CountyAnimal = {
+  species: string;
+  label: string;
+  zone: string;
+  bagLimit: string;
+  antlerRestrictions: string;
+  seasons: CountySeason[];
+};
+
+export type CountyHunting = {
+  county: string;
+  slug?: string;
+  url: string;
+  animals: CountyAnimal[];
 };
 
 export type Meta = {
@@ -57,6 +84,7 @@ export type Meta = {
   access: { id: AccessId; label: string }[];
   regions: string[];
   counties: string[];
+  countiesWithCalendars?: number;
 };
 
 export type Filters = {

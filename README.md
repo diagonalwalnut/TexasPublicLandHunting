@@ -11,6 +11,7 @@ Compiled from public TPWD sources (see [data/SOURCES.md](data/SOURCES.md)):
 - APH Area/Legal Game search JSON (`aph_202627.json`) — ~176 units, species tags, E-Postcard / youth / regular-permit flags
 - 2026–27 Public Hunt Area KMZ and locator GPX — unit and dove-lease polygons
 - Outdoor Annual 2026–27 season dates — archery, firearm, muzzleloader, shotgun, and youth windows used when a unit follows county seasons
+- Outdoor Annual **seasons by county** pages — per-county game, zones, bag limits, and dates joined onto each unit
 - TPWD Public Hunt Locator Map (ArcGIS) — fallback point locations
 
 Unit Legal Game boxes can override county seasons. Structured dates here are mostly **county defaults** unless a unit PDF was parsed.
@@ -19,7 +20,7 @@ Unit Legal Game boxes can override county seasons. Structured dates here are mos
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 scripts/fetch.py          # download TPWD sources into cache/ (gitignored)
+python3 scripts/fetch.py --counties  # Outdoor Annual county season pages
 python3 scripts/build.py          # write data/ and web/public/data/
 
 cd web

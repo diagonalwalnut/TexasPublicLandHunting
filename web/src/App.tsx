@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import HuntMap from "./HuntMap";
-import type { AccessId, Filters, Meta, MethodId, Opportunity, Unit } from "./types";
+import type { AccessId, CountyHunting, Filters, Meta, MethodId, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
   METHOD_LABEL,
@@ -29,6 +29,7 @@ export default function App() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [counties, setCounties] = useState<Record<string, CountyHunting>>({});
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
@@ -39,11 +40,13 @@ export default function App() {
       fetch("data/units.json").then((r) => r.json()),
       fetch("data/opportunities.json").then((r) => r.json()),
       fetch("data/meta.json").then((r) => r.json()),
+      fetch("data/counties.json").then((r) => r.json()),
     ])
-      .then(([u, o, m]) => {
+      .then(([u, o, m, c]) => {
         setUnits(u);
         setOpportunities(o);
         setMeta(m);
+        setCounties(c);
       })
       .catch(() => setError("Could not load hunt data."));
   }, []);
@@ -53,6 +56,10 @@ export default function App() {
     [units, opportunities, filters],
   );
   const selected = units.find((u) => u.id === selectedId) ?? null;
+  const selectedCountyPages = useMemo(() => {
+    if (!selected?.countySlugs) return [];
+    return selected.countySlugs.map((slug) => counties[slug]).filter(Boolean);
+  }, [selected, counties]);
   const selectedOpps = selected ? unitOpportunities(selected.id, opportunities, filters) : [];
 
   const groupedOpps = useMemo(() => {
@@ -289,11 +296,14 @@ export default function App() {
               )}
               <a
                 className="text-moss underline"
-                href="https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates"
+                href={
+                  selectedCountyPages[0]?.url ||
+                  "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons-by-county"
+                }
                 target="_blank"
                 rel="noreferrer"
               >
-                Outdoor Annual dates
+                Outdoor Annual county
               </a>
               {selected.epostcardUrl && (
                 <a className="text-moss underline" href={selected.epostcardUrl} target="_blank" rel="noreferrer">
@@ -319,7 +329,42 @@ export default function App() {
               <p className="mb-3 text-sm leading-relaxed text-muted">{selected.legalGameText}</p>
             )}
 
-            <h3 className="text-sm font-semibold">Seasons & methods</h3>
+            {selectedCountyPages.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold">County seasons (Outdoor Annual)</h3>
+                <p className="mb-2 text-xs text-muted">
+                  Public-land hunts follow these county dates unless the unit Legal Game box says otherwise.
+                  A species is only legal on this unit if it is listed in Legal game above.
+                </p>
+                {selectedCountyPages.map((page) => (
+                  <div key={page.county} className="mb-3">
+                    <a className="text-sm font-semibold text-moss underline" href={page.url} target="_blank" rel="noreferrer">
+                      {page.county} County
+                    </a>
+                    <ul className="mt-1 space-y-2">
+                      {page.animals.map((animal) => (
+                        <li key={`${page.county}-${animal.label}`} className="rounded bg-sand px-2 py-1.5 text-sm">
+                          <div className="font-medium">
+                            {animal.label}
+                            {animal.zone ? <span className="font-normal text-muted"> · {animal.zone}</span> : null}
+                          </div>
+                          {animal.bagLimit ? <p className="text-xs text-muted">{animal.bagLimit}</p> : null}
+                          <ul className="mt-1 space-y-0.5 text-xs">
+                            {animal.seasons.map((season, i) => (
+                              <li key={`${season.title}-${i}`}>
+                                {season.title}: {season.windows.map((w) => formatRange(w.start, w.end)).join("; ")}
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <h3 className="text-sm font-semibold">Seasons & methods on this unit</h3>
             <p className="mb-2 text-xs text-muted">
               Dates are county/zone defaults unless a unit PDF says otherwise. Confirm before hunting.
             </p>
@@ -339,7 +384,13 @@ export default function App() {
                         {formatRange(row.start, row.end)}
                         <span className="text-xs text-muted">
                           {" "}
-                          ({row.dateSource === "unit_pdf" ? "unit PDF" : "county default"})
+                          (
+                          {row.dateSource === "unit_pdf"
+                            ? "unit PDF"
+                            : row.dateSource === "county"
+                              ? `${row.county || "county"} Outdoor Annual`
+                              : "region default"}
+                          )
                         </span>
                       </li>
                     ))}

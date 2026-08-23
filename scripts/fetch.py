@@ -110,14 +110,51 @@ def fetch_pdfs(limit: int | None = None) -> None:
             print(f"  skip {name}: {exc}")
 
 
+def fetch_counties() -> None:
+    from county_seasons import county_slugs, split_counties
+
+    catalog = json.loads((CACHE / "aph_202627.json").read_text())
+    names: list[str] = []
+    for row in catalog:
+        names.extend(split_counties(str(row.get("county") or "")))
+    unique = sorted(set(names), key=str.lower)
+    dest_dir = CACHE / "counties"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    print(f"fetch {len(unique)} county Outdoor Annual pages")
+    for i, name in enumerate(unique, 1):
+        slugs = county_slugs(name)
+        done = False
+        for slug in slugs:
+            dest = dest_dir / f"{slug}.html"
+            if dest.exists() and dest.stat().st_size > 5000:
+                done = True
+                break
+            url = f"https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/{slug}"
+            try:
+                print(f"[{i}/{len(unique)}] {name} ({slug})")
+                download_file(url, dest)
+                if dest.stat().st_size > 5000 and b"This page does not seem to exist" not in dest.read_bytes():
+                    done = True
+                    break
+                dest.unlink(missing_ok=True)
+            except Exception as exc:
+                print(f"  skip {slug}: {exc}")
+                dest.unlink(missing_ok=True)
+        if not done:
+            print(f"  missing county page for {name}")
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdfs", action="store_true")
+    parser.add_argument("--counties", action="store_true")
     parser.add_argument("--pdf-limit", type=int, default=None)
     args = parser.parse_args()
     fetch_core()
     if args.pdfs:
         fetch_pdfs(args.pdf_limit)
+    if args.counties:
+        fetch_counties()
     print("done")

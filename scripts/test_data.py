@@ -27,7 +27,12 @@ def main() -> int:
     assert "dove" in species and "white_tailed_deer" in species
     assert meta["seasonYear"] == "2026-27"
     assert len(regions["features"]) == 8
-    print(f"ok: {len(units)} units, {len(opps)} opportunities")
+    with_county = sum(1 for u in units if u.get("countySlugs"))
+    assert with_county >= 100, with_county
+    counties = json.loads((DATA / "counties.json").read_text())
+    assert len(counties) >= 80, len(counties)
+    assert any(o.get("dateSource") == "county" for o in opps)
+    print(f"ok: {len(units)} units, {len(opps)} opportunities, {with_county} with county calendars")
     return 0
 
 
