@@ -87,6 +87,7 @@ export default function HuntReport({
                     <tr>
                       <th className="px-3 py-2 font-medium">Unit</th>
                       <th className="px-3 py-2 font-medium">County</th>
+                      <th className="px-3 py-2 font-medium">Booklet</th>
                       <th className="px-3 py-2 font-medium">Access</th>
                       <th className="px-3 py-2 font-medium">Dates</th>
                     </tr>
@@ -114,6 +115,20 @@ export default function HuntReport({
                             </div>
                           </td>
                           <td className="px-3 py-2">{row.unit.counties.join(", ") || "—"}</td>
+                          <td className="px-3 py-2">
+                            {row.unit.bookletUrl ? (
+                              <a
+                                className="text-moss underline"
+                                href={row.unit.bookletUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {row.unit.bookletPage ? `p. ${row.unit.bookletPage}` : "PDF"}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td className="px-3 py-2">
                             {access.map((id) => ACCESS_LABEL[id] ?? id).join(", ")}
                           </td>

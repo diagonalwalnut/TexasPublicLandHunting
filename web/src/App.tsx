@@ -209,6 +209,7 @@ export default function App() {
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted">
                   Unit {selected.unitIds.join(", ") || selected.id} · {selected.region}
+                  {selected.bookletPage ? ` · booklet p. ${selected.bookletPage}` : ""}
                 </p>
                 <h2 className="font-serif text-xl font-semibold">{selected.name}</h2>
                 <p className="text-sm text-muted">
@@ -235,6 +236,13 @@ export default function App() {
               {selected.aerialPdfUrl && (
                 <a className="text-moss underline" href={selected.aerialPdfUrl} target="_blank" rel="noreferrer">
                   Aerial map
+                </a>
+              )}
+              {selected.bookletUrl && (
+                <a className="text-moss underline" href={selected.bookletUrl} target="_blank" rel="noreferrer">
+                  {selected.bookletPage
+                    ? `Map booklet p. ${selected.bookletPage}`
+                    : "Map booklet"}
                 </a>
               )}
               <a

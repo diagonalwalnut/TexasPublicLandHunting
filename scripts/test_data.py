@@ -32,7 +32,16 @@ def main() -> int:
     counties = json.loads((DATA / "counties.json").read_text())
     assert len(counties) >= 80, len(counties)
     assert any(o.get("dateSource") == "county" for o in opps)
-    print(f"ok: {len(units)} units, {len(opps)} opportunities, {with_county} with county calendars")
+    with_booklet = sum(1 for u in units if u.get("bookletPage"))
+    assert with_booklet >= 150, with_booklet
+    by_id = {u["id"]: u for u in units}
+    assert by_id["702"]["bookletPage"] == "5", by_id["702"].get("bookletPage")
+    assert by_id["904"]["bookletPage"] == "85", by_id["904"].get("bookletPage")
+    assert by_id["736"]["bookletPage"] in {"xxiv", "xxv"}, by_id["736"].get("bookletPage")
+    print(
+        f"ok: {len(units)} units, {len(opps)} opportunities, "
+        f"{with_county} with county calendars, {with_booklet} with booklet pages"
+    )
     return 0
 
 

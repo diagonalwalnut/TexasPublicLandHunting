@@ -23,6 +23,7 @@ SOURCES = {
     "PublicHuntAreasDetailsKMZ2026-27.zip": f"{BASE}/resources/map/PublicHuntAreasDetailsKMZ2026-27.zip",
     "PublicHuntLocatorPointsGPX2026-27.zip": f"{BASE}/resources/map/PublicHuntLocatorPointsGPX2026-27.zip",
     "oa_dates.html": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates",
+    "pwd_bk_w7000_0112a.pdf": "https://tpwd.texas.gov/publications/pwdpubs/media/pwd_bk_w7000_0112a.pdf",
 }
 
 ARCGIS_POINTS = (

@@ -14,6 +14,7 @@ Compiled from public TPWD sources (see [data/SOURCES.md](data/SOURCES.md)):
 - 2026–27 Public Hunt Area KMZ and locator GPX — unit and dove-lease polygons
 - Outdoor Annual 2026–27 season dates — archery, firearm, muzzleloader, shotgun, and youth windows used when a unit follows county seasons
 - Outdoor Annual **seasons by county** pages — per-county game, zones, bag limits, and dates joined onto each unit
+- Public Hunting Lands Map Booklet — printed page number for each unit (linked into the PDF)
 - TPWD Public Hunt Locator Map (ArcGIS) — fallback point locations
 
 Unit Legal Game boxes can override county seasons. Structured dates here are mostly **county defaults** unless a unit PDF was parsed.

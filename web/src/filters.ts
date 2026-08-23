@@ -40,7 +40,7 @@ export function matchingUnitIds(units: Unit[], opportunities: Opportunity[], fil
     if (filters.region && unit.region !== filters.region) continue;
     if (filters.county && !unit.counties.includes(filters.county)) continue;
     if (q) {
-      const hay = `${unit.name} ${unit.unitIds.join(" ")} ${unit.counties.join(" ")}`.toLowerCase();
+      const hay = `${unit.name} ${unit.unitIds.join(" ")} ${unit.counties.join(" ")} ${unit.bookletPage ?? ""}`.toLowerCase();
       if (!hay.includes(q)) continue;
     }
     const opps = byUnit.get(unit.id) ?? [];

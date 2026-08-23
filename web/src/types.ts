@@ -28,6 +28,9 @@ export type Unit = {
   hasRegularPermit: boolean;
   epostcardUrl: string;
   countySlugs?: string[];
+  bookletPage?: string | null;
+  bookletPdfPage?: number | null;
+  bookletUrl?: string;
   lon: number | null;
   lat: number | null;
 };
@@ -85,6 +88,8 @@ export type Meta = {
   regions: string[];
   counties: string[];
   countiesWithCalendars?: number;
+  unitsWithBookletPage?: number;
+  bookletUrl?: string;
 };
 
 export type Filters = {

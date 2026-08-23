@@ -9,6 +9,7 @@ from pathlib import Path
 
 from shapely.geometry import Point, mapping
 
+from booklet import BOOKLET_URL, load_booklet_pages, lookup_unit
 from county_seasons import load_counties, lookup_county, split_counties, windows_from_county
 from geometry import (
     centroid_point,
@@ -126,6 +127,7 @@ def build() -> None:
     )
     points = load_points()
     county_index = load_counties(CACHE / "counties")
+    booklet = load_booklet_pages(CACHE / "pwd_bk_w7000_0112a.pdf")
 
     units = []
     opportunities = []
@@ -259,6 +261,10 @@ def build() -> None:
             "lon": lonlat[0] if lonlat else None,
             "lat": lonlat[1] if lonlat else None,
         }
+        booklet_rec = lookup_unit(booklet, ids, name)
+        unit["bookletPage"] = booklet_rec["bookletPage"] if booklet_rec else None
+        unit["bookletPdfPage"] = booklet_rec["bookletPdfPage"] if booklet_rec else None
+        unit["bookletUrl"] = booklet_rec["bookletUrl"] if booklet_rec else BOOKLET_URL
         units.append(unit)
         if geom is not None:
             unit_geoms[feature_id] = geom
@@ -374,6 +380,10 @@ def build() -> None:
                 "url": "https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/anderson",
             },
             {
+                "name": "2026-27 Public Hunting Lands Map Booklet",
+                "url": BOOKLET_URL,
+            },
+            {
                 "name": "TPWD Public Hunt Locator Map (ArcGIS)",
                 "url": "https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer",
             },
@@ -397,6 +407,8 @@ def build() -> None:
         "regions": sorted({u["region"] for u in units if u["region"]}),
         "counties": sorted({c for u in units for c in u["counties"]}),
         "countiesWithCalendars": sum(1 for u in units if u.get("countySlugs")),
+        "unitsWithBookletPage": sum(1 for u in units if u.get("bookletPage")),
+        "bookletUrl": BOOKLET_URL,
     }
 
     DATA.mkdir(parents=True, exist_ok=True)
@@ -436,6 +448,7 @@ def build() -> None:
         f"- Hunt opportunities (species × method × date window): {meta['opportunityCount']}",
         f"- Units with polygons: {meta['polygonCount']}",
         f"- Units with county Outdoor Annual calendars: {meta.get('countiesWithCalendars', 0)}",
+        f"- Units with Map Booklet page numbers: {meta.get('unitsWithBookletPage', 0)}",
         "",
         "Unit map PDFs are not republished here; each unit links to the official TPWD PDF.",
         "",

@@ -62,7 +62,7 @@ export default function FilterPanel({ filters, meta, onChange, onPreset }: Props
         Search
         <input
           className="mt-1 w-full rounded-md border border-black/15 bg-white px-2 py-1.5"
-          placeholder="Unit name, number, county"
+          placeholder="Unit name, number, county, booklet page"
           value={filters.query}
           onChange={(e) => onChange({ ...filters, query: e.target.value })}
         />
