@@ -38,6 +38,36 @@ def main() -> int:
     assert by_id["702"]["bookletPage"] == "5", by_id["702"].get("bookletPage")
     assert by_id["904"]["bookletPage"] == "85", by_id["904"].get("bookletPage")
     assert by_id["736"]["bookletPage"] in {"xxiv", "xxv"}, by_id["736"].get("bookletPage")
+    url_fields = ("pdfUrl", "aerialPdfUrl", "bookletUrl", "epostcardUrl")
+    for unit in units:
+        for field in url_fields:
+            val = unit.get(field) or ""
+            if val:
+                assert val.startswith("https://tpwd.texas.gov/"), (unit["id"], field, val)
+    for page in counties.values():
+        url = page.get("url") or ""
+        if url:
+            assert url.startswith("https://tpwd.texas.gov/"), url
+
+    from safe import is_tpwd_url, resource_stem, safe_extract
+
+    assert not is_tpwd_url("javascript:alert(1)")
+    assert not is_tpwd_url("https://evil.example/https://tpwd.texas.gov/")
+    assert not resource_stem("../secret")
+    import tempfile
+    import zipfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        zpath = root / "t.zip"
+        dest = root / "out"
+        dest.mkdir()
+        with zipfile.ZipFile(zpath, "w") as zf:
+            zf.writestr("../evil.txt", "nope")
+            zf.writestr("ok.txt", "yes")
+        safe_extract(zpath, dest)
+        assert (dest / "ok.txt").read_text() == "yes"
+        assert not (root / "evil.txt").exists()
     print(
         f"ok: {len(units)} units, {len(opps)} opportunities, "
         f"{with_county} with county calendars, {with_booklet} with booklet pages"

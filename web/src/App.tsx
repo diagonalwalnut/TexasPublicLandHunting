@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import HuntMap from "./HuntMap";
 import HuntReport from "./HuntReport";
+import ExternalLink from "./ExternalLink";
 import FilterPanel from "./FilterPanel";
 import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
 import {
@@ -38,10 +39,22 @@ export default function App() {
 
   useEffect(() => {
     Promise.all([
-      fetch("data/units.json").then((r) => r.json()),
-      fetch("data/opportunities.json").then((r) => r.json()),
-      fetch("data/meta.json").then((r) => r.json()),
-      fetch("data/counties.json").then((r) => r.json()),
+      fetch("data/units.json").then((r) => {
+        if (!r.ok) throw new Error("units");
+        return r.json();
+      }),
+      fetch("data/opportunities.json").then((r) => {
+        if (!r.ok) throw new Error("opportunities");
+        return r.json();
+      }),
+      fetch("data/meta.json").then((r) => {
+        if (!r.ok) throw new Error("meta");
+        return r.json();
+      }),
+      fetch("data/counties.json").then((r) => {
+        if (!r.ok) throw new Error("counties");
+        return r.json();
+      }),
     ])
       .then(([u, o, m, c]) => {
         setUnits(u);
@@ -115,14 +128,12 @@ export default function App() {
           <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
             {matchIds.size} of {units.length} areas
           </span>
-          <a
+          <ExternalLink
             className="rounded-full border border-sand/30 px-3 py-1 hover:bg-white/10"
             href="https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/"
-            target="_blank"
-            rel="noreferrer"
           >
             TPWD APH
-          </a>
+          </ExternalLink>
         </div>
       </header>
 
@@ -237,39 +248,27 @@ export default function App() {
             )}
 
             <div className="mb-3 flex flex-wrap gap-2 text-sm">
-              {selected.pdfUrl && (
-                <a className="text-moss underline" href={selected.pdfUrl} target="_blank" rel="noreferrer">
-                  Official unit PDF
-                </a>
-              )}
-              {selected.aerialPdfUrl && (
-                <a className="text-moss underline" href={selected.aerialPdfUrl} target="_blank" rel="noreferrer">
-                  Aerial map
-                </a>
-              )}
-              {selected.bookletUrl && (
-                <a className="text-moss underline" href={selected.bookletUrl} target="_blank" rel="noreferrer">
-                  {selected.bookletPage
-                    ? `Map booklet p. ${selected.bookletPage}`
-                    : "Map booklet"}
-                </a>
-              )}
-              <a
+              <ExternalLink className="text-moss underline" href={selected.pdfUrl}>
+                Official unit PDF
+              </ExternalLink>
+              <ExternalLink className="text-moss underline" href={selected.aerialPdfUrl}>
+                Aerial map
+              </ExternalLink>
+              <ExternalLink className="text-moss underline" href={selected.bookletUrl}>
+                {selected.bookletPage ? `Map booklet p. ${selected.bookletPage}` : "Map booklet"}
+              </ExternalLink>
+              <ExternalLink
                 className="text-moss underline"
                 href={
                   selectedCountyPages[0]?.url ||
                   "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons-by-county"
                 }
-                target="_blank"
-                rel="noreferrer"
               >
                 Outdoor Annual county
-              </a>
-              {selected.epostcardUrl && (
-                <a className="text-moss underline" href={selected.epostcardUrl} target="_blank" rel="noreferrer">
-                  E-Postcard hunts
-                </a>
-              )}
+              </ExternalLink>
+              <ExternalLink className="text-moss underline" href={selected.epostcardUrl}>
+                E-Postcard hunts
+              </ExternalLink>
             </div>
 
             {selected.legalGameTags.length > 0 && (
@@ -298,9 +297,9 @@ export default function App() {
                 </p>
                 {selectedCountyPages.map((page) => (
                   <div key={page.county} className="mb-3">
-                    <a className="text-sm font-semibold text-moss underline" href={page.url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="text-sm font-semibold text-moss underline" href={page.url}>
                       {page.county} County
-                    </a>
+                    </ExternalLink>
                     <ul className="mt-1 space-y-2">
                       {page.animals.map((animal) => (
                         <li key={`${page.county}-${animal.label}`} className="rounded bg-sand px-2 py-1.5 text-sm">

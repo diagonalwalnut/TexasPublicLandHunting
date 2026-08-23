@@ -19,6 +19,7 @@ from geometry import (
     parse_kml_polygons,
 )
 from pdfs import methods_from_pdf_text, parse_pdf
+from safe import resource_stem, tpwd_url
 from seasons import SEASON_YEAR, default_calendar, windows_for
 from species import SPECIES, classify_tag, legal_game_tags
 
@@ -144,9 +145,9 @@ def build() -> None:
         primary = ids[0]
         region = str(row.get("region") or "").strip()
         county_names = split_counties(str(row.get("county") or "").strip())
-        area_pdf = str(row.get("areaPDF") or "").strip()
-        aerial = str(row.get("aerialPDFurl") or "").strip()
-        pdf_url = (
+        area_pdf = resource_stem(str(row.get("areaPDF") or "").strip())
+        aerial = resource_stem(str(row.get("aerialPDFurl") or "").strip())
+        pdf_url = tpwd_url(
             f"{PDF_BASE}/{area_pdf}.pdf"
             if area_pdf and area_pdf.lower() not in {"no_areamappdf", "none", ""}
             else ""
@@ -242,7 +243,7 @@ def build() -> None:
             "acres": acres,
             "type": unit_type,
             "pdfUrl": pdf_url,
-            "aerialPdfUrl": (
+            "aerialPdfUrl": tpwd_url(
                 f"{PDF_BASE}/{aerial}.pdf"
                 if aerial and aerial.lower() not in {"no_areamappdf", "none"}
                 else ""
@@ -256,7 +257,7 @@ def build() -> None:
             "complexes": complexes,
             "hasEpostcard": bool(row.get("epostcard_label")),
             "hasRegularPermit": bool(row.get("regular_label")),
-            "epostcardUrl": row.get("epostcard_url") or "",
+            "epostcardUrl": tpwd_url(str(row.get("epostcard_url") or "")),
             "countySlugs": [p["slug"] for p in county_pages],
             "lon": lonlat[0] if lonlat else None,
             "lat": lonlat[1] if lonlat else None,
@@ -264,7 +265,7 @@ def build() -> None:
         booklet_rec = lookup_unit(booklet, ids, name)
         unit["bookletPage"] = booklet_rec["bookletPage"] if booklet_rec else None
         unit["bookletPdfPage"] = booklet_rec["bookletPdfPage"] if booklet_rec else None
-        unit["bookletUrl"] = booklet_rec["bookletUrl"] if booklet_rec else BOOKLET_URL
+        unit["bookletUrl"] = tpwd_url(booklet_rec["bookletUrl"] if booklet_rec else BOOKLET_URL)
         units.append(unit)
         if geom is not None:
             unit_geoms[feature_id] = geom

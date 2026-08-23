@@ -9,6 +9,8 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
+from safe import tpwd_url
+
 MONTHS = {
     "jan": 1,
     "january": 1,
@@ -307,7 +309,7 @@ def parse_county_html(html: str, slug: str = "") -> dict[str, Any]:
     return {
         "county": name,
         "slug": slug,
-        "url": COUNTY_URL.format(slug=slug) if slug else "",
+        "url": tpwd_url(COUNTY_URL.format(slug=slug)) if slug else "",
         "animals": animals,
     }
 

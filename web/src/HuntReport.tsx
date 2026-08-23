@@ -1,3 +1,5 @@
+import ExternalLink from "./ExternalLink";
+import { safeExternalUrl } from "./urls";
 import type { Filters, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
@@ -116,15 +118,10 @@ export default function HuntReport({
                           </td>
                           <td className="px-3 py-2">{row.unit.counties.join(", ") || "—"}</td>
                           <td className="px-3 py-2">
-                            {row.unit.bookletUrl ? (
-                              <a
-                                className="text-moss underline"
-                                href={row.unit.bookletUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
+                            {safeExternalUrl(row.unit.bookletUrl) ? (
+                              <ExternalLink className="text-moss underline" href={row.unit.bookletUrl}>
                                 {row.unit.bookletPage ? `p. ${row.unit.bookletPage}` : "PDF"}
-                              </a>
+                              </ExternalLink>
                             ) : (
                               "—"
                             )}

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import time
-import zipfile
 from pathlib import Path
 
 import requests
+
+from safe import resource_stem, safe_extract, tpwd_url
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "cache"
@@ -33,6 +34,8 @@ ARCGIS_POINTS = (
 
 
 def get(url: str) -> bytes:
+    if not tpwd_url(url):
+        raise ValueError(f"blocked URL: {url}")
     r = requests.get(url, headers=HEADERS, timeout=120)
     r.raise_for_status()
     return r.content
@@ -47,15 +50,11 @@ def download_file(url: str, dest: Path) -> None:
 
 
 def unzip(zip_path: Path, dest_dir: Path) -> None:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(dest_dir)
+    safe_extract(zip_path, dest_dir)
 
 
 def extract_kmz(kmz_path: Path, dest_dir: Path) -> None:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(kmz_path) as zf:
-        zf.extractall(dest_dir)
+    safe_extract(kmz_path, dest_dir)
 
 
 def fetch_core() -> None:
@@ -96,7 +95,7 @@ def fetch_pdfs(limit: int | None = None) -> None:
             val = row.get(f"moreDetails{i}_url")
             if val:
                 names.append(str(val))
-    unique = list(dict.fromkeys(names))
+    unique = list(dict.fromkeys(resource_stem(n) for n in names if resource_stem(n)))
     if limit:
         unique = unique[:limit]
     for i, name in enumerate(unique, 1):

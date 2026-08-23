@@ -214,8 +214,14 @@ export default function HuntMap({
 
     map.on("load", async () => {
       const [units, regions] = await Promise.all([
-        fetch("data/units.geojson").then((r) => r.json()),
-        fetch("data/regions.geojson").then((r) => r.json()),
+        fetch("data/units.geojson").then((r) => {
+          if (!r.ok) throw new Error("units geojson");
+          return r.json();
+        }),
+        fetch("data/regions.geojson").then((r) => {
+          if (!r.ok) throw new Error("regions geojson");
+          return r.json();
+        }),
       ]);
       unitsRef.current = units.features as FeatureLike[];
       regionsRef.current = regions.features as FeatureLike[];
