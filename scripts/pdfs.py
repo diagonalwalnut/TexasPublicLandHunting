@@ -25,9 +25,12 @@ HEADING_RE = re.compile(
 
 def parse_pdf(path: Path) -> dict[str, str]:
     try:
-        import fitz  # PyMuPDF
+        import pymupdf as fitz
     except ImportError:
-        return {}
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            return {}
     if not path.exists() or path.stat().st_size < 500:
         return {}
     try:

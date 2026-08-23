@@ -1,7 +1,7 @@
 # Data sources
 
 Season: **2026-27** (September 1, 2026 – August 31, 2027).
-Generated: 2026-08-23T13:48:36.045186+00:00
+Generated: 2026-08-23T13:55:35.945403+00:00
 
 This dataset is an unofficial compilation. TPWD publications remain authoritative.
 
@@ -11,7 +11,7 @@ This dataset is an unofficial compilation. TPWD publications remain authoritativ
 - [TPWD Public Hunt Locator Map (ArcGIS)](https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer)
 
 - Units: 176
-- Hunt opportunities (species × method × date window): 1502
+- Hunt opportunities (species × method × date window): 1516
 - Units with polygons: 154
 
 Unit map PDFs are not republished here; each unit links to the official TPWD PDF.
