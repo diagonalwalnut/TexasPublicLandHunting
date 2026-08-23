@@ -3,6 +3,10 @@ import HuntMap from "./HuntMap";
 import HuntReport from "./HuntReport";
 import ExternalLink from "./ExternalLink";
 import FilterPanel from "./FilterPanel";
+import AccountBar from "./auth/AccountBar";
+import AuthModal from "./auth/AuthModal";
+import FavoriteButton from "./auth/FavoriteButton";
+import FavoritesView from "./FavoritesView";
 import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
@@ -34,7 +38,7 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
-  const [view, setView] = useState<"map" | "report">("map");
+  const [view, setView] = useState<"map" | "report" | "saved">("map");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,6 +128,13 @@ export default function App() {
             >
               Report
             </button>
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${view === "saved" ? "bg-gold text-pine" : "text-sand/80"}`}
+              onClick={() => setView("saved")}
+            >
+              Saved
+            </button>
           </div>
           <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
             {matchIds.size} of {units.length} areas
@@ -134,6 +145,7 @@ export default function App() {
           >
             TPWD APH
           </ExternalLink>
+          <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
         </div>
       </header>
 
@@ -205,6 +217,9 @@ export default function App() {
                   ))}
                 </div>
               </div>
+              <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
+                <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
+              </div>
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
                   units={units}
@@ -238,9 +253,12 @@ export default function App() {
                   {selected.counties.length ? ` · ${selected.counties.join(", ")} County` : ""}
                 </p>
               </div>
-              <button type="button" className="text-muted" onClick={() => setSelectedId(null)} aria-label="Close">
-                ✕
-              </button>
+              <div className="flex shrink-0 items-start gap-1">
+                <FavoriteButton unitId={selected.id} />
+                <button type="button" className="text-muted" onClick={() => setSelectedId(null)} aria-label="Close">
+                  ✕
+                </button>
+              </div>
             </div>
 
             {selected.complexes.length > 0 && (
@@ -360,6 +378,7 @@ export default function App() {
           </aside>
         )}
       </div>
+      <AuthModal />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import ExternalLink from "./ExternalLink";
+import FavoriteButton from "./auth/FavoriteButton";
 import { safeExternalUrl } from "./urls";
 import type { Filters, Opportunity, Unit } from "./types";
 import {
@@ -87,6 +88,7 @@ export default function HuntReport({
                 <table className="w-full min-w-[40rem] text-left text-sm">
                   <thead className="bg-sand/80 text-xs uppercase tracking-wide text-muted">
                     <tr>
+                      <th className="px-3 py-2 font-medium">Save</th>
                       <th className="px-3 py-2 font-medium">Unit</th>
                       <th className="px-3 py-2 font-medium">County</th>
                       <th className="px-3 py-2 font-medium">Booklet</th>
@@ -101,6 +103,9 @@ export default function HuntReport({
                       const species = [...new Set(row.opportunities.map((o) => o.speciesLabel))];
                       return (
                         <tr key={row.unit.id} className="border-t border-black/5 align-top">
+                          <td className="px-3 py-2">
+                            <FavoriteButton unitId={row.unit.id} />
+                          </td>
                           <td className="px-3 py-2">
                             <button
                               type="button"
