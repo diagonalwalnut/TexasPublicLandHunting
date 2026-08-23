@@ -9,6 +9,8 @@ from pathlib import Path
 
 from shapely.geometry import Point, mapping
 
+from booklet import BOOKLET_URL, load_booklet_pages, lookup_unit
+from county_seasons import load_counties, lookup_county, split_counties, windows_from_county
 from geometry import (
     centroid_point,
     dissolve,
@@ -17,6 +19,7 @@ from geometry import (
     parse_kml_polygons,
 )
 from pdfs import methods_from_pdf_text, parse_pdf
+from safe import resource_stem, tpwd_url
 from seasons import SEASON_YEAR, default_calendar, windows_for
 from species import SPECIES, classify_tag, legal_game_tags
 
@@ -124,6 +127,8 @@ def build() -> None:
         ("LEASE_NUM", "Unit_Num"),
     )
     points = load_points()
+    county_index = load_counties(CACHE / "counties")
+    booklet = load_booklet_pages(CACHE / "pwd_bk_w7000_0112a.pdf")
 
     units = []
     opportunities = []
@@ -139,10 +144,10 @@ def build() -> None:
             ids = [slug]
         primary = ids[0]
         region = str(row.get("region") or "").strip()
-        county = str(row.get("county") or "").strip()
-        area_pdf = str(row.get("areaPDF") or "").strip()
-        aerial = str(row.get("aerialPDFurl") or "").strip()
-        pdf_url = (
+        county_names = split_counties(str(row.get("county") or "").strip())
+        area_pdf = resource_stem(str(row.get("areaPDF") or "").strip())
+        aerial = resource_stem(str(row.get("aerialPDFurl") or "").strip())
+        pdf_url = tpwd_url(
             f"{PDF_BASE}/{area_pdf}.pdf"
             if area_pdf and area_pdf.lower() not in {"no_areamappdf", "none", ""}
             else ""
@@ -209,6 +214,15 @@ def build() -> None:
         if row.get("regular_label"):
             extra_access.append("regular_permit")
 
+        county_pages = []
+        seen_slugs = set()
+        for cname in county_names:
+            page = lookup_county(county_index, cname)
+            if not page or page.get("slug") in seen_slugs:
+                continue
+            seen_slugs.add(page.get("slug"))
+            county_pages.append(page)
+
         species_set = sorted({c["species"] for c in classified if c["species"] != "fishing"})
         methods_set = sorted({m for c in classified for m in c["methods"]})
         access_set = sorted({c["access"] for c in classified} | set(extra_access))
@@ -224,12 +238,12 @@ def build() -> None:
             "id": feature_id,
             "unitIds": ids,
             "name": name,
-            "counties": [county] if county else [],
+            "counties": county_names,
             "region": region,
             "acres": acres,
             "type": unit_type,
             "pdfUrl": pdf_url,
-            "aerialPdfUrl": (
+            "aerialPdfUrl": tpwd_url(
                 f"{PDF_BASE}/{aerial}.pdf"
                 if aerial and aerial.lower() not in {"no_areamappdf", "none"}
                 else ""
@@ -243,10 +257,15 @@ def build() -> None:
             "complexes": complexes,
             "hasEpostcard": bool(row.get("epostcard_label")),
             "hasRegularPermit": bool(row.get("regular_label")),
-            "epostcardUrl": row.get("epostcard_url") or "",
+            "epostcardUrl": tpwd_url(str(row.get("epostcard_url") or "")),
+            "countySlugs": [p["slug"] for p in county_pages],
             "lon": lonlat[0] if lonlat else None,
             "lat": lonlat[1] if lonlat else None,
         }
+        booklet_rec = lookup_unit(booklet, ids, name)
+        unit["bookletPage"] = booklet_rec["bookletPage"] if booklet_rec else None
+        unit["bookletPdfPage"] = booklet_rec["bookletPdfPage"] if booklet_rec else None
+        unit["bookletUrl"] = tpwd_url(booklet_rec["bookletUrl"] if booklet_rec else BOOKLET_URL)
         units.append(unit)
         if geom is not None:
             unit_geoms[feature_id] = geom
@@ -257,7 +276,23 @@ def build() -> None:
             if pdf_methods and item["species"] == "white_tailed_deer" and "any_legal" in methods:
                 methods = pdf_methods
             for method in methods:
-                for win in windows_for(item["species"], method, region, item["access"]):
+                wins: list[dict[str, str]] = []
+                date_source = "county_default"
+                source_county = ""
+                if pdf_sections and item["species"] == "white_tailed_deer" and pdf_methods:
+                    date_source = "unit_pdf"
+                for page in county_pages:
+                    found = windows_from_county(page, item["species"], method, item["access"])
+                    if found:
+                        wins = found
+                        source_county = page["county"]
+                        if date_source != "unit_pdf":
+                            date_source = "county"
+                        break
+                if not wins:
+                    wins = windows_for(item["species"], method, region, item["access"])
+                    date_source = "unit_pdf" if date_source == "unit_pdf" else "county_default"
+                for win in wins:
                     opp_id += 1
                     opportunities.append(
                         {
@@ -269,7 +304,8 @@ def build() -> None:
                             "access": item["access"],
                             "start": win["start"],
                             "end": win["end"],
-                            "dateSource": "unit_pdf" if pdf_sections and item["species"] == "white_tailed_deer" and pdf_methods else "county_default",
+                            "dateSource": date_source,
+                            "county": source_county,
                             "notes": item["sourceTag"],
                         }
                     )
@@ -341,8 +377,12 @@ def build() -> None:
                 "url": "https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/resources/map/PublicHuntAreasDetailsKMZ2026-27.zip",
             },
             {
-                "name": "Outdoor Annual 2026-27 hunting season dates",
-                "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates",
+                "name": "Outdoor Annual seasons by county",
+                "url": "https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/anderson",
+            },
+            {
+                "name": "2026-27 Public Hunting Lands Map Booklet",
+                "url": BOOKLET_URL,
             },
             {
                 "name": "TPWD Public Hunt Locator Map (ArcGIS)",
@@ -367,6 +407,9 @@ def build() -> None:
         ],
         "regions": sorted({u["region"] for u in units if u["region"]}),
         "counties": sorted({c for u in units for c in u["counties"]}),
+        "countiesWithCalendars": sum(1 for u in units if u.get("countySlugs")),
+        "unitsWithBookletPage": sum(1 for u in units if u.get("bookletPage")),
+        "bookletUrl": BOOKLET_URL,
     }
 
     DATA.mkdir(parents=True, exist_ok=True)
@@ -377,6 +420,11 @@ def build() -> None:
         "opportunities.json": opportunities,
         "units.json": units,
         "seasons.json": default_calendar(),
+        "counties.json": {
+            page["slug"]: page
+            for page in county_index.values()
+            if isinstance(page, dict) and page.get("slug")
+        },
         "meta.json": meta,
     }
     for name, obj in payload.items():
@@ -400,6 +448,8 @@ def build() -> None:
         f"- Units: {meta['unitCount']}",
         f"- Hunt opportunities (species × method × date window): {meta['opportunityCount']}",
         f"- Units with polygons: {meta['polygonCount']}",
+        f"- Units with county Outdoor Annual calendars: {meta.get('countiesWithCalendars', 0)}",
+        f"- Units with Map Booklet page numbers: {meta.get('unitsWithBookletPage', 0)}",
         "",
         "Unit map PDFs are not republished here; each unit links to the official TPWD PDF.",
         "",

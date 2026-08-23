@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import time
-import zipfile
 from pathlib import Path
 
 import requests
+
+from safe import resource_stem, safe_extract, tpwd_url
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "cache"
@@ -23,6 +24,7 @@ SOURCES = {
     "PublicHuntAreasDetailsKMZ2026-27.zip": f"{BASE}/resources/map/PublicHuntAreasDetailsKMZ2026-27.zip",
     "PublicHuntLocatorPointsGPX2026-27.zip": f"{BASE}/resources/map/PublicHuntLocatorPointsGPX2026-27.zip",
     "oa_dates.html": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates",
+    "pwd_bk_w7000_0112a.pdf": "https://tpwd.texas.gov/publications/pwdpubs/media/pwd_bk_w7000_0112a.pdf",
 }
 
 ARCGIS_POINTS = (
@@ -32,6 +34,8 @@ ARCGIS_POINTS = (
 
 
 def get(url: str) -> bytes:
+    if not tpwd_url(url):
+        raise ValueError(f"blocked URL: {url}")
     r = requests.get(url, headers=HEADERS, timeout=120)
     r.raise_for_status()
     return r.content
@@ -46,15 +50,11 @@ def download_file(url: str, dest: Path) -> None:
 
 
 def unzip(zip_path: Path, dest_dir: Path) -> None:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(dest_dir)
+    safe_extract(zip_path, dest_dir)
 
 
 def extract_kmz(kmz_path: Path, dest_dir: Path) -> None:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(kmz_path) as zf:
-        zf.extractall(dest_dir)
+    safe_extract(kmz_path, dest_dir)
 
 
 def fetch_core() -> None:
@@ -95,7 +95,7 @@ def fetch_pdfs(limit: int | None = None) -> None:
             val = row.get(f"moreDetails{i}_url")
             if val:
                 names.append(str(val))
-    unique = list(dict.fromkeys(names))
+    unique = list(dict.fromkeys(resource_stem(n) for n in names if resource_stem(n)))
     if limit:
         unique = unique[:limit]
     for i, name in enumerate(unique, 1):
@@ -110,14 +110,51 @@ def fetch_pdfs(limit: int | None = None) -> None:
             print(f"  skip {name}: {exc}")
 
 
+def fetch_counties() -> None:
+    from county_seasons import county_slugs, split_counties
+
+    catalog = json.loads((CACHE / "aph_202627.json").read_text())
+    names: list[str] = []
+    for row in catalog:
+        names.extend(split_counties(str(row.get("county") or "")))
+    unique = sorted(set(names), key=str.lower)
+    dest_dir = CACHE / "counties"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    print(f"fetch {len(unique)} county Outdoor Annual pages")
+    for i, name in enumerate(unique, 1):
+        slugs = county_slugs(name)
+        done = False
+        for slug in slugs:
+            dest = dest_dir / f"{slug}.html"
+            if dest.exists() and dest.stat().st_size > 5000:
+                done = True
+                break
+            url = f"https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/{slug}"
+            try:
+                print(f"[{i}/{len(unique)}] {name} ({slug})")
+                download_file(url, dest)
+                if dest.stat().st_size > 5000 and b"This page does not seem to exist" not in dest.read_bytes():
+                    done = True
+                    break
+                dest.unlink(missing_ok=True)
+            except Exception as exc:
+                print(f"  skip {slug}: {exc}")
+                dest.unlink(missing_ok=True)
+        if not done:
+            print(f"  missing county page for {name}")
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdfs", action="store_true")
+    parser.add_argument("--counties", action="store_true")
     parser.add_argument("--pdf-limit", type=int, default=None)
     args = parser.parse_args()
     fetch_core()
     if args.pdfs:
         fetch_pdfs(args.pdf_limit)
+    if args.counties:
+        fetch_counties()
     print("done")
