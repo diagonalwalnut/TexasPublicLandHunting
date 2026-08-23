@@ -6,6 +6,7 @@ import FilterPanel from "./FilterPanel";
 import AccountBar from "./auth/AccountBar";
 import AuthModal from "./auth/AuthModal";
 import FavoriteButton from "./auth/FavoriteButton";
+import { AUTH_AND_SAVES_ENABLED } from "./auth/features";
 import FavoritesView from "./FavoritesView";
 import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
 import {
@@ -137,13 +138,15 @@ export default function App() {
             >
               Report
             </button>
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 ${view === "saved" ? "bg-gold text-pine" : "text-sand/80"}`}
-              onClick={() => setView("saved")}
-            >
-              Saved
-            </button>
+            {AUTH_AND_SAVES_ENABLED ? (
+              <button
+                type="button"
+                className={`rounded-full px-3 py-1 ${view === "saved" ? "bg-gold text-pine" : "text-sand/80"}`}
+                onClick={() => setView("saved")}
+              >
+                Saved
+              </button>
+            ) : null}
           </div>
           <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
             {matchIds.size} of {units.length} areas
@@ -154,7 +157,9 @@ export default function App() {
           >
             TPWD APH
           </ExternalLink>
-          <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
+          {AUTH_AND_SAVES_ENABLED ? (
+            <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
+          ) : null}
         </div>
       </header>
 
@@ -226,9 +231,11 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
-                <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
-              </div>
+              {AUTH_AND_SAVES_ENABLED ? (
+                <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
+                  <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
+                </div>
+              ) : null}
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
                   units={units}
@@ -263,7 +270,7 @@ export default function App() {
                 </p>
               </div>
               <div className="flex shrink-0 items-start gap-1">
-                <FavoriteButton unitId={selected.id} />
+                {AUTH_AND_SAVES_ENABLED ? <FavoriteButton unitId={selected.id} /> : null}
                 <button type="button" className="text-muted" onClick={() => setSelectedId(null)} aria-label="Close">
                   ✕
                 </button>
@@ -387,7 +394,7 @@ export default function App() {
           </aside>
         )}
       </div>
-      <AuthModal />
+      {AUTH_AND_SAVES_ENABLED ? <AuthModal /> : null}
     </div>
   );
 }

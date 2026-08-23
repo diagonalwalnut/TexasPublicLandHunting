@@ -1,9 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { AUTH_AND_SAVES_ENABLED } from "./features";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? "";
 
-export const isAuthConfigured = url.startsWith("https://") && anonKey.length > 20;
+export const isAuthConfigured =
+  AUTH_AND_SAVES_ENABLED && url.startsWith("https://") && anonKey.length > 20;
 
 export function authRedirectTo(): string {
   return new URL(import.meta.env.BASE_URL || "/", window.location.origin).toString();

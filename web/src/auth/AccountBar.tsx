@@ -1,4 +1,5 @@
 import { useAuth } from "./AuthContext";
+import { AUTH_AND_SAVES_ENABLED } from "./features";
 
 type Props = {
   savedActive: boolean;
@@ -7,6 +8,7 @@ type Props = {
 
 export default function AccountBar({ savedActive, onOpenSaved }: Props) {
   const { loading, user, profile, openAuth, signOut, favoriteIds } = useAuth();
+  if (!AUTH_AND_SAVES_ENABLED) return null;
 
   if (loading) {
     return <span className="text-sm text-sand/70">Account…</span>;

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useAuth } from "./AuthContext";
+import { AUTH_AND_SAVES_ENABLED } from "./features";
 import { PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from "./rules";
 
 export default function AuthModal() {
@@ -52,7 +53,7 @@ export default function AuthModal() {
     return () => window.removeEventListener("keydown", onKey);
   }, [authOpen, closeAuth]);
 
-  if (!authOpen) return null;
+  if (!AUTH_AND_SAVES_ENABLED || !authOpen) return null;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();

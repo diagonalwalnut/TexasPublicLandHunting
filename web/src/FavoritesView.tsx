@@ -1,5 +1,6 @@
 import FavoriteButton from "./auth/FavoriteButton";
 import { useAuth } from "./auth/AuthContext";
+import { AUTH_AND_SAVES_ENABLED } from "./auth/features";
 import { TYPE_LABEL } from "./filters";
 import type { Unit } from "./types";
 
@@ -10,6 +11,7 @@ type Props = {
 
 export default function FavoritesView({ units, onSelectUnit }: Props) {
   const { user, favoriteIds, openAuth } = useAuth();
+  if (!AUTH_AND_SAVES_ENABLED) return null;
   const byId = new Map(units.map((u) => [u.id, u]));
   const rows = [...favoriteIds].map((id) => ({ id, unit: byId.get(id) ?? null }));
 

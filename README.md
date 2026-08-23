@@ -83,7 +83,9 @@ If the site lives in a subdirectory (for example `public_html/hunt/`), rebuild w
 
 ## Accounts and saved units
 
-The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password, Google, or Microsoft) and **save units** for later. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work; the sign-in dialog explains that accounts are not configured yet.
+Sign-in, account creation, and saved units are **hidden in the production UI**. Set `AUTH_AND_SAVES_ENABLED` to `true` in `web/src/auth/features.ts` to restore them. The map and hunt report work without an account.
+
+The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password, Google, or Microsoft) and **save units** for later. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Authentication → Providers**

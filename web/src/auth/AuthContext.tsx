@@ -19,6 +19,7 @@ import {
   validateSignUp,
   validateUsername,
 } from "./rules";
+import { AUTH_AND_SAVES_ENABLED } from "./features";
 import { authRedirectTo, isAuthConfigured, supabase } from "./supabase";
 
 export type Profile = {
@@ -178,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [cooldownSeconds]);
 
   const openAuth = useCallback((mode: AuthMode = "signin") => {
+    if (!AUTH_AND_SAVES_ENABLED) return;
     setNotice(null);
     setAuthMode(mode);
     setAuthOpen(true);
@@ -275,6 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const toggleFavorite = useCallback(
     async (unitId: string) => {
+      if (!AUTH_AND_SAVES_ENABLED) return "Saving units is not available.";
       if (!supabase) return NOT_CONFIGURED;
       if (!user) {
         openAuth("signin");

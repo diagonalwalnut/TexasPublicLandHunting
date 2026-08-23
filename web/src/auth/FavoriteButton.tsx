@@ -1,4 +1,5 @@
 import { useAuth } from "./AuthContext";
+import { AUTH_AND_SAVES_ENABLED } from "./features";
 
 type Props = {
   unitId: string;
@@ -7,6 +8,7 @@ type Props = {
 
 export default function FavoriteButton({ unitId, className = "" }: Props) {
   const { user, isFavorite, toggleFavorite, openAuth } = useAuth();
+  if (!AUTH_AND_SAVES_ENABLED) return null;
   const saved = isFavorite(unitId);
 
   return (
