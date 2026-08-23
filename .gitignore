@@ -8,3 +8,7 @@ web/dist/
 .DS_Store
 *.egg-info/
 .pytest_cache/
+web/.env
+web/.env.local
+.env
+.env.local

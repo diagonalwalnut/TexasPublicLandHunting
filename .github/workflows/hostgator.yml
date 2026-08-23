@@ -26,6 +26,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Build site for a HostGator domain root
         working-directory: web
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           npm ci
           npm run build

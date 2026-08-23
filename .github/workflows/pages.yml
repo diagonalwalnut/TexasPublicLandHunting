@@ -28,6 +28,9 @@ jobs:
         working-directory: web
         # Custom domain huntpubliclandintexas.com is a site root, so asset
         # URLs must be / not /TexasPublicLandHunting/.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           npm ci
           npm run build
