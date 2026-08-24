@@ -25,6 +25,8 @@ Unofficial 2026–27 explorer for TPWD Annual Public Hunting units. See `README.
 
 ### HostGator FTP (not GitHub)
 - FTP login lives only on this Cloud Agent machine in `$HOME/.config/tplh/ftp.env` (`chmod 600`). Login shells source that file from `~/.bashrc`. **Never commit it, and never add `FTP_USER` / `FTP_PASSWORD` as GitHub Actions secrets.**
+- `ftp.mljpodcast.com` has no DNS. `FTP_HOST` must be `192.185.41.29` (the A record for `huntpubliclandintexas.com` / `mljpodcast.com`). Port 21, explicit AUTH TLS. Upload target is `public_html` (`FTP_REMOTE_DIR`).
 - Before a local deploy: `set -a && . "$HOME/.config/tplh/ftp.env" && set +a`, then `python3 scripts/deploy-hostgator.py` from the repo root (after `npm run build` in `web/`). Required vars: `FTP_USER`, `FTP_PASSWORD`, `FTP_HOST`, `FTP_PORT`.
-- Explicit FTPS is AUTH TLS on port 21 (`scripts/deploy-hostgator.py`). A missing env file means deploy is skipped, not that GitHub should be filled in.
+- HostGator Pure-FTPd needs `PRET STOR <file>` before `PASV` or the data port is refused. `scripts/deploy-hostgator.py` sends PRET. If the Python uploader still hangs on data TLS, use `lftp` with `ftp:ssl-force true`, `ftp:ssl-protect-data false`, `ftp:ssl-protect-list false`, and `mirror -R web/dist /public_html`.
+- Cloud Agent caveat: FTP **control** (AUTH TLS on port 21) works from this VM, but the **data** channel often never gets `150`/`226` because the VM’s egress IP is not stable (HostGator then ignores PASV and refuses active `PORT` to the RFC1918 address). Publish from a single-public-IP machine, not from this Cloud Agent, unless GitHub Actions secrets are allowed (they are not, by request).
 - The GitHub `Deploy to HostGator` workflow will keep skipping FTP until GitHub secrets exist; that skip is intentional.
