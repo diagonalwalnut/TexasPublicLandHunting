@@ -1,37 +1,29 @@
 # HostGator restore files
 
-Use these files to repair https://huntpubliclandintexas.com/ from **cPanel File Manager**. Do not upload `web/index.html` from the repo (that is the Vite **dev** page and points at `/src/main.tsx`, which Apache cannot serve).
+Use these files in **cPanel File Manager** for https://huntpubliclandintexas.com/. Do not upload repo `web/index.html` (that is the Vite **dev** page).
 
-Cursor chat **.zip attachments often fail to download**. The repo is private, so open GitHub **signed in** and use **Download raw file** (anonymous `raw.githubusercontent.com` links 404).
+Cursor chat **.zip attachments often fail to download**. The repo is private: open GitHub **signed in** and use **Download raw file**.
 
-## Download (GitHub, signed in — not the chat zip)
+## Sign-in (“accounts service on this host”)
 
-Folder:
+The live `public_html/api/` folder is missing `index.php` and has 0-byte PHP files from a failed FTP upload. Upload this one file next to `index.html`:
 
-https://github.com/diagonalwalnut/TexasPublicLandHunting/tree/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore
+1. `accounts.php` → `public_html/accounts.php`
+2. `htaccess.txt` → `public_html/.htaccess` (rename after upload)
 
-Open a file, then **Download raw file**:
+Then open https://huntpubliclandintexas.com/accounts.php once (it restores `api/*.php` and redirects home). Click **Sign in** again.
 
-- [homepage.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.zip) (371 KB)
-- [homepage.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.tar.gz) (same files; use this if zip download still fails)
-- [full-site.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.zip)
-- [full-site.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.tar.gz)
+If Sign-in still shows the accounts-service popup, also upload the new `index.html` and `assets/` from this folder (the browser script must call `/accounts.php`).
 
-If archives still fail, download the four homepage files individually from that folder (`index.html`, `htaccess.txt`, `assets/index-BVMFCN11.js`, `assets/index-CiQZZOqP.css`).
+Do **not** overwrite `public_html/api/data/*.sqlite` or `*.key`.
 
-## Fastest repair (no archive)
+## Homepage files
 
-Upload these four items into `public_html` (overwrite when asked):
+Upload into `public_html` (overwrite when asked):
 
-1. `index.html` → `public_html/index.html`
-2. `htaccess.txt` → `public_html/.htaccess` (rename after upload; File Manager hides names that start with a dot)
-3. `assets/index-BVMFCN11.js` → `public_html/assets/index-BVMFCN11.js` (create `assets` if needed)
-4. `assets/index-CiQZZOqP.css` → `public_html/assets/index-CiQZZOqP.css`
+1. `index.html`
+2. `htaccess.txt` → rename to `.htaccess`
+3. `assets/` (hashed JS/CSS from the latest build)
+4. `accounts.php`
 
-The repaired `index.html` must contain `/assets/index-BVMFCN11.js`. If it still mentions `/src/main.tsx`, the wrong file was uploaded.
-
-Then extract `full-site.zip` into `public_html` for data JSON, icons, and the PHP API. Do **not** overwrite `public_html/api/data/*.sqlite` or `*.key` if those already exist.
-
-## Check
-
-After upload, https://huntpubliclandintexas.com/ should load the map. View source and confirm `assets/index-BVMFCN11.js`.
+The repaired `index.html` must reference `/assets/…js`, not `/src/main.tsx`.

@@ -1,4 +1,6 @@
-const API_BASE = "/api/index.php?action=";
+const API_BASES = ["/accounts.php?action=", "/api/index.php?action="];
+
+let apiBase = API_BASES[0];
 
 export type Account = {
   id: string;
@@ -78,7 +80,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${encodeURIComponent(action)}`, {
+    res = await fetch(`${apiBase}${encodeURIComponent(action)}`, {
       ...init,
       headers,
       credentials: "include",
@@ -180,12 +182,18 @@ export async function setUserRole(userId: string, role: "user" | "admin"): Promi
 }
 
 export async function probeApi(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}health`, { credentials: "include" });
-    if (!res.ok) return false;
-    const data = (await res.json()) as { ok?: boolean };
-    return data.ok === true;
-  } catch {
-    return false;
+  for (const base of API_BASES) {
+    try {
+      const res = await fetch(`${base}health`, { credentials: "include" });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { ok?: boolean };
+      if (data.ok === true) {
+        apiBase = base;
+        return true;
+      }
+    } catch {
+      /* try the next front controller */
+    }
   }
+  return false;
 }

@@ -5,7 +5,7 @@ $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 if (!is_string($uri)) {
     $uri = '/';
 }
-if (strncmp($uri, '/api', 4) === 0) {
+if (strncmp($uri, '/api', 4) === 0 || preg_match('#/accounts\\.php$#', $uri) === 1) {
     require __DIR__ . '/public/api/index.php';
     return true;
 }
