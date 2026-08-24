@@ -26,6 +26,7 @@ import {
   unitOpportunities,
 } from "./filters";
 import { safeExternalUrl } from "./urls";
+import { loadDrawnCatalog } from "./loadDrawn";
 
 const EMPTY_FILTERS: Filters = {
   species: [],
@@ -112,21 +113,20 @@ export default function App() {
 
   useEffect(() => {
     if (!betaEnabled || drawnHunts.length) return;
-    Promise.all([
-      fetch("data/drawn_hunts.json").then((r) => {
-        if (!r.ok) throw new Error("drawn");
-        return r.json();
-      }),
-      fetch("data/drawn_meta.json").then((r) => {
-        if (!r.ok) throw new Error("drawn-meta");
-        return r.json();
-      }),
-    ])
-      .then(([hunts, dm]) => {
+    let cancelled = false;
+    void loadDrawnCatalog()
+      .then(({ hunts, meta: dm }) => {
+        if (cancelled) return;
         setDrawnHunts(hunts);
         setDrawnMeta(dm);
+        setError((prev) => (prev === "Could not load drawn hunt data." ? null : prev));
       })
-      .catch(() => setError("Could not load drawn hunt data."));
+      .catch(() => {
+        if (!cancelled) setError("Could not load drawn hunt data.");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [betaEnabled, drawnHunts.length]);
 
   const matchIds = useMemo(
@@ -303,10 +303,15 @@ export default function App() {
         ) : null}
 
         <main className="relative order-1 min-h-[46vh] min-w-0 flex-1 md:order-2">
-          {error ? (
+          {error === "Could not load hunt data." ? (
             <p className="p-6 text-red-800">{error}</p>
           ) : (
             <>
+              {error === "Could not load drawn hunt data." && showDrawn ? (
+                <p className="absolute left-3 right-3 top-3 z-20 rounded-md bg-white/95 p-3 text-sm text-red-800 shadow">
+                  {error}
+                </p>
+              ) : null}
               <div className={`absolute inset-0 ${view === "map" ? "z-10" : "invisible pointer-events-none"}`}>
                 <HuntMap
                   matchingIds={matchIds}

@@ -13,6 +13,12 @@ DirectoryIndex index.html
   # accounts probe through accounts.php so it can restore those files.
   RewriteCond %{DOCUMENT_ROOT}/api/index.php !-s
   RewriteRule ^api/index\.php$ accounts.php [L,QSA]
+  RewriteCond %{DOCUMENT_ROOT}/data/drawn_hunts.json !-s
+  RewriteRule ^data/drawn_hunts\.json$ drawn_payload.php?name=hunts [L,QSA]
+  RewriteCond %{DOCUMENT_ROOT}/data/drawn_meta.json !-s
+  RewriteRule ^data/drawn_meta\.json$ drawn_payload.php?name=meta [L,QSA]
+  RewriteCond %{DOCUMENT_ROOT}/data/drawn_hunts.geojson !-s
+  RewriteRule ^data/drawn_hunts\.geojson$ drawn_payload.php?name=geo [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>
