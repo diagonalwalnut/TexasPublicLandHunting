@@ -2,20 +2,22 @@
 
 Use these files to repair https://huntpubliclandintexas.com/ from **cPanel File Manager**. Do not upload `web/index.html` from the repo (that is the Vite **dev** page and points at `/src/main.tsx`, which Apache cannot serve).
 
-Cursor chat **.zip attachments often fail to download**. Get the files from GitHub instead.
+Cursor chat **.zip attachments often fail to download**. The repo is private, so open GitHub **signed in** and use **Download raw file** (anonymous `raw.githubusercontent.com` links 404).
 
-## Download (GitHub, not the chat zip)
+## Download (GitHub, signed in — not the chat zip)
 
 Folder:
 
 https://github.com/diagonalwalnut/TexasPublicLandHunting/tree/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore
 
-Direct files (click, then **Download raw file** if the browser tries to display them):
+Open a file, then **Download raw file**:
 
-- Homepage zip: https://github.com/diagonalwalnut/TexasPublicLandHunting/raw/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.zip
-- Homepage tar.gz: https://github.com/diagonalwalnut/TexasPublicLandHunting/raw/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.tar.gz
-- Full site zip: https://github.com/diagonalwalnut/TexasPublicLandHunting/raw/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.zip
-- Full site tar.gz: https://github.com/diagonalwalnut/TexasPublicLandHunting/raw/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.tar.gz
+- [homepage.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.zip) (371 KB)
+- [homepage.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.tar.gz) (same files; use this if zip download still fails)
+- [full-site.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.zip)
+- [full-site.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.tar.gz)
+
+If archives still fail, download the four homepage files individually from that folder (`index.html`, `htaccess.txt`, `assets/index-BVMFCN11.js`, `assets/index-CiQZZOqP.css`).
 
 ## Fastest repair (no archive)
 
