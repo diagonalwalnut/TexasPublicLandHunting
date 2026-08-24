@@ -18,10 +18,11 @@ Unofficial 2026–27 explorer for TPWD Annual Public Hunting units. See `README.
 - Requires `php-cli` with the `sqlite3`/`pdo_sqlite` extensions and `PASSWORD_ARGON2ID` (all present in this environment).
 - SQLite DB + HMAC key are created on first use under `web/public/api/data/` (git-ignored). Delete that directory to reset accounts.
 - API is same-origin only; requests need a matching `Origin`/`Referer`. Mutating routes require the `X-CSRF-Token` header (returned by `/api/signup`, `/api/signin`, `/api/me`) plus the session cookie.
+- Production Sign-in probes `/accounts.php?action=health` first, then `/api/index.php?action=health`. `web/public/accounts.php` is a generated front controller (`python3 scripts/bundle_accounts_php.py`) that restores missing or 0-byte `api/*.php` files left by a failed HostGator FTP `STOR`. Root `.htaccess` also rewrites `/api/index.php` to `accounts.php` when that file is missing or empty. After changing PHP under `web/public/api/`, regenerate `accounts.php` before building.
 
 ### Lint / test / build
 - Build + typecheck: `npm run build` (from `web/`) = `tsc --noEmit && vite build`. There is no separate ESLint/Prettier config; the TypeScript check is the type/lint gate.
-- Python tests are plain scripts (no pytest): `python3 scripts/test_auth.py`, `python3 scripts/test_data.py`, `python3 scripts/test_methods.py`, `python3 scripts/test_drawn.py`.
+- Python tests are plain scripts (no pytest): `python3 scripts/test_auth.py`, `python3 scripts/test_data.py`, `python3 scripts/test_methods.py`, `python3 scripts/test_drawn.py`, `python3 scripts/test_accounts_restore.py`.
 
 ### Accounts, roles, and beta
 - The first user in an empty SQLite DB is an administrator; later sign-ups are standard users. If an older DB has users but no admin, startup migration promotes the oldest account.

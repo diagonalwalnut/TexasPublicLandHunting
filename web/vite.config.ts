@@ -15,6 +15,10 @@ const SECURITY_HEADERS = {
 };
 
 const API_PROXY = {
+  "/accounts.php": {
+    target: "http://127.0.0.1:8088",
+    changeOrigin: false,
+  },
   "/api": {
     target: "http://127.0.0.1:8088",
     changeOrigin: false,
