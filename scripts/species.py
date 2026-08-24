@@ -69,8 +69,14 @@ def methods_from_tag(tag: str, species: str) -> list[str]:
         methods.append("archery")
     if "muzzle" in t:
         methods.append("muzzleloader")
-    if re.search(r"general|rifle|firearm|gun", t):
+    # "gun" must not match shotgun. "general" is the gun season, not a means —
+    # it defaults to firearm/rifle unless the unit Legal Game box restricts it.
+    if re.search(r"\brifle\b|\bfirearm\b|centerfire", t):
         methods.append("firearm")
+    elif re.search(r"\bgeneral\b", t) and "muzzle" not in t:
+        methods.append("firearm")
+    if re.search(r"shotguns?", t) and "shotgun" not in methods:
+        methods.append("shotgun")
     if species in {"dove", "waterfowl", "teal", "sandhill_crane", "other_migratory", "chachalaca"}:
         if "shotgun" not in methods:
             methods.append("shotgun")
