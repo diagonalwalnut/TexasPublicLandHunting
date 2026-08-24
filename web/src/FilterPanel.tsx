@@ -1,11 +1,26 @@
-import type { AccessId, Filters, Meta, MethodId } from "./types";
+import type { AccessId, DrawnMeta, Filters, Meta, MethodId } from "./types";
 
-export const PRESETS: { label: string; species: string[]; methods: MethodId[] }[] = [
+export type FilterPreset = {
+  label: string;
+  species: string[];
+  methods: MethodId[];
+  access?: AccessId[];
+};
+
+export const PRESETS: FilterPreset[] = [
   { label: "Whitetail + rifle", species: ["white_tailed_deer"], methods: ["firearm"] },
   { label: "Whitetail + archery", species: ["white_tailed_deer"], methods: ["archery"] },
   { label: "Dove + shotgun", species: ["dove"], methods: ["shotgun"] },
   { label: "Feral hog", species: ["feral_hog"], methods: [] },
   { label: "Squirrel", species: ["squirrel"], methods: [] },
+];
+
+export const DRAWN_PRESETS: FilterPreset[] = [
+  { label: "Whitetail + rifle", species: ["white_tailed_deer"], methods: ["firearm"] },
+  { label: "Youth hunts", species: [], methods: [], access: ["youth", "youth_adult"] },
+  { label: "Alligator", species: ["alligator"], methods: [] },
+  { label: "Exotic", species: ["exotic_mammals"], methods: [] },
+  { label: "Waterfowl", species: ["waterfowl"], methods: [] },
 ];
 
 const EMPTY: Filters = {
@@ -25,20 +40,31 @@ function toggleValue<T extends string>(list: T[], value: T): T[] {
 
 type Props = {
   filters: Filters;
-  meta: Meta | null;
+  meta: Pick<Meta, "species" | "methods" | "access" | "regions" | "counties"> | Pick<DrawnMeta, "species" | "methods" | "access" | "regions" | "counties"> | null;
   onChange: (filters: Filters) => void;
   onPreset?: (filters: Filters) => void;
+  presets?: FilterPreset[];
+  searchPlaceholder?: string;
 };
 
-export default function FilterPanel({ filters, meta, onChange, onPreset }: Props) {
+export default function FilterPanel({
+  filters,
+  meta,
+  onChange,
+  onPreset,
+  presets = PRESETS,
+  searchPlaceholder = "Unit name, number, county, booklet page",
+}: Props) {
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Quick reports</p>
       <div className="mb-3 flex flex-wrap gap-1">
-        {PRESETS.map((preset) => {
+        {presets.map((preset) => {
+          const presetAccess = preset.access ?? [];
           const active =
             JSON.stringify(filters.species) === JSON.stringify(preset.species) &&
-            JSON.stringify(filters.methods) === JSON.stringify(preset.methods);
+            JSON.stringify(filters.methods) === JSON.stringify(preset.methods) &&
+            JSON.stringify(filters.access) === JSON.stringify(presetAccess);
           return (
             <button
               key={preset.label}
@@ -47,7 +73,12 @@ export default function FilterPanel({ filters, meta, onChange, onPreset }: Props
                 active ? "bg-moss text-white" : "bg-white text-muted ring-1 ring-black/10 hover:bg-moss hover:text-white"
               }`}
               onClick={() => {
-                const next = { ...EMPTY, species: preset.species, methods: preset.methods };
+                const next = {
+                  ...EMPTY,
+                  species: preset.species,
+                  methods: preset.methods,
+                  access: presetAccess,
+                };
                 onChange(next);
                 onPreset?.(next);
               }}
@@ -62,7 +93,7 @@ export default function FilterPanel({ filters, meta, onChange, onPreset }: Props
         Search
         <input
           className="mt-1 w-full rounded-md border border-black/15 bg-white px-2 py-1.5"
-          placeholder="Unit name, number, county, booklet page"
+          placeholder={searchPlaceholder}
           value={filters.query}
           onChange={(e) => onChange({ ...filters, query: e.target.value })}
         />

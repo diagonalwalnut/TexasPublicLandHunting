@@ -93,6 +93,8 @@ def main() -> int:
         )
         assert status == 201, created
         assert created["user"]["username"] == "trailwalker"
+        assert created["user"]["role"] == "admin"
+        assert created["user"]["betaEnabled"] is False
         assert created.get("csrf")
 
         db_path = data_dir / "accounts.sqlite"
@@ -157,8 +159,99 @@ def main() -> int:
         status, me = api2.call("/api/index.php?action=me")
         assert status == 200, me
         assert me["user"]["username"] == "trailwalker"
+        assert me["user"]["role"] == "admin"
         assert "901S" in me["favorites"]
-        print("auth tests ok (argon2id)")
+
+        standard = Api("http://127.0.0.1:18088")
+        status, second = standard.call(
+            "/api/index.php?action=signup",
+            method="POST",
+            body={
+                "username": "mapreader",
+                "email": "mapreader@example.com",
+                "password": PASSWORD,
+            },
+        )
+        assert status == 201, second
+        assert second["user"]["role"] == "user"
+        assert second["user"]["betaEnabled"] is False
+
+        status, forbidden_users = standard.call("/api/index.php?action=users")
+        assert status == 403, forbidden_users
+        status, forbidden_beta = standard.call(
+            "/api/index.php?action=beta",
+            method="POST",
+            body={"enabled": True},
+            csrf=True,
+        )
+        assert status == 403, forbidden_beta
+
+        status, listed = api2.call("/api/index.php?action=users")
+        assert status == 200, listed
+        names = {row["username"]: row for row in listed["users"]}
+        assert names["trailwalker"]["role"] == "admin"
+        assert names["mapreader"]["role"] == "user"
+
+        status, last_admin = api2.call(
+            "/api/index.php?action=users/role",
+            method="POST",
+            body={"user_id": names["trailwalker"]["id"], "role": "user"},
+            csrf=True,
+        )
+        assert status == 400, last_admin
+        assert "administrator" in last_admin.get("error", "").lower()
+
+        status, beta_on = api2.call(
+            "/api/index.php?action=beta",
+            method="POST",
+            body={"enabled": True},
+            csrf=True,
+        )
+        assert status == 200, beta_on
+        assert beta_on["user"]["betaEnabled"] is True
+
+        status, promoted = api2.call(
+            "/api/index.php?action=users/role",
+            method="POST",
+            body={"user_id": names["mapreader"]["id"], "role": "admin"},
+            csrf=True,
+        )
+        assert status == 200, promoted
+        roles = {row["username"]: row["role"] for row in promoted["users"]}
+        assert roles["mapreader"] == "admin"
+
+        status, demoted = api2.call(
+            "/api/index.php?action=users/role",
+            method="POST",
+            body={"user_id": names["trailwalker"]["id"], "role": "user"},
+            csrf=True,
+        )
+        assert status == 200, demoted
+        assert demoted["user"]["role"] == "user"
+        assert demoted["user"]["betaEnabled"] is False
+
+        status, lost_admin = api2.call("/api/index.php?action=users")
+        assert status == 403, lost_admin
+
+        status, me_admin = standard.call("/api/index.php?action=me")
+        assert status == 200, me_admin
+        status, keep_one = standard.call(
+            "/api/index.php?action=users/role",
+            method="POST",
+            body={"user_id": names["mapreader"]["id"], "role": "user"},
+            csrf=True,
+        )
+        assert status == 400, keep_one
+
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute("SELECT username, role, password_hash FROM users").fetchall()
+        finally:
+            conn.close()
+        assert {r[0]: r[1] for r in rows} == {"trailwalker": "user", "mapreader": "admin"}
+        assert all(r[2].startswith("$argon2id$") for r in rows)
+
+        print("auth tests ok (argon2id, roles, beta)")
         return 0
     finally:
         proc.terminate()

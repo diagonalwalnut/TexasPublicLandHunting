@@ -4,6 +4,8 @@ export type Account = {
   id: string;
   username: string;
   email: string;
+  role: "user" | "admin";
+  betaEnabled: boolean;
 };
 
 export type AuthPayload = {
@@ -11,6 +13,26 @@ export type AuthPayload = {
   favorites: string[];
   csrf: string | null;
 };
+
+export type ManagedUser = {
+  id: string;
+  username: string;
+  email: string;
+  role: "user" | "admin";
+  betaEnabled: boolean;
+  createdAt: number;
+};
+
+function asAccount(user: Account | null): Account | null {
+  if (!user) return null;
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role === "admin" ? "admin" : "user",
+    betaEnabled: user.role === "admin" && Boolean(user.betaEnabled),
+  };
+}
 
 let csrfToken = "";
 
@@ -77,7 +99,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export async function fetchMe(): Promise<AuthPayload> {
   const data = await request<AuthPayload>("/me");
   return {
-    user: data.user ?? null,
+    user: asAccount(data.user ?? null),
     favorites: Array.isArray(data.favorites) ? data.favorites : [],
     csrf: data.csrf ?? null,
   };
@@ -88,17 +110,19 @@ export async function signUpAccount(input: {
   email: string;
   password: string;
 }): Promise<AuthPayload> {
-  return request<AuthPayload>("/signup", {
+  const data = await request<AuthPayload>("/signup", {
     method: "POST",
     body: JSON.stringify(input),
   });
+  return { ...data, user: asAccount(data.user) };
 }
 
 export async function signInAccount(input: { login: string; password: string }): Promise<AuthPayload> {
-  return request<AuthPayload>("/signin", {
+  const data = await request<AuthPayload>("/signin", {
     method: "POST",
     body: JSON.stringify(input),
   });
+  return { ...data, user: asAccount(data.user) };
 }
 
 export async function signOutAccount(): Promise<void> {
@@ -111,7 +135,9 @@ export async function updateAccountUsername(username: string): Promise<Account> 
     method: "POST",
     body: JSON.stringify({ username }),
   });
-  return data.user;
+  const next = asAccount(data.user);
+  if (!next) throw new ApiError(500, "Could not save username. Try another.");
+  return next;
 }
 
 export async function addFavorite(unitId: string): Promise<string[]> {
@@ -128,6 +154,29 @@ export async function removeFavorite(unitId: string): Promise<string[]> {
     body: JSON.stringify({ unit_id: unitId }),
   });
   return data.favorites;
+}
+
+export async function setBetaEnabled(enabled: boolean): Promise<Account> {
+  const data = await request<{ user: Account }>("/beta", {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  });
+  const user = asAccount(data.user);
+  if (!user) throw new ApiError(500, "Could not update beta mode.");
+  return user;
+}
+
+export async function listUsers(): Promise<ManagedUser[]> {
+  const data = await request<{ users: ManagedUser[] }>("/users");
+  return Array.isArray(data.users) ? data.users : [];
+}
+
+export async function setUserRole(userId: string, role: "user" | "admin"): Promise<ManagedUser[]> {
+  const data = await request<{ users: ManagedUser[] }>("/users/role", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, role }),
+  });
+  return Array.isArray(data.users) ? data.users : [];
 }
 
 export async function probeApi(): Promise<boolean> {

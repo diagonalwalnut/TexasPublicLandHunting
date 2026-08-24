@@ -10,6 +10,8 @@ This dataset is an unofficial compilation. TPWD publications remain authoritativ
 - [Outdoor Annual seasons by county](https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/anderson)
 - [2026-27 Public Hunting Lands Map Booklet](https://tpwd.texas.gov/publications/pwdpubs/media/pwd_bk_w7000_0112a.pdf)
 - [TPWD Public Hunt Locator Map (ArcGIS)](https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer)
+- [Drawn hunt catalog (2026-27)](https://tpwd.texas.gov/huntwild/hunt/public/public_hunt_drawing/hunt-categories.phtml)
+- [Drawn hunt areas / maps](https://tpwd.texas.gov/huntwild/hunt/public/public_hunt_drawing/hunt-areas.phtml)
 
 - Units: 176
 - Hunt opportunities (species × method × date window): 1980

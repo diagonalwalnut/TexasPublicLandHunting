@@ -3,10 +3,12 @@ import { useAuth } from "./AuthContext";
 type Props = {
   savedActive: boolean;
   onOpenSaved: () => void;
+  usersActive?: boolean;
+  onOpenUsers?: () => void;
 };
 
-export default function AccountBar({ savedActive, onOpenSaved }: Props) {
-  const { loading, user, profile, openAuth, signOut, favoriteIds } = useAuth();
+export default function AccountBar({ savedActive, onOpenSaved, usersActive, onOpenUsers }: Props) {
+  const { loading, user, profile, openAuth, signOut, favoriteIds, isAdmin } = useAuth();
 
   if (loading) {
     return <span className="text-sm text-sand/70">Account…</span>;
@@ -42,6 +44,15 @@ export default function AccountBar({ savedActive, onOpenSaved }: Props) {
       >
         Saved{favoriteIds.size ? ` · ${favoriteIds.size}` : ""}
       </button>
+      {isAdmin && onOpenUsers ? (
+        <button
+          type="button"
+          className={`rounded-full px-3 py-1 ${usersActive ? "bg-gold text-pine" : "border border-sand/30 hover:bg-white/10"}`}
+          onClick={onOpenUsers}
+        >
+          Users
+        </button>
+      ) : null}
       <span className="max-w-[10rem] truncate text-sm text-sand/90" title={profile?.username ?? user.email ?? ""}>
         {profile?.username ?? user.email}
       </span>

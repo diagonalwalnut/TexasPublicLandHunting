@@ -1,4 +1,9 @@
-const ALLOWED_HOSTS = new Set(["tpwd.texas.gov", "www.tpwd.texas.gov"]);
+const ALLOWED_HOSTS = new Set([
+  "tpwd.texas.gov",
+  "www.tpwd.texas.gov",
+  "txfgsales.com",
+  "www.txfgsales.com",
+]);
 
 /** Allow only HTTPS TPWD URLs for hrefs built from compiled data. */
 export function safeExternalUrl(url: string | undefined | null): string | undefined {

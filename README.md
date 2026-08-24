@@ -1,6 +1,6 @@
 # Texas Public Land Hunting
 
-Unofficial 2026–27 explorer for Texas Parks and Wildlife Department **Annual Public Hunting (APH)** walk-in units and dove/small-game leases.
+Unofficial 2026–27 explorer for Texas Parks and Wildlife Department **Annual Public Hunting (APH)** walk-in units, dove/small-game leases, and (for signed-in administrators in beta) **drawn hunts**.
 
 Use the **map** to click hunt regions and units, or open the **report** for a filterable list of where and when a hunt is legal. Example: **Whitetail + rifle** lists matching regions and units with county season dates.
 
@@ -25,6 +25,7 @@ Unit Legal Game boxes can override county seasons. Structured dates here are mos
 python3 -m pip install -r requirements.txt
 python3 scripts/fetch.py --counties  # Outdoor Annual county season pages
 python3 scripts/build.py          # write data/ and web/public/data/
+python3 scripts/fetch_drawn.py    # TPWD drawn hunt catalog → data/drawn_*.json
 
 cd web
 npm install
@@ -48,6 +49,8 @@ Local `npm run dev` starts Vite and a PHP API on `127.0.0.1:8088` (`php-cli` and
 ## Accounts and saved units
 
 Hunters create an account with a **username**, **email**, and **password**, then **save units**. Sign-in accepts username or email plus password. The map and report still work if the PHP API is down.
+
+The first account on an empty database is an **administrator**. Later accounts are **standard users**. Administrators can open **Users** and grant or remove the administrator role (the last administrator cannot be removed). Administrators also get a **Beta** switch in the top-right header; it is stored per admin and is off by default. Beta currently unlocks the TPWD **drawn hunt** catalog (map pins color-coded by animal, the same style of filters as public land, plus deadlines, weapons, hunt dates, and apply/brochure links).
 
 On HostGator the API is `https://huntpubliclandintexas.com/api/` (Apache + PHP). Account data lives in a SQLite file under `api/data/`, which Apache refuses to serve. That directory must be writable by PHP (`chmod 700` is enough). The file is created on first sign-up.
 

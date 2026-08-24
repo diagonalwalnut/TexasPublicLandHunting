@@ -10,13 +10,17 @@ import {
 import {
   addFavorite,
   fetchMe,
+  listUsers,
   probeApi,
   removeFavorite,
+  setBetaEnabled,
+  setUserRole,
   signInAccount,
   signOutAccount,
   signUpAccount,
   updateAccountUsername,
   type Account,
+  type ManagedUser,
 } from "./api";
 import {
   GENERIC_LOGIN_ERROR,
@@ -39,6 +43,8 @@ type AuthContextValue = {
   configured: boolean;
   loading: boolean;
   user: Account | null;
+  isAdmin: boolean;
+  betaEnabled: boolean;
   profile: Profile | null;
   favoriteIds: ReadonlySet<string>;
   authOpen: boolean;
@@ -53,6 +59,9 @@ type AuthContextValue = {
   toggleFavorite: (unitId: string) => Promise<string | null>;
   isFavorite: (unitId: string) => boolean;
   updateUsername: (username: string) => Promise<string | null>;
+  setBeta: (enabled: boolean) => Promise<string | null>;
+  loadUsers: () => Promise<ManagedUser[] | string>;
+  changeUserRole: (userId: string, role: "user" | "admin") => Promise<ManagedUser[] | string>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -271,13 +280,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [configured, user],
   );
 
+  const setBeta = useCallback(
+    async (enabled: boolean) => {
+      if (!configured || !user || user.role !== "admin") return "Only administrators can use beta features.";
+      const previous = user;
+      setUser({ ...user, betaEnabled: enabled });
+      try {
+        const next = await setBetaEnabled(enabled);
+        setUser(next);
+        return null;
+      } catch (err) {
+        setUser(previous);
+        return err instanceof Error ? err.message : "Could not update beta mode.";
+      }
+    },
+    [configured, user],
+  );
+
+  const loadUsers = useCallback(async () => {
+    if (!configured || !user || user.role !== "admin") return "Only administrators can manage users.";
+    try {
+      return await listUsers();
+    } catch (err) {
+      return err instanceof Error ? err.message : "Could not load users.";
+    }
+  }, [configured, user]);
+
+  const changeUserRole = useCallback(
+    async (userId: string, role: "user" | "admin") => {
+      if (!configured || !user || user.role !== "admin") return "Only administrators can manage users.";
+      try {
+        const users = await setUserRole(userId, role);
+        if (userId === user.id) {
+          const self = users.find((row) => row.id === user.id);
+          if (self) {
+            setUser({
+              ...user,
+              role: self.role,
+              betaEnabled: self.role === "admin" && user.betaEnabled,
+            });
+          }
+        }
+        return users;
+      } catch (err) {
+        return err instanceof Error ? err.message : "Could not update that role.";
+      }
+    },
+    [configured, user],
+  );
+
   const profile = profileFrom(user);
+  const isAdmin = user?.role === "admin";
+  const betaEnabled = Boolean(isAdmin && user?.betaEnabled);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       configured,
       loading,
       user,
+      isAdmin,
+      betaEnabled,
       profile,
       favoriteIds,
       authOpen,
@@ -292,11 +354,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toggleFavorite,
       isFavorite,
       updateUsername,
+      setBeta,
+      loadUsers,
+      changeUserRole,
     }),
     [
       configured,
       loading,
       user,
+      isAdmin,
+      betaEnabled,
       profile,
       favoriteIds,
       authOpen,
@@ -311,6 +378,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toggleFavorite,
       isFavorite,
       updateUsername,
+      setBeta,
+      loadUsers,
+      changeUserRole,
     ],
   );
 
