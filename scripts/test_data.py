@@ -72,6 +72,12 @@ def main() -> int:
         f"ok: {len(units)} units, {len(opps)} opportunities, "
         f"{with_county} with county calendars, {with_booklet} with booklet pages"
     )
+    drawn_path = DATA / "drawn_hunts.json"
+    if drawn_path.exists():
+        drawn = json.loads(drawn_path.read_text())
+        assert len(drawn) >= 300, len(drawn)
+        assert len({h["id"] for h in drawn}) == len(drawn)
+        assert all(h.get("lon") is not None for h in drawn)
     return 0
 
 

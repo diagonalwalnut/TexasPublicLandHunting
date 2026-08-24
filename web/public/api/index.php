@@ -126,14 +126,14 @@ try {
     }
 
     if (!$current || !$session) {
-        if (in_array($path, ['/username', '/favorites', '/favorites/delete'], true)) {
+        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/beta', '/users', '/users/role'], true)) {
             tplh_fail(401, 'Sign in to continue.');
         }
         tplh_fail(404, 'Not found.');
     }
 
     $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!tplh_csrf_ok($session, is_string($csrf) ? $csrf : '')) {
+    if ($method !== 'GET' && $method !== 'HEAD' && !tplh_csrf_ok($session, is_string($csrf) ? $csrf : '')) {
         tplh_fail(403, 'Session expired. Sign in again.');
     }
 
@@ -171,6 +171,53 @@ try {
         }
         tplh_remove_favorite($current['id'], $unitId);
         tplh_ok(['favorites' => tplh_favorite_ids($current['id'])]);
+    }
+
+    if ($path === '/beta' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Only administrators can use beta features.');
+        }
+        $enabled = (bool) (tplh_json_input()['enabled'] ?? false);
+        tplh_set_beta($current['id'], $enabled);
+        $fresh = tplh_user_by_id($current['id']);
+        tplh_ok(['user' => tplh_public_user($fresh ?? $current)]);
+    }
+
+    if ($path === '/users' && $method === 'GET') {
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Only administrators can manage users.');
+        }
+        tplh_ok(['users' => tplh_list_users()]);
+    }
+
+    if ($path === '/users/role' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Only administrators can manage users.');
+        }
+        if (!tplh_rate_limit('role:' . $current['id'], 30, 900)) {
+            tplh_fail(429, 'Too many attempts. Try again later.');
+        }
+        $body = tplh_json_input();
+        $targetId = tplh_str($body, 'user_id', 64);
+        $role = tplh_str($body, 'role', 16);
+        if (!preg_match('/^[a-f0-9]{32}$/', $targetId)) {
+            tplh_fail(400, 'That account cannot be updated.');
+        }
+        if ($role !== 'admin' && $role !== 'user') {
+            tplh_fail(400, 'Role must be administrator or standard user.');
+        }
+        $target = tplh_user_by_id($targetId);
+        if (!$target) {
+            tplh_fail(404, 'That account was not found.');
+        }
+        if ($role === 'user' && tplh_is_admin($target) && tplh_admin_count() <= 1) {
+            tplh_fail(400, 'Keep at least one administrator.');
+        }
+        tplh_set_role($targetId, $role);
+        $fresh = tplh_user_by_id($targetId);
+        tplh_ok(['users' => tplh_list_users(), 'user' => tplh_public_user($fresh ?? $target)]);
     }
 
     tplh_fail(404, 'Not found.');

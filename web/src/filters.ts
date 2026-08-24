@@ -1,4 +1,4 @@
-import type { Filters, MethodId, Opportunity, Unit } from "./types";
+import type { DrawnHunt, Filters, MethodId, Opportunity, Unit } from "./types";
 
 const METHOD_EXPAND: Record<MethodId, MethodId[]> = {
   archery: ["archery", "any_legal"],
@@ -160,6 +160,7 @@ export function regionMatchCounts(
 export function filterHeadline(
   filters: Filters,
   speciesLabels: Record<string, string>,
+  emptyLabel = "All public hunt areas",
 ): string {
   const animals = filters.species.map((id) => speciesLabels[id] ?? id);
   const methods = filters.methods.map((id) => METHOD_LABEL[id] ?? id);
@@ -170,7 +171,7 @@ export function filterHeadline(
   if (filters.start || filters.end) {
     parts.push(formatRange(filters.start || "2026-09-01", filters.end || "2027-08-31"));
   }
-  return parts.length ? parts.join(" · ") : "All public hunt areas";
+  return parts.length ? parts.join(" · ") : emptyLabel;
 }
 
 export function uniqueDateRanges(opps: Opportunity[]): { start: string; end: string }[] {
@@ -199,7 +200,11 @@ export const ACCESS_LABEL: Record<string, string> = {
   youth_adult: "Youth/adult",
   e_postcard: "E-Postcard",
   regular_permit: "Regular (daily) permit",
-  drawn: "Drawn / special permit",
+  drawn: "Special permit",
+  usfs: "U.S. Forest Service",
+  nwr: "National Wildlife Refuge",
+  private_lands: "Private lands",
+  guided: "Guided package",
 };
 
 export const TYPE_LABEL: Record<string, string> = {
@@ -209,3 +214,94 @@ export const TYPE_LABEL: Record<string, string> = {
   phl: "Public hunting land",
   other: "Public hunt area",
 };
+
+function drawnDateWindows(hunt: DrawnHunt): { start: string; end: string }[] {
+  if (hunt.huntDates.length) return hunt.huntDates;
+  if (hunt.start && hunt.end) return [{ start: hunt.start, end: hunt.end }];
+  if (hunt.applicationDeadline) {
+    return [{ start: hunt.applicationDeadline, end: hunt.applicationDeadline }];
+  }
+  return [];
+}
+
+export function drawnHuntMatches(hunt: DrawnHunt, filters: Filters): boolean {
+  if (filters.species.length && !hunt.species.some((s) => filters.species.includes(s))) return false;
+  if (filters.access.length && !filters.access.includes(hunt.access)) return false;
+  if (filters.methods.length) {
+    const allowed = new Set(filters.methods.flatMap((m) => METHOD_EXPAND[m] ?? [m]));
+    if (!hunt.methods.some((m) => allowed.has(m))) return false;
+  }
+  if (filters.region) {
+    const region = hunt.region || "Other areas";
+    if (region !== filters.region) return false;
+  }
+  if (filters.county && hunt.counties.length && !hunt.counties.includes(filters.county)) return false;
+  if (filters.query.trim()) {
+    const q = filters.query.trim().toLowerCase();
+    const hay = `${hunt.areaName} ${hunt.categoryName} ${hunt.speciesLabel} ${hunt.counties.join(" ")}`.toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  if (filters.start || filters.end) {
+    const windows = drawnDateWindows(hunt);
+    if (windows.length && !windows.some((w) => overlaps(w.start, w.end, filters.start, filters.end))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function matchingDrawnHuntIds(hunts: DrawnHunt[], filters: Filters): Set<string> {
+  return new Set(hunts.filter((hunt) => drawnHuntMatches(hunt, filters)).map((hunt) => hunt.id));
+}
+
+export function drawnRegionMatchCounts(
+  hunts: DrawnHunt[],
+  matchIds: Set<string>,
+): { region: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const hunt of hunts) {
+    if (!matchIds.has(hunt.id)) continue;
+    const region = hunt.region || "Other areas";
+    counts.set(region, (counts.get(region) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([region, count]) => ({ region, count }))
+    .sort((a, b) => b.count - a.count || a.region.localeCompare(b.region));
+}
+
+export type DrawnReportGroup = {
+  region: string;
+  huntCount: number;
+  hunts: DrawnHunt[];
+};
+
+export function buildDrawnHuntReport(hunts: DrawnHunt[], filters: Filters): DrawnReportGroup[] {
+  const grouped = new Map<string, DrawnHunt[]>();
+  for (const hunt of hunts.filter((h) => drawnHuntMatches(h, filters))) {
+    const region = hunt.region || "Other areas";
+    const list = grouped.get(region) ?? [];
+    list.push(hunt);
+    grouped.set(region, list);
+  }
+  return [...grouped.entries()]
+    .map(([region, rows]) => ({
+      region,
+      huntCount: rows.length,
+      hunts: rows.sort((a, b) => a.areaName.localeCompare(b.areaName) || a.categoryName.localeCompare(b.categoryName)),
+    }))
+    .sort((a, b) => a.region.localeCompare(b.region));
+}
+
+export function drawnSpeciesLegend(
+  hunts: DrawnHunt[],
+  matchIds: Set<string>,
+): { id: string; label: string; color: string }[] {
+  const seen = new Map<string, { id: string; label: string; color: string }>();
+  for (const hunt of hunts) {
+    if (!matchIds.has(hunt.id)) continue;
+    const id = hunt.species[0] || hunt.categoryCode;
+    if (seen.has(id)) continue;
+    seen.set(id, { id, label: hunt.speciesLabel || hunt.categoryName, color: hunt.color });
+  }
+  return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
+}

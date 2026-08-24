@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
+import type { DrawnHunt } from "./types";
 
 type Props = {
   matchingIds: Set<string>;
@@ -9,6 +10,11 @@ type Props = {
   onSelectRegion: (region: string) => void;
   satellite: boolean;
   active: boolean;
+  showDrawn?: boolean;
+  drawnHunts?: DrawnHunt[];
+  matchingDrawnIds?: Set<string>;
+  selectedDrawnId?: string | null;
+  onSelectDrawn?: (id: string) => void;
 };
 
 const TEXAS_BOUNDS: maplibregl.LngLatBoundsLike = [
@@ -68,6 +74,30 @@ function withMatch(
   return match ? (["all", geom, match] as maplibregl.FilterSpecification) : geom;
 }
 
+function drawnCollection(
+  hunts: DrawnHunt[],
+  matching: Set<string>,
+  selectedId: string | null,
+): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: hunts
+      .filter((hunt) => hunt.lon != null && hunt.lat != null && matching.has(hunt.id))
+      .map((hunt) => ({
+        type: "Feature",
+        id: hunt.id,
+        properties: {
+          id: hunt.id,
+          name: hunt.areaName,
+          category: hunt.categoryName,
+          color: hunt.color,
+          selected: hunt.id === selectedId ? 1 : 0,
+        },
+        geometry: { type: "Point", coordinates: [hunt.lon as number, hunt.lat as number] },
+      })),
+  };
+}
+
 export default function HuntMap({
   matchingIds,
   selectedId,
@@ -76,6 +106,11 @@ export default function HuntMap({
   onSelectRegion,
   satellite,
   active,
+  showDrawn = false,
+  drawnHunts = [],
+  matchingDrawnIds,
+  selectedDrawnId = null,
+  onSelectDrawn,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -87,11 +122,19 @@ export default function HuntMap({
   const selectedRef = useRef(selectedId);
   const regionRef = useRef(regionFilter);
   const fittedKeyRef = useRef<string | null>(null);
-  const callbacks = useRef({ onSelectUnit, onSelectRegion });
+  const showDrawnRef = useRef(showDrawn);
+  const selectedDrawnRef = useRef(selectedDrawnId);
+  const drawnHuntsRef = useRef(drawnHunts);
+  const matchingDrawnRef = useRef(matchingDrawnIds);
+  const callbacks = useRef({ onSelectUnit, onSelectRegion, onSelectDrawn });
   matchingRef.current = matchingIds;
   selectedRef.current = selectedId;
   regionRef.current = regionFilter;
-  callbacks.current = { onSelectUnit, onSelectRegion };
+  showDrawnRef.current = showDrawn;
+  selectedDrawnRef.current = selectedDrawnId;
+  drawnHuntsRef.current = drawnHunts;
+  matchingDrawnRef.current = matchingDrawnIds;
+  callbacks.current = { onSelectUnit, onSelectRegion, onSelectDrawn };
 
   const matchFilter = (): maplibregl.FilterSpecification | null => {
     const ids = [...matchingRef.current];
@@ -155,9 +198,60 @@ export default function HuntMap({
     if (map.getLayer("regions-fill")) map.setFilter("regions-fill", regionFilterExpr);
     if (map.getLayer("regions-line")) map.setFilter("regions-line", regionFilterExpr);
     if (map.getLayer("region-labels")) map.setFilter("region-labels", regionFilterExpr);
+
+    const drawnSrc = map.getSource("drawn") as maplibregl.GeoJSONSource | undefined;
+    if (drawnSrc) {
+      const matching = matchingDrawnRef.current ?? new Set(drawnHuntsRef.current.map((h) => h.id));
+      drawnSrc.setData(drawnCollection(drawnHuntsRef.current, matching, selectedDrawnRef.current));
+    }
+    const drawnVis = showDrawnRef.current ? "visible" : "none";
+    if (map.getLayer("drawn-pins")) map.setLayoutProperty("drawn-pins", "visibility", drawnVis);
+    if (map.getLayer("drawn-labels")) map.setLayoutProperty("drawn-labels", "visibility", drawnVis);
+    const fade = showDrawnRef.current;
+    if (map.getLayer("units-fill")) map.setPaintProperty("units-fill", "fill-opacity", fade ? 0.12 : 0.55);
+    if (map.getLayer("units-line")) map.setPaintProperty("units-line", "line-opacity", fade ? 0.25 : 1);
+    if (map.getLayer("units-point")) map.setPaintProperty("units-point", "circle-opacity", fade ? 0.2 : 1);
+    if (map.getLayer("regions-fill")) map.setPaintProperty("regions-fill", "fill-opacity", fade ? 0.04 : 0.14);
+  };
+
+  const matchingDrawnBounds = (): maplibregl.LngLatBounds | null => {
+    const matching = matchingDrawnRef.current;
+    if (!matching) return null;
+    const bounds = new maplibregl.LngLatBounds();
+    let any = false;
+    for (const hunt of drawnHuntsRef.current) {
+      if (!matching.has(hunt.id) || hunt.lon == null || hunt.lat == null) continue;
+      bounds.extend([hunt.lon, hunt.lat]);
+      any = true;
+    }
+    return any ? bounds : null;
   };
 
   const fitToSelection = (map: maplibregl.Map) => {
+    if (showDrawnRef.current) {
+      const selectedDrawn = selectedDrawnRef.current;
+      const matching = matchingDrawnRef.current;
+      const matchKey = matching ? [...matching].sort().join(",") : "";
+      const key = selectedDrawn ? `drawn:${selectedDrawn}` : `drawn-filter:${matchKey}`;
+      if (key === fittedKeyRef.current) return;
+      fittedKeyRef.current = key;
+      if (selectedDrawn) {
+        const hunt = drawnHuntsRef.current.find((h) => h.id === selectedDrawn);
+        if (hunt?.lon != null && hunt.lat != null) {
+          map.flyTo({ center: [hunt.lon, hunt.lat], zoom: 9.4, duration: 700 });
+          return;
+        }
+      }
+      if (matching && matching.size > 0 && matching.size < drawnHuntsRef.current.length) {
+        const bounds = matchingDrawnBounds();
+        if (bounds) {
+          map.fitBounds(bounds, { padding: 70, duration: 700, maxZoom: 8.5 });
+          return;
+        }
+      }
+      map.fitBounds(TEXAS_BOUNDS, { padding: 40, duration: 700 });
+      return;
+    }
     const selected = selectedRef.current;
     const region = regionRef.current;
     const matchKey = [...matchingRef.current].sort().join(",");
@@ -310,8 +404,41 @@ export default function HuntMap({
           "circle-opacity": 1,
         },
       });
+      map.addSource("drawn", { type: "geojson", data: drawnCollection([], new Set(), null) });
+      map.addLayer({
+        id: "drawn-pins",
+        type: "circle",
+        source: "drawn",
+        paint: {
+          "circle-radius": ["case", ["==", ["get", "selected"], 1], 9, 7],
+          "circle-color": ["coalesce", ["get", "color"], "#2f6b4f"],
+          "circle-stroke-color": ["case", ["==", ["get", "selected"], 1], "#c4a35a", "#f4efe4"],
+          "circle-stroke-width": 1.6,
+          "circle-opacity": 0.95,
+        },
+      });
+      map.addLayer({
+        id: "drawn-labels",
+        type: "symbol",
+        source: "drawn",
+        minzoom: 7.2,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Open Sans Regular"],
+          "text-size": 11,
+          "text-offset": [0, 1.1],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: {
+          "text-color": "#1a1f1c",
+          "text-halo-color": "#f4efe4",
+          "text-halo-width": 1.2,
+        },
+      });
 
       const pickUnit = (e: maplibregl.MapLayerMouseEvent) => {
+        if (showDrawnRef.current) return;
         const f = e.features?.[0];
         const id = (f?.id ?? f?.properties?.id) as string | undefined;
         if (id) callbacks.current.onSelectUnit(String(id));
@@ -319,6 +446,10 @@ export default function HuntMap({
       map.on("click", "units-fill", pickUnit);
       map.on("click", "units-line", pickUnit);
       map.on("click", "units-point", pickUnit);
+      map.on("click", "drawn-pins", (e) => {
+        const id = e.features?.[0]?.properties?.id;
+        if (id) callbacks.current.onSelectDrawn?.(String(id));
+      });
       const pickRegion = (e: maplibregl.MapLayerMouseEvent) => {
         const unitHit = map.queryRenderedFeatures(e.point, {
           layers: ["units-fill", "units-point"],
@@ -333,7 +464,7 @@ export default function HuntMap({
         if (name) callbacks.current.onSelectRegion(String(name));
       });
 
-      for (const layer of ["units-fill", "units-point", "regions-fill", "region-labels"]) {
+      for (const layer of ["units-fill", "units-point", "regions-fill", "region-labels", "drawn-pins"]) {
         map.on("mouseenter", layer, () => {
           map.getCanvas().style.cursor = "pointer";
         });
@@ -362,13 +493,13 @@ export default function HuntMap({
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     applyState(map);
-  }, [matchingIds, selectedId, regionFilter]);
+  }, [matchingIds, selectedId, regionFilter, showDrawn, drawnHunts, matchingDrawnIds, selectedDrawnId]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     fitToSelection(map);
-  }, [matchingIds, selectedId, regionFilter]);
+  }, [matchingIds, selectedId, regionFilter, showDrawn, matchingDrawnIds, selectedDrawnId]);
 
   useEffect(() => {
     const map = mapRef.current;

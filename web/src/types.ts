@@ -5,7 +5,11 @@ export type AccessId =
   | "youth_adult"
   | "e_postcard"
   | "regular_permit"
-  | "drawn";
+  | "drawn"
+  | "usfs"
+  | "nwr"
+  | "private_lands"
+  | "guided";
 
 export type Unit = {
   id: string;
@@ -104,3 +108,60 @@ export type Filters = {
 };
 
 export type UnitFeatureProperties = Unit;
+
+export type DrawnHuntDates = { start: string; end: string };
+
+export type DrawnHunt = {
+  id: string;
+  areaCode: string;
+  areaName: string;
+  categoryCode: string;
+  categoryName: string;
+  program: string;
+  group: string;
+  species: string[];
+  speciesLabel: string;
+  methods: MethodId[];
+  access: AccessId;
+  applicationDeadline: string | null;
+  huntDates: DrawnHuntDates[];
+  start: string;
+  end: string;
+  bagLimit: string;
+  meansAllowed: string[];
+  meansNotAllowed: string[];
+  huntMethod: string;
+  baiting: string;
+  restrictions?: string;
+  permitsAvailable: number | null;
+  feeAdult: number | null;
+  feeYouth: number | null;
+  peoplePerApplication: string;
+  ageRequirements: string;
+  lastYearApplications: number | null;
+  lastYearPermits: number | null;
+  lastYearSuccess: string;
+  notes: string[];
+  brochureUrl: string;
+  applyUrl: string;
+  lon: number | null;
+  lat: number | null;
+  color: string;
+  counties: string[];
+  region: string;
+};
+
+export type DrawnMeta = {
+  seasonYear: string;
+  generatedAt: string;
+  huntCount: number;
+  areaCount: number;
+  disclaimer: string;
+  sources: { name: string; url: string }[];
+  species: { id: string; label: string }[];
+  methods: { id: MethodId; label: string }[];
+  access: { id: AccessId; label: string }[];
+  regions: string[];
+  counties: string[];
+  catalogUrl?: string;
+};

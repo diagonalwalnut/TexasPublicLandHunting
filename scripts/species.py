@@ -24,6 +24,9 @@ SPECIES: dict[str, str] = {
     "furbearers": "Furbearers / predators",
     "coyote": "Coyote",
     "exotic_mammals": "Exotic mammals",
+    "alligator": "Alligator",
+    "pronghorn": "Pronghorn",
+    "bighorn_sheep": "Bighorn sheep",
     "fishing": "Fishing",
 }
 
@@ -89,6 +92,12 @@ def species_from_tag(tag: str) -> str | None:
     t = tag.lower().replace("squirel", "squirrel")
     t = t.replace("feral hop", "feral hog").replace("exotics mammals", "exotic mammals")
     t = t.replace("mulit-species", "multi-species").replace("mult-species", "multi-species")
+    if "alligator" in t:
+        return "alligator"
+    if "pronghorn" in t or "antelope" in t:
+        return "pronghorn"
+    if "bighorn" in t:
+        return "bighorn_sheep"
     if "fishing" in t:
         return "fishing"
     if "chachalaca" in t:

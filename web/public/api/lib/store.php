@@ -75,10 +75,13 @@ function tplh_db(): PDO
             username TEXT NOT NULL UNIQUE COLLATE NOCASE,
             email TEXT NOT NULL UNIQUE COLLATE NOCASE,
             password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT \'user\',
+            beta_enabled INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         )'
     );
+    tplh_migrate_users($pdo);
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS sessions (
             token_hash TEXT PRIMARY KEY,
@@ -157,12 +160,50 @@ function tplh_client_ip(): string
     return hash('sha256', $ip);
 }
 
+function tplh_migrate_users(PDO $pdo): void
+{
+    $cols = [];
+    foreach ($pdo->query('PRAGMA table_info(users)') as $row) {
+        $cols[(string) $row['name']] = true;
+    }
+    if (!isset($cols['role'])) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+    }
+    if (!isset($cols['beta_enabled'])) {
+        $pdo->exec('ALTER TABLE users ADD COLUMN beta_enabled INTEGER NOT NULL DEFAULT 0');
+    }
+    $admins = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
+    if ($admins === 0) {
+        $pdo->exec(
+            "UPDATE users SET role = 'admin', updated_at = updated_at
+             WHERE id = (SELECT id FROM users ORDER BY created_at ASC, id ASC LIMIT 1)"
+        );
+    }
+}
+
+function tplh_is_admin(array $row): bool
+{
+    return ($row['role'] ?? '') === 'admin';
+}
+
+function tplh_user_count(): int
+{
+    return (int) tplh_db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+}
+
+function tplh_admin_count(): int
+{
+    return (int) tplh_db()->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
+}
+
 function tplh_public_user(array $row): array
 {
     return [
         'id' => $row['id'],
         'username' => $row['username'],
         'email' => $row['email'],
+        'role' => ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
+        'betaEnabled' => tplh_is_admin($row) && (int) ($row['beta_enabled'] ?? 0) === 1,
     ];
 }
 
@@ -193,19 +234,60 @@ function tplh_create_user(string $username, string $email, string $passwordHash)
     $db = tplh_db();
     $now = time();
     $id = bin2hex(random_bytes(16));
+    $role = tplh_user_count() === 0 ? 'admin' : 'user';
     $stmt = $db->prepare(
-        'INSERT INTO users (id, username, email, password_hash, created_at, updated_at)
-         VALUES (:id, :u, :e, :p, :c, :t)'
+        'INSERT INTO users (id, username, email, password_hash, role, beta_enabled, created_at, updated_at)
+         VALUES (:id, :u, :e, :p, :r, 0, :c, :t)'
     );
     $stmt->execute([
         ':id' => $id,
         ':u' => $username,
         ':e' => $email,
         ':p' => $passwordHash,
+        ':r' => $role,
         ':c' => $now,
         ':t' => $now,
     ]);
     return tplh_user_by_id($id) ?? [];
+}
+
+function tplh_list_users(): array
+{
+    $stmt = tplh_db()->query(
+        'SELECT id, username, email, role, beta_enabled, created_at, updated_at
+         FROM users ORDER BY created_at ASC, username ASC'
+    );
+    $out = [];
+    foreach ($stmt as $row) {
+        $out[] = [
+            'id' => $row['id'],
+            'username' => $row['username'],
+            'email' => $row['email'],
+            'role' => ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
+            'betaEnabled' => (int) ($row['beta_enabled'] ?? 0) === 1,
+            'createdAt' => (int) $row['created_at'],
+        ];
+    }
+    return $out;
+}
+
+function tplh_set_role(string $userId, string $role): void
+{
+    if ($role !== 'admin' && $role !== 'user') {
+        throw new InvalidArgumentException('Invalid role.');
+    }
+    $stmt = tplh_db()->prepare(
+        'UPDATE users SET role = :r, beta_enabled = CASE WHEN :r2 = \'admin\' THEN beta_enabled ELSE 0 END, updated_at = :t WHERE id = :id'
+    );
+    $stmt->execute([':r' => $role, ':r2' => $role, ':t' => time(), ':id' => $userId]);
+}
+
+function tplh_set_beta(string $userId, bool $enabled): void
+{
+    $stmt = tplh_db()->prepare(
+        'UPDATE users SET beta_enabled = :b, updated_at = :t WHERE id = :id AND role = \'admin\''
+    );
+    $stmt->execute([':b' => $enabled ? 1 : 0, ':t' => time(), ':id' => $userId]);
 }
 
 function tplh_update_password_hash(string $userId, string $hash): void

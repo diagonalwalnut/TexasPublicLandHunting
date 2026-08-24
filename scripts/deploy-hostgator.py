@@ -117,6 +117,10 @@ class HostGatorFTP:
         return socket.create_connection((self.host, port), timeout=self.timeout)
 
     def storbinary(self, name: str, data: bytes) -> None:
+        # Pure-FTPd (HostGator) often refuses PASV until PRET names the transfer.
+        pret_code, _pret_msg = self.cmd(f"PRET STOR {name}")
+        if pret_code not in {200, 250}:
+            print(f"  ftp> PRET not accepted ({pret_code}); continuing with PASV")
         data_sock: socket.socket | None = self._pasv_socket()
         try:
             assert self.sock is not None
