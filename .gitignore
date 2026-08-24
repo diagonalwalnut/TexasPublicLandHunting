@@ -12,3 +12,6 @@ web/.env
 web/.env.local
 .env
 .env.local
+web/public/api/data/*.sqlite
+web/public/api/data/*.sqlite-*
+web/public/api/data/*.key

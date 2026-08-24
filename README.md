@@ -28,8 +28,10 @@ python3 scripts/build.py          # write data/ and web/public/data/
 
 cd web
 npm install
-npm run dev
+npm run dev          # Vite + PHP accounts API (needs php-cli and php-sqlite3)
 ```
+
+`python3 scripts/test_auth.py` checks that passwords are stored as Argon2id hashes.
 
 Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py` can attach Legal Game text.
 
@@ -38,73 +40,57 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 - `scripts/` — fetch and join TPWD sources
 - `data/` — compiled GeoJSON/JSON checked in for the static site
 - `web/` — Vite + React + MapLibre map and filterable hunt report
-- `.github/workflows/pages.yml` — GitHub Pages build
+- `web/public/api/` — HostGator PHP accounts API (username/email + password, saved units)
 - `.github/workflows/hostgator.yml` — optional FTP upload to HostGator
+
+Local `npm run dev` starts Vite and a PHP API on `127.0.0.1:8088` (`php-cli` and `php-sqlite3` required).
 
 ## Accounts and saved units
 
-The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password, Google, or Microsoft) and **save units** for later. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work; the sign-in dialog explains that accounts are not configured yet.
+Hunters create an account with a **username**, **email**, and **password**, then **save units**. Sign-in accepts username or email plus password. The map and report still work if the PHP API is down.
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. **Authentication → Providers**
-   - **Email**: enable. Recommended: turn on **Confirm email**. Set the minimum password length to 12 if the dashboard allows it.
-   - **Google**: enable and add the client ID/secret from Google Cloud (OAuth consent + Web client). Authorized redirect: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`.
-   - **Azure (Microsoft)**: enable and add the Azure app (Accounts in any org + personal Microsoft accounts). Redirect: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`. Request the `email` scope.
-3. **Authentication → URL configuration** — add redirect URLs:
-   - `http://localhost:5173/**`
-   - `https://huntpubliclandintexas.com/**`
-   - `https://<github-user>.github.io/TexasPublicLandHunting/**`
-4. **SQL editor**: paste and run `supabase/schema.sql` (profiles, favorites, RLS, `username_taken`, trigger on `auth.users`).
-5. Copy `web/.env.example` to `web/.env.local` and set:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY` (the **anon/public** key only — never the service role key)
-6. For GitHub Pages and HostGator builds, add the same two values as Actions secrets named `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Vite inlines them at **build** time.
+On HostGator the API is `https://huntpubliclandintexas.com/api/` (Apache + PHP). Account data lives in a SQLite file under `api/data/`, which Apache refuses to serve. That directory must be writable by PHP (`chmod 700` is enough). The file is created on first sign-up.
 
-Email is the login identifier. Username is a public handle, not the login.
+There are no frontend auth secrets. Do not commit `api/data/*.sqlite` or `api/data/*.key`.
 
 ## Account security
 
-Controls used for usernames, passwords, sessions, OAuth, and favorites:
-
-### Username (public handle, not the login id)
-- Normalized: trim + lowercase before store or compare.
+### Username
+- Unique public handle; trim + lowercase before store or compare.
 - Allowlist: 3–20 characters, `^[a-z][a-z0-9_]+$` (must start with a letter).
-- Unique case-insensitive unique index in Postgres.
-- Reserved names blocked in the client and with a SQL check (`admin`, `tpwd`, `official`, …).
-- Rendered as React text nodes (not `dangerouslySetInnerHTML`) so the handle cannot inject HTML.
-- Row Level Security: a user can only `select`/`insert`/`update` their own `profiles` row. There is no public `select` on all usernames.
-- Availability is checked with the `username_taken` **security definer** RPC (returns boolean), not a wide-open table read.
+- Reserved names blocked in the PHP API and the browser (`admin`, `tpwd`, `official`, …).
+- Rendered as React text nodes (not `dangerouslySetInnerHTML`).
+- Lookups use parameterized SQL. Other users cannot list accounts.
 
-### Email and password
-- Email is the login identifier; trim + lowercase; format check; max length 254.
-- This app **never stores or logs passwords**. They are sent only over HTTPS to Supabase Auth (GoTrue), which hashes with **bcrypt** and a unique salt per user.
-- Minimum 12 characters. Maximum **72 bytes** because bcrypt silently truncates after 72 bytes; the client rejects longer secrets so the hash matches what the user typed.
+### Email
+- Unique; trim + lowercase; format check; max length 254.
+- Sign-in accepts email or username. Sign-up email collisions return a generic error so the form does not confirm whether an address is registered.
+
+### Password storage
+- Passwords are **never stored or logged as plain text**. They are sent only over HTTPS (`POST /api/signup` and `/api/signin`) and hashed on the server before insert.
+- Hash: **Argon2id** via PHP `password_hash(PASSWORD_ARGON2ID)` (OWASP 2023 recommendation), unique salt per user, 19 MiB memory, 3 iterations, 1 thread. If a host lacks Argon2id, the API falls back to bcrypt cost 12 and **rehashes to Argon2id on the next successful login**.
+- Minimum 12 characters. Maximum 128 bytes (DoS cap; Argon2id does not truncate at 72 bytes like bcrypt).
 - Common passwords are rejected. Password may not equal the email, the email local-part, or the username.
-- Sign-in errors are generic (`Email or password is incorrect`) to reduce email enumeration. Sign-up errors similarly avoid confirming whether an email is already registered.
-- Password fields use `type="password"`, `autocomplete="current-password"` / `new-password`, and **allow paste**.
-- Enable **email confirmation** in the Supabase dashboard (recommended). After sign-up the UI tells the user to check email when no session is returned.
-- Client-side cooldown after failed logins (sessionStorage; delay grows after 3 failures, capped at 60s). Supabase also **rate-limits** Auth endpoints (sign-in, sign-up, recover) by IP — keep that enabled.
-- Optional dashboard setting: raise GoTrue’s minimum password length to 12 so server policy matches the client.
-
-### OAuth (Google and Microsoft)
-- PKCE (`flowType: "pkce"`). Redirect flow (`skipBrowserRedirect: false`), not a popup, so **Cross-Origin-Opener-Policy: same-origin** can stay on (`web/public/.htaccess` and the Vite preview headers).
-- `redirectTo` is the deployed origin + Vite `BASE_URL` (localhost, HostGator domain, or GitHub Pages subpath).
+- Unknown logins still run `password_verify` against a dummy Argon2id hash so timing stays close to a real miss.
+- Sign-in errors are generic (`Username, email, or password is incorrect`).
+- Password fields use `type="password"`, `autocomplete="username"` / `current-password` / `new-password`, and **allow paste**.
+- Client-side cooldown after failed logins (sessionStorage). The API also rate-limits sign-up and sign-in by IP and by login id hash.
 
 ### Session
-- `persistSession` + `autoRefreshToken` (local session only).
-- Sign out calls `supabase.auth.signOut()`, which clears the local session (and refresh token on the server when the project is configured for that).
+- Opaque 256-bit session token in an **HttpOnly, SameSite=Lax, Secure** (on HTTPS) cookie. Only a **HMAC-SHA256** of the token is stored.
+- CSRF token in the JSON body; mutating routes require `X-CSRF-Token`.
+- Sign-out deletes the server row and clears the cookie.
 
 ### Browser / hosting
-- CSP `connect-src` allows `https://*.supabase.co` and `wss://*.supabase.co` in `web/index.html`.
-- COOP remains `same-origin` because OAuth uses a top-level redirect, not `window.open`.
-- The **anon key is public by design** (it ships in the static bundle). Data protection is **RLS**, not key secrecy. **Never commit the service role key.**
+- CSP `connect-src` is `'self'` plus the map tile hosts — no third-party auth origin.
+- COOP remains `same-origin`.
+- SQLite lives under `api/data/` with `.htaccess` deny rules. Session HMAC key is `api/data/app.key` (0600), generated on first use.
 
 ### Favorites
 - Only when signed in; otherwise the star opens sign-in.
-- Stored in Postgres (`favorites`) so they persist across devices.
+- Stored in SQLite so they persist across devices.
 - `unit_id` must match `^[A-Za-z0-9._-]{1,64}$`.
-- Unique on `(user_id, unit_id)`.
-- RLS: users can only read/insert/delete their own rows.
+- Unique on `(user_id, unit_id)`. Queries are scoped to the session user.
 - Star control on the unit drawer and hunt-report rows. **Saved** lists favorited units; a click opens the map.
 
 ## License / attribution
