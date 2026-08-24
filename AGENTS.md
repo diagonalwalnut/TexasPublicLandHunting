@@ -22,3 +22,9 @@ Unofficial 2026–27 explorer for TPWD Annual Public Hunting units. See `README.
 ### Lint / test / build
 - Build + typecheck: `npm run build` (from `web/`) = `tsc --noEmit && vite build`. There is no separate ESLint/Prettier config; the TypeScript check is the type/lint gate.
 - Python tests are plain scripts (no pytest): `python3 scripts/test_auth.py`, `python3 scripts/test_data.py`, `python3 scripts/test_methods.py`.
+
+### HostGator FTP (not GitHub)
+- FTP login lives only on this Cloud Agent machine in `$HOME/.config/tplh/ftp.env` (`chmod 600`). Login shells source that file from `~/.bashrc`. **Never commit it, and never add `FTP_USER` / `FTP_PASSWORD` as GitHub Actions secrets.**
+- Before a local deploy: `set -a && . "$HOME/.config/tplh/ftp.env" && set +a`, then `python3 scripts/deploy-hostgator.py` from the repo root (after `npm run build` in `web/`). Required vars: `FTP_USER`, `FTP_PASSWORD`, `FTP_HOST`, `FTP_PORT`.
+- Explicit FTPS is AUTH TLS on port 21 (`scripts/deploy-hostgator.py`). A missing env file means deploy is skipped, not that GitHub should be filled in.
+- The GitHub `Deploy to HostGator` workflow will keep skipping FTP until GitHub secrets exist; that skip is intentional.
