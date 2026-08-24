@@ -18,7 +18,7 @@ from geometry import (
     parse_gpx_points,
     parse_kml_polygons,
 )
-from pdfs import methods_from_pdf_text, parse_pdf
+from pdfs import apply_general_means, general_season_methods, methods_from_pdf_text, parse_pdf
 from safe import resource_stem, tpwd_url
 from seasons import SEASON_YEAR, default_calendar, windows_for
 from species import SPECIES, classify_tag, legal_game_tags
@@ -190,7 +190,9 @@ def build() -> None:
         unit_type = infer_type(name, primary)
         pdf_sections = load_pdf_notes(area_pdf)
         legal_text = pdf_sections.get("LEGAL GAME") or pdf_sections.get("MEANS RESTRICTION") or ""
-        pdf_methods = methods_from_pdf_text(" ".join(pdf_sections.values())) if pdf_sections else []
+        pdf_blob = " ".join(pdf_sections.values()) if pdf_sections else legal_text
+        pdf_methods = methods_from_pdf_text(pdf_blob) if pdf_blob else []
+        general_means = general_season_methods(pdf_blob) if pdf_blob else None
         registration = "none"
         blob_text = " ".join(pdf_sections.values()).lower()
         if "electronic on-site" in blob_text or "eosr" in blob_text:
@@ -273,6 +275,11 @@ def build() -> None:
 
         for item in classified:
             methods = list(item["methods"])
+            used_general_dates = False
+            if item["species"] in {"white_tailed_deer", "mule_deer", "feral_hog", "coyote"}:
+                methods, used_general_dates = apply_general_means(
+                    methods, item["sourceTag"], general_means
+                )
             if pdf_methods and item["species"] == "white_tailed_deer" and "any_legal" in methods:
                 methods = pdf_methods
             for method in methods:
@@ -281,8 +288,9 @@ def build() -> None:
                 source_county = ""
                 if pdf_sections and item["species"] == "white_tailed_deer" and pdf_methods:
                     date_source = "unit_pdf"
+                date_method = "firearm" if used_general_dates and method != "archery" else method
                 for page in county_pages:
-                    found = windows_from_county(page, item["species"], method, item["access"])
+                    found = windows_from_county(page, item["species"], date_method, item["access"])
                     if found:
                         wins = found
                         source_county = page["county"]
@@ -290,7 +298,7 @@ def build() -> None:
                             date_source = "county"
                         break
                 if not wins:
-                    wins = windows_for(item["species"], method, region, item["access"])
+                    wins = windows_for(item["species"], date_method, region, item["access"])
                     date_source = "unit_pdf" if date_source == "unit_pdf" else "county_default"
                 for win in wins:
                     opp_id += 1
@@ -309,6 +317,9 @@ def build() -> None:
                             "notes": item["sourceTag"],
                         }
                     )
+        unit["methods"] = sorted(
+            {m for o in opportunities if o["unitId"] == feature_id for m in o["methods"]}
+        ) or methods_set
 
     features = []
     for unit in units:
