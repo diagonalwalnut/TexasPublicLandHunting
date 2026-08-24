@@ -19,7 +19,13 @@ import {
   validateSignUp,
   validateUsername,
 } from "./rules";
-import { authRedirectTo, isAuthConfigured, supabase } from "./supabase";
+import {
+  authRedirectTo,
+  fetchOAuthProviders,
+  isAuthConfigured,
+  supabase,
+  type OAuthProviders,
+} from "./supabase";
 
 export type Profile = {
   user_id: string;
@@ -45,6 +51,7 @@ type AuthContextValue = {
   signUp: (email: string, password: string, username: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
   signInWithMicrosoft: () => Promise<string | null>;
+  oauthProviders: OAuthProviders;
   signOut: () => Promise<void>;
   toggleFavorite: (unitId: string) => Promise<string | null>;
   isFavorite: (unitId: string) => boolean;
@@ -107,7 +114,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [cooldownSeconds, setCooldownSeconds] = useState(() => cooldownSecondsFrom(readFail().until));
   const [notice, setNotice] = useState<string | null>(null);
+  const [oauthProviders, setOAuthProviders] = useState<OAuthProviders>({
+    google: isAuthConfigured,
+    microsoft: false,
+  });
   const promptedUsername = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchOAuthProviders().then((next) => {
+      if (!cancelled) setOAuthProviders(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadAccount = useCallback(async (sessionUser: User | null) => {
     if (!supabase || !sessionUser) {
@@ -359,6 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signInWithGoogle,
       signInWithMicrosoft,
+      oauthProviders,
       signOut,
       toggleFavorite,
       isFavorite,
@@ -380,6 +402,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signInWithGoogle,
       signInWithMicrosoft,
+      oauthProviders,
       signOut,
       toggleFavorite,
       isFavorite,

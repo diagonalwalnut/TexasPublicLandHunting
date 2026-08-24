@@ -19,3 +19,28 @@ export const supabase: SupabaseClient | null = isAuthConfigured
       },
     })
   : null;
+
+export type OAuthProviders = {
+  google: boolean;
+  microsoft: boolean;
+};
+
+export async function fetchOAuthProviders(): Promise<OAuthProviders> {
+  if (!isAuthConfigured) return { google: false, microsoft: false };
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    });
+    if (!res.ok) return { google: isAuthConfigured, microsoft: false };
+    const data = (await res.json()) as { external?: Record<string, { enabled?: boolean } | boolean> };
+    const ext = data.external ?? {};
+    const on = (key: string) => {
+      const value = ext[key];
+      if (typeof value === "boolean") return value;
+      return Boolean(value && value.enabled);
+    };
+    return { google: on("google"), microsoft: on("azure") };
+  } catch {
+    return { google: isAuthConfigured, microsoft: false };
+  }
+}

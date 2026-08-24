@@ -13,6 +13,7 @@ export default function AuthModal() {
     signUp,
     signInWithGoogle,
     signInWithMicrosoft,
+    oauthProviders,
     cooldownSeconds,
     notice,
     needsUsername,
@@ -101,7 +102,7 @@ export default function AuthModal() {
               Accounts not configured
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Email, Google, and Microsoft sign-in need a Supabase project. Set{" "}
+              Email and Google sign-in need a Supabase project. Set{" "}
               <code className="text-ink">VITE_SUPABASE_URL</code> and{" "}
               <code className="text-ink">VITE_SUPABASE_ANON_KEY</code> (see the README), then rebuild.
               The map and hunt report still work without an account.
@@ -160,7 +161,9 @@ export default function AuthModal() {
             <p className="mt-1 text-sm text-muted">
               {authMode === "signup"
                 ? "Email is your login. Username is a public handle for this site."
-                : "Use the email and password you registered, or continue with Google or Microsoft."}
+                : oauthProviders.google
+                  ? "Use the email and password you registered, or continue with Google."
+                  : "Use the email and password you registered."}
             </p>
             {notice ? <p className="mt-2 text-sm text-moss">{notice}</p> : null}
 
@@ -223,24 +226,30 @@ export default function AuthModal() {
               </button>
             </form>
 
-            <div className="mt-4 space-y-2">
-              <button
-                type="button"
-                className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
-                disabled={busy}
-                onClick={() => void onOAuth("google")}
-              >
-                Continue with Google
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
-                disabled={busy}
-                onClick={() => void onOAuth("microsoft")}
-              >
-                Continue with Microsoft
-              </button>
-            </div>
+            {oauthProviders.google || oauthProviders.microsoft ? (
+              <div className="mt-4 space-y-2">
+                {oauthProviders.google ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
+                    disabled={busy}
+                    onClick={() => void onOAuth("google")}
+                  >
+                    Continue with Google
+                  </button>
+                ) : null}
+                {oauthProviders.microsoft ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
+                    disabled={busy}
+                    onClick={() => void onOAuth("microsoft")}
+                  >
+                    Continue with Microsoft
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
             <p className="mt-4 text-sm text-muted">
               {authMode === "signup" ? (
