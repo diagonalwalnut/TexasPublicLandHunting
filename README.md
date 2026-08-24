@@ -43,13 +43,13 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 
 ## Accounts and saved units
 
-The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password, Google, or Microsoft) and **save units** for later. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work; the sign-in dialog explains that accounts are not configured yet.
+The static site can attach **Supabase Auth + Postgres** so hunters create an account (email/password and any OAuth providers you enable) and **save units** for later. The sign-in dialog only shows Google or Microsoft when that provider is turned on in Supabase. If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, the map and report still work; the sign-in dialog explains that accounts are not configured yet.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Authentication → Providers**
    - **Email**: enable. Recommended: turn on **Confirm email**. Set the minimum password length to 12 if the dashboard allows it.
-   - **Google**: enable and add the client ID/secret from Google Cloud (OAuth consent + Web client). Authorized redirect: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`.
-   - **Azure (Microsoft)**: enable and add the Azure app (Accounts in any org + personal Microsoft accounts). Redirect: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`. Request the `email` scope.
+   - **Google**: enable and add the client ID/secret from Google Cloud (OAuth consent + Web client). In Google Cloud, the OAuth client's **Authorized redirect URIs** must include the exact Supabase callback `https://YOUR_PROJECT.supabase.co/auth/v1/callback` (a `redirect_uri_mismatch` error means this URI is missing).
+   - **Azure (Microsoft)**: optional. Leave disabled unless you want a Microsoft button. If you enable it, add the Azure app (Accounts in any org + personal Microsoft accounts). Redirect: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`. Request the `email` scope.
 3. **Authentication → URL configuration** — add redirect URLs:
    - `http://localhost:5173/**`
    - `https://huntpubliclandintexas.com/**`
@@ -86,7 +86,8 @@ Controls used for usernames, passwords, sessions, OAuth, and favorites:
 - Client-side cooldown after failed logins (sessionStorage; delay grows after 3 failures, capped at 60s). Supabase also **rate-limits** Auth endpoints (sign-in, sign-up, recover) by IP — keep that enabled.
 - Optional dashboard setting: raise GoTrue’s minimum password length to 12 so server policy matches the client.
 
-### OAuth (Google and Microsoft)
+### OAuth (Google, optional Microsoft)
+- The UI reads `/auth/v1/settings` and only renders buttons for providers that are enabled.
 - PKCE (`flowType: "pkce"`). Redirect flow (`skipBrowserRedirect: false`), not a popup, so **Cross-Origin-Opener-Policy: same-origin** can stay on (`web/public/.htaccess` and the Vite preview headers).
 - `redirectTo` is the deployed origin + Vite `BASE_URL` (localhost, HostGator domain, or GitHub Pages subpath).
 
