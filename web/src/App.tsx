@@ -275,12 +275,7 @@ export default function App() {
           >
             {showDrawn ? "TPWD drawing" : "TPWD APH"}
           </ExternalLink>
-          <AccountBar
-            savedActive={view === "saved"}
-            onOpenSaved={() => setView("saved")}
-            usersActive={view === "users"}
-            onOpenUsers={() => setView("users")}
-          />
+          <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
           <BetaSwitch />
         </div>
       </header>
