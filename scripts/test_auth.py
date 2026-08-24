@@ -56,7 +56,7 @@ def wait_health(api: Api) -> dict:
     last = ""
     for _ in range(40):
         try:
-            status, payload = api.call("/api/health")
+            status, payload = api.call("/api/index.php?action=health")
             if status == 200 and payload.get("ok"):
                 return payload
             last = repr(payload)
@@ -83,7 +83,7 @@ def main() -> int:
         assert health.get("hasher") == "argon2id", health
 
         status, created = api.call(
-            "/api/signup",
+            "/api/index.php?action=signup",
             method="POST",
             body={
                 "username": "trailwalker",
@@ -127,7 +127,7 @@ def main() -> int:
 
         api2 = Api("http://127.0.0.1:18088")
         status, failed = api2.call(
-            "/api/signin",
+            "/api/index.php?action=signin",
             method="POST",
             body={"login": "trailwalker", "password": "definitely-not-the-password"},
         )
@@ -135,18 +135,18 @@ def main() -> int:
         assert "incorrect" in failed.get("error", "").lower()
 
         status, signed = api2.call(
-            "/api/signin",
+            "/api/index.php?action=signin",
             method="POST",
             body={"login": "trailwalker@example.com", "password": PASSWORD},
         )
         assert status == 200, signed
         assert signed["user"]["username"] == "trailwalker"
 
-        status, blocked = api2.call("/api/favorites", method="POST", body={"unit_id": "901S"})
+        status, blocked = api2.call("/api/index.php?action=favorites", method="POST", body={"unit_id": "901S"})
         assert status == 403, blocked
 
         status, added = api2.call(
-            "/api/favorites",
+            "/api/index.php?action=favorites",
             method="POST",
             body={"unit_id": "901S"},
             csrf=True,
@@ -154,7 +154,7 @@ def main() -> int:
         assert status == 200, added
         assert "901S" in added["favorites"]
 
-        status, me = api2.call("/api/me")
+        status, me = api2.call("/api/index.php?action=me")
         assert status == 200, me
         assert me["user"]["username"] == "trailwalker"
         assert "901S" in me["favorites"]

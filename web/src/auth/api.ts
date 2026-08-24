@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = "/api/index.php?action=";
 
 export type Account = {
   id: string;
@@ -45,17 +45,18 @@ async function readError(res: Response): Promise<string> {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const action = path.replace(/^\//, "");
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  if (init.method && init.method !== "GET" && path !== "/signup" && path !== "/signin" && path !== "/signout") {
+  if (init.method && init.method !== "GET" && action !== "signup" && action !== "signin" && action !== "signout") {
     if (csrfToken) headers.set("X-CSRF-Token", csrfToken);
   }
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(`${API_BASE}${encodeURIComponent(action)}`, {
       ...init,
       headers,
       credentials: "include",
@@ -131,7 +132,7 @@ export async function removeFavorite(unitId: string): Promise<string[]> {
 
 export async function probeApi(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}health`, { credentials: "include" });
     if (!res.ok) return false;
     const data = (await res.json()) as { ok?: boolean };
     return data.ok === true;
