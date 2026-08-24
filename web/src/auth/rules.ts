@@ -4,12 +4,12 @@ export const USERNAME_PATTERN = /^[a-z][a-z0-9_]+$/;
 
 export const EMAIL_MAX = 254;
 export const PASSWORD_MIN = 12;
-/** bcrypt only hashes the first 72 bytes; longer secrets would silently truncate. */
-export const PASSWORD_MAX_BYTES = 72;
+/** Cap length to limit hashing DoS. Argon2id has no 72-byte bcrypt truncation. */
+export const PASSWORD_MAX_BYTES = 128;
 
 export const UNIT_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
-export const GENERIC_LOGIN_ERROR = "Email or password is incorrect.";
+export const GENERIC_LOGIN_ERROR = "Username, email, or password is incorrect.";
 
 const RESERVED_USERNAMES = new Set([
   "admin",
@@ -190,7 +190,7 @@ export function validatePassword(password: string, email: string, username: stri
     return `Password must be at least ${PASSWORD_MIN} characters.`;
   }
   if (utf8ByteLength(password) > PASSWORD_MAX_BYTES) {
-    return `Password must be at most ${PASSWORD_MAX_BYTES} bytes (bcrypt limit).`;
+    return `Password must be at most ${PASSWORD_MAX_BYTES} bytes.`;
   }
   const lower = password.toLowerCase();
   if (COMMON_PASSWORDS.has(lower)) {

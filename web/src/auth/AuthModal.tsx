@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { useAuth } from "./AuthContext";
-import { PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from "./rules";
+import { PASSWORD_MAX_BYTES, PASSWORD_MIN, USERNAME_MAX, USERNAME_MIN } from "./rules";
 
 export default function AuthModal() {
   const {
@@ -11,35 +11,28 @@ export default function AuthModal() {
     openAuth,
     signIn,
     signUp,
-    signInWithGoogle,
-    signInWithMicrosoft,
     cooldownSeconds,
     notice,
-    needsUsername,
-    user,
-    updateUsername,
-    profile,
   } = useAuth();
+  const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [pickedName, setPickedName] = useState("");
   const emailId = useId();
+  const loginId = useId();
   const passwordId = useId();
   const usernameId = useId();
 
-  const showPickUsername = Boolean(user && needsUsername && authOpen);
-
   useEffect(() => {
     if (!authOpen) {
+      setLogin("");
       setEmail("");
       setPassword("");
       setUsername("");
       setError(null);
       setBusy(false);
-      setPickedName("");
     }
   }, [authOpen, authMode]);
 
@@ -59,27 +52,9 @@ export default function AuthModal() {
     setError(null);
     setBusy(true);
     const result =
-      authMode === "signup" ? await signUp(email, password, username) : await signIn(email, password);
+      authMode === "signup" ? await signUp(email, password, username) : await signIn(login, password);
     setBusy(false);
     if (result) setError(result);
-  };
-
-  const onOAuth = async (which: "google" | "microsoft") => {
-    setError(null);
-    setBusy(true);
-    const result = which === "google" ? await signInWithGoogle() : await signInWithMicrosoft();
-    setBusy(false);
-    if (result) setError(result);
-  };
-
-  const onPickUsername = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setBusy(true);
-    const result = await updateUsername(pickedName);
-    setBusy(false);
-    if (result) setError(result);
-    else closeAuth();
   };
 
   return (
@@ -98,13 +73,10 @@ export default function AuthModal() {
         {!configured ? (
           <>
             <h2 id="auth-title" className="font-serif text-xl font-semibold">
-              Accounts not configured
+              Accounts not available
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Email, Google, and Microsoft sign-in need a Supabase project. Set{" "}
-              <code className="text-ink">VITE_SUPABASE_URL</code> and{" "}
-              <code className="text-ink">VITE_SUPABASE_ANON_KEY</code> (see the README), then rebuild.
-              The map and hunt report still work without an account.
+              The map and hunt report still work. Sign-in needs the accounts service on this host.
             </p>
             <button
               type="button"
@@ -114,44 +86,6 @@ export default function AuthModal() {
               Close
             </button>
           </>
-        ) : showPickUsername ? (
-          <>
-            <h2 id="auth-title" className="font-serif text-xl font-semibold">
-              Choose a username
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              This is a public handle, not your login. Your current handle is{" "}
-              <span className="text-ink">{profile?.username}</span>.
-            </p>
-            <form className="mt-4 space-y-3" onSubmit={onPickUsername}>
-              <label className="block text-sm" htmlFor={`${usernameId}-pick`}>
-                Username
-                <input
-                  id={`${usernameId}-pick`}
-                  className="mt-1 w-full rounded-md border border-black/15 px-2 py-1.5"
-                  autoComplete="nickname"
-                  spellCheck={false}
-                  maxLength={USERNAME_MAX}
-                  value={pickedName}
-                  onChange={(e) => setPickedName(e.target.value)}
-                  placeholder={`${USERNAME_MIN}–${USERNAME_MAX} letters, numbers, _`}
-                />
-              </label>
-              {error ? <p className="text-sm text-red-800">{error}</p> : null}
-              <div className="flex justify-end gap-2">
-                <button type="button" className="rounded-md px-3 py-2 text-sm text-muted" onClick={closeAuth}>
-                  Skip
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-md bg-pine px-3 py-2 text-sm text-sand disabled:opacity-60"
-                  disabled={busy}
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </>
         ) : (
           <>
             <h2 id="auth-title" className="font-serif text-xl font-semibold">
@@ -159,8 +93,8 @@ export default function AuthModal() {
             </h2>
             <p className="mt-1 text-sm text-muted">
               {authMode === "signup"
-                ? "Email is your login. Username is a public handle for this site."
-                : "Use the email and password you registered, or continue with Google or Microsoft."}
+                ? "Pick a username, email, and password. Passwords are stored as a one-way hash, never as plain text."
+                : "Use your username or email, and your password."}
             </p>
             {notice ? <p className="mt-2 text-sm text-moss">{notice}</p> : null}
 
@@ -171,27 +105,43 @@ export default function AuthModal() {
                   <input
                     id={usernameId}
                     className="mt-1 w-full rounded-md border border-black/15 px-2 py-1.5"
-                    autoComplete="nickname"
+                    autoComplete="username"
                     spellCheck={false}
                     maxLength={USERNAME_MAX}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    placeholder={`${USERNAME_MIN}–${USERNAME_MAX} letters, numbers, _`}
+                  />
+                </label>
+              ) : (
+                <label className="block text-sm" htmlFor={loginId}>
+                  Username or email
+                  <input
+                    id={loginId}
+                    className="mt-1 w-full rounded-md border border-black/15 px-2 py-1.5"
+                    autoComplete="username"
+                    spellCheck={false}
+                    maxLength={254}
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                  />
+                </label>
+              )}
+              {authMode === "signup" ? (
+                <label className="block text-sm" htmlFor={emailId}>
+                  Email
+                  <input
+                    id={emailId}
+                    type="email"
+                    className="mt-1 w-full rounded-md border border-black/15 px-2 py-1.5"
+                    autoComplete="email"
+                    inputMode="email"
+                    maxLength={254}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </label>
               ) : null}
-              <label className="block text-sm" htmlFor={emailId}>
-                Email
-                <input
-                  id={emailId}
-                  type="email"
-                  className="mt-1 w-full rounded-md border border-black/15 px-2 py-1.5"
-                  autoComplete="email"
-                  inputMode="email"
-                  maxLength={254}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </label>
               <label className="block text-sm" htmlFor={passwordId}>
                 Password
                 <input
@@ -207,7 +157,8 @@ export default function AuthModal() {
               </label>
               {authMode === "signup" ? (
                 <p className="text-xs text-muted">
-                  At least {PASSWORD_MIN} characters, at most 72 bytes. Paste is allowed.
+                  At least {PASSWORD_MIN} characters, at most {PASSWORD_MAX_BYTES} bytes. Paste is
+                  allowed.
                 </p>
               ) : null}
               {error ? <p className="text-sm text-red-800">{error}</p> : null}
@@ -222,25 +173,6 @@ export default function AuthModal() {
                 {authMode === "signup" ? "Create account" : "Sign in"}
               </button>
             </form>
-
-            <div className="mt-4 space-y-2">
-              <button
-                type="button"
-                className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
-                disabled={busy}
-                onClick={() => void onOAuth("google")}
-              >
-                Continue with Google
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-md border border-black/15 px-3 py-2 text-sm hover:bg-sand disabled:opacity-60"
-                disabled={busy}
-                onClick={() => void onOAuth("microsoft")}
-              >
-                Continue with Microsoft
-              </button>
-            </div>
 
             <p className="mt-4 text-sm text-muted">
               {authMode === "signup" ? (
