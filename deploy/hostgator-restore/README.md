@@ -1,0 +1,37 @@
+# HostGator restore files
+
+Use these files to repair https://huntpubliclandintexas.com/ from **cPanel File Manager**. Do not upload `web/index.html` from the repo (that is the Vite **dev** page and points at `/src/main.tsx`, which Apache cannot serve).
+
+Cursor chat **.zip attachments often fail to download**. The repo is private, so open GitHub **signed in** and use **Download raw file** (anonymous `raw.githubusercontent.com` links 404).
+
+## Download (GitHub, signed in — not the chat zip)
+
+Folder:
+
+https://github.com/diagonalwalnut/TexasPublicLandHunting/tree/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore
+
+Open a file, then **Download raw file**:
+
+- [homepage.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.zip) (371 KB)
+- [homepage.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/homepage.tar.gz) (same files; use this if zip download still fails)
+- [full-site.zip](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.zip)
+- [full-site.tar.gz](https://github.com/diagonalwalnut/TexasPublicLandHunting/blob/cursor/hostgator-restore-packages-9ae6/deploy/hostgator-restore/full-site.tar.gz)
+
+If archives still fail, download the four homepage files individually from that folder (`index.html`, `htaccess.txt`, `assets/index-BVMFCN11.js`, `assets/index-CiQZZOqP.css`).
+
+## Fastest repair (no archive)
+
+Upload these four items into `public_html` (overwrite when asked):
+
+1. `index.html` → `public_html/index.html`
+2. `htaccess.txt` → `public_html/.htaccess` (rename after upload; File Manager hides names that start with a dot)
+3. `assets/index-BVMFCN11.js` → `public_html/assets/index-BVMFCN11.js` (create `assets` if needed)
+4. `assets/index-CiQZZOqP.css` → `public_html/assets/index-CiQZZOqP.css`
+
+The repaired `index.html` must contain `/assets/index-BVMFCN11.js`. If it still mentions `/src/main.tsx`, the wrong file was uploaded.
+
+Then extract `full-site.zip` into `public_html` for data JSON, icons, and the PHP API. Do **not** overwrite `public_html/api/data/*.sqlite` or `*.key` if those already exist.
+
+## Check
+
+After upload, https://huntpubliclandintexas.com/ should load the map. View source and confirm `assets/index-BVMFCN11.js`.
