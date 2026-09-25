@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import HuntMap from "./HuntMap";
+import OregonExplorer from "./oregon/OregonExplorer";
+import { useAuth } from "./auth/AuthContext";
 import HuntReport from "./HuntReport";
 import ExternalLink from "./ExternalLink";
 import FilterPanel from "./FilterPanel";
@@ -31,6 +33,8 @@ const EMPTY_FILTERS: Filters = {
 };
 
 export default function App() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -39,6 +43,11 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
   const [view, setView] = useState<"map" | "report" | "saved">("map");
+  const [oregonOpen, setOregonOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) setOregonOpen(false);
+  }, [isAdmin]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -145,11 +154,21 @@ export default function App() {
           >
             TPWD APH
           </ExternalLink>
+          {isAdmin && (
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${oregonOpen ? "bg-gold text-pine" : "border border-gold/60 text-gold"}`}
+              onClick={() => setOregonOpen(true)}
+            >
+              Oregon beta
+            </button>
+          )}
           <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      {isAdmin && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
+      <div className={`flex min-h-0 flex-1 flex-col md:flex-row ${oregonOpen ? "hidden" : ""}`}>
         <aside className="scrollbar-thin order-2 max-h-[42vh] shrink-0 overflow-y-auto border-t border-black/10 bg-sand p-4 md:order-1 md:max-h-none md:w-80 md:border-r md:border-t-0">
           <FilterPanel
             filters={filters}

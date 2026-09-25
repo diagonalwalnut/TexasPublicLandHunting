@@ -70,6 +70,7 @@ def main() -> int:
     data_dir = Path(tempfile.mkdtemp(prefix="tplh-auth-"))
     env = os.environ.copy()
     env["AUTH_DATA_DIR"] = str(data_dir)
+    env["AUTH_ADMIN_EMAILS"] = "rangeboss@example.com"
     proc = subprocess.Popen(
         ["php", "-S", "127.0.0.1:18088", str(ROUTER)],
         cwd=str(ROOT / "web"),
@@ -141,6 +142,19 @@ def main() -> int:
         )
         assert status == 200, signed
         assert signed["user"]["username"] == "trailwalker"
+        assert signed["user"]["role"] == "user"
+
+        status, admin_created = api.call(
+            "/api/index.php?action=signup",
+            method="POST",
+            body={
+                "username": "rangeboss",
+                "email": "rangeboss@example.com",
+                "password": PASSWORD,
+            },
+        )
+        assert status == 201, admin_created
+        assert admin_created["user"]["role"] == "admin"
 
         status, blocked = api2.call("/api/index.php?action=favorites", method="POST", body={"unit_id": "901S"})
         assert status == 403, blocked
