@@ -22,12 +22,12 @@ Unofficial 2026–27 explorer for TPWD Annual Public Hunting units. See `README.
 
 ### Lint / test / build
 - Build + typecheck: `npm run build` (from `web/`) = `tsc --noEmit && vite build`. There is no separate ESLint/Prettier config; the TypeScript check is the type/lint gate.
-- Python tests are plain scripts (no pytest): `python3 scripts/test_auth.py`, `python3 scripts/test_data.py`, `python3 scripts/test_methods.py`, `python3 scripts/test_drawn.py`, `python3 scripts/test_accounts_restore.py`.
+- Python tests are plain scripts (no pytest): `python3 scripts/test_auth.py`, `python3 scripts/test_data.py`, `python3 scripts/test_methods.py`, `python3 scripts/test_drawn.py`, `python3 scripts/test_accounts_restore.py`, `python3 scripts/test_drawn_payload.py`.
 
 ### Accounts, roles, and beta
 - The first user in an empty SQLite DB is an administrator; later sign-ups are standard users. If an older DB has users but no admin, startup migration promotes the oldest account.
 - Administrators can open **Users** to grant or remove the administrator role. The API refuses to remove the last administrator.
-- The **Beta** switch is in the site header top-right and is shown only to signed-in admins. The flag is stored on `users.beta_enabled` (per admin). Turning it on loads drawn-hunt JSON from `web/public/data/drawn_*.json` (already committed; refresh with `python3 scripts/fetch_drawn.py`, which reuses `cache/drawn/`).
+- The **Beta** switch is in the site header top-right and is shown only to signed-in admins. The flag is stored on `users.beta_enabled` (per admin). Turning it on loads drawn-hunt JSON from `/data/drawn_*.json` (committed under `web/public/data/`; refresh with `python3 scripts/fetch_drawn.py`, which reuses `cache/drawn/`). If those files are missing on HostGator, `drawn_payload.php` restores them (regenerate with `python3 scripts/bundle_drawn_payload.py`) and the browser also falls back to a bundled copy.
 
 ### HostGator FTP (not GitHub)
 - FTP login lives only on this Cloud Agent machine in `$HOME/.config/tplh/ftp.env` (`chmod 600`). Login shells source that file from `~/.bashrc`. **Never commit it, and never add `FTP_USER` / `FTP_PASSWORD` as GitHub Actions secrets.**
