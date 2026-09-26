@@ -1,0 +1,11 @@
+{
+  "name": "Texas Public Land Hunting",
+  "user": "ubuntu",
+  "install": "./.cursor/install.sh",
+  "terminals": [
+    {
+      "name": "dev (Vite + PHP API)",
+      "command": "cd web && npm run dev"
+    }
+  ]
+}
