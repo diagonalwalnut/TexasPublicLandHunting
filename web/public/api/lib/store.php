@@ -79,6 +79,13 @@ function tplh_db(): PDO
             updated_at INTEGER NOT NULL
         )'
     );
+    $userCols = [];
+    foreach ($pdo->query('PRAGMA table_info(users)') as $col) {
+        $userCols[] = $col['name'];
+    }
+    if (!in_array('role', $userCols, true)) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+    }
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS sessions (
             token_hash TEXT PRIMARY KEY,
@@ -157,12 +164,54 @@ function tplh_client_ip(): string
     return hash('sha256', $ip);
 }
 
+function tplh_admin_emails(): array
+{
+    $emails = [];
+    $env = getenv('AUTH_ADMIN_EMAILS');
+    if (is_string($env) && $env !== '') {
+        foreach (explode(',', $env) as $part) {
+            $email = strtolower(trim($part));
+            if ($email !== '') {
+                $emails[$email] = true;
+            }
+        }
+    }
+    $file = tplh_data_dir() . '/admins.txt';
+    if (is_file($file)) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES);
+        if (is_array($lines)) {
+            foreach ($lines as $line) {
+                $line = trim((string) $line);
+                if ($line === '' || $line[0] === '#') {
+                    continue;
+                }
+                $emails[strtolower($line)] = true;
+            }
+        }
+    }
+    return $emails;
+}
+
+function tplh_sync_role(array $row): array
+{
+    $want = isset(tplh_admin_emails()[strtolower((string) $row['email'])]) ? 'admin' : 'user';
+    $current = isset($row['role']) && $row['role'] === 'admin' ? 'admin' : 'user';
+    if ($current !== $want) {
+        $stmt = tplh_db()->prepare('UPDATE users SET role = :r, updated_at = :t WHERE id = :id');
+        $stmt->execute([':r' => $want, ':t' => time(), ':id' => $row['id']]);
+        $row['role'] = $want;
+    }
+    return $row;
+}
+
 function tplh_public_user(array $row): array
 {
+    $row = tplh_sync_role($row);
     return [
         'id' => $row['id'],
         'username' => $row['username'],
         'email' => $row['email'],
+        'role' => ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
     ];
 }
 

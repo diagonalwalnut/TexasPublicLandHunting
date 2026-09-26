@@ -93,6 +93,12 @@ There are no frontend auth secrets. Do not commit `api/data/*.sqlite` or `api/da
 - Unique on `(user_id, unit_id)`. Queries are scoped to the session user.
 - Star control on the unit drawer and hunt-report rows. **Saved** lists favorited units; a click opens the map.
 
+## Oregon admin beta
+
+Signed-in admins get an **Oregon beta** button. It maps ODFW wildlife management units and 2026 eastern deer hunt areas, filters by animal, season, and method (any legal weapon, centerfire, archery, muzzleloader, shotgun), and lists controlled hunts, general seasons, and game-bird dates. A licenses section covers over-the-counter, agent, internet, and draw purchases, plus preference points.
+
+An account is an admin when its email is listed in the `AUTH_ADMIN_EMAILS` environment variable (comma-separated) or in `api/data/admins.txt` (one email per line). That file sits in the same directory Apache already refuses to serve. The role is not chosen at sign-up. Rebuild the dataset with `python3 scripts/oregon_build.py` after placing the 2026 regulations text or letting the script download the booklet PDF.
+
 ## License / attribution
 
-Hunt regulations and maps remain © Texas Parks and Wildlife Department. This repository only stores derived JSON/GeoJSON for an unofficial planning aid and links back to official PDFs.
+Hunt regulations and maps remain © Texas Parks and Wildlife Department and, for the Oregon beta, © Oregon Department of Fish and Wildlife. This repository only stores derived JSON/GeoJSON for an unofficial planning aid and links back to official publications.
