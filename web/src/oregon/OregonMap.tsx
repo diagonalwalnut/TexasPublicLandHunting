@@ -15,10 +15,12 @@ const OREGON_BOUNDS: maplibregl.LngLatBoundsLike = [
   [-116.4, 46.4],
 ];
 
+const CARTO_KEY = "cb1_2l9o_1_42d8008425541ac6684b5dbc";
+
 function rasterStyle(satellite: boolean): maplibregl.StyleSpecification {
   const tiles = satellite
     ? ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]
-    : ["https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"];
+    : [`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_KEY}`];
   const attribution = satellite ? "Tiles © Esri" : "© OpenStreetMap © CARTO";
   return {
     version: 8,
