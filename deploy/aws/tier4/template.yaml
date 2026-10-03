@@ -88,7 +88,7 @@ Resources:
       Description: TPLH accounts API (Bref PHP + DynamoDB).
       CodeUri: ./
       Handler: src/index.php
-      Runtime: provided.al2
+      Runtime: provided.al2023
       Architectures:
         - !Ref LambdaArch
       MemorySize: !Ref MemorySize
