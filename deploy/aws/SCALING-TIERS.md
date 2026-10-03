@@ -5,8 +5,11 @@ Land Hunting on AWS, their cost/performance/scalability trade-offs, and which on
 this repo implements.
 
 **This build implements Tier 3** (S3 + CloudFront for the static site, a slim
-Graviton EC2 box for the PHP/SQLite API, built in CI). **Tier 4 is recorded for
-future consideration** if the API itself ever becomes the measured bottleneck.
+Graviton EC2 box for the PHP/SQLite API, built in CI) and now also ships a
+**Tier 4** option (serverless API on Lambda + DynamoDB) as a drop-in replacement
+for the `/api/*` backend - see [tier4/README.md](tier4/README.md). Tier 3 remains
+the default; adopt Tier 4 if/when the API itself becomes the measured bottleneck
+or you want a scale-to-zero cost profile.
 
 ## Where the cost and load actually are
 
@@ -78,10 +81,12 @@ single-writer SQLite ([web/public/api/lib/store.php](../../web/public/api/lib/st
 with CPU-heavy Argon2id per login. For this app that ceiling is very high because
 auth/favorites are infrequent relative to map/data views.
 
-### Tier 4 — Serverless / horizontally-scalable API (future consideration)
+### Tier 4 — Serverless / horizontally-scalable API (implemented, optional)
 
-Only needed if the SQLite-backed API — not static delivery — becomes the measured
-bottleneck. This removes the single-writer and single-instance limits but is a
+Implemented under [tier4/](tier4/) as an alternative `/api/*` backend; the static
+S3 + CloudFront front is reused unchanged. Adopt it if the SQLite-backed API — not
+static delivery — becomes the measured bottleneck, or for a scale-to-zero cost
+profile. It removes the single-writer and single-instance limits, and is a
 **rewrite, not a hosting change**:
 
 - Replace `php -S` / Apache+php-fpm with **Lambda + API Gateway** (or Fargate
@@ -103,8 +108,8 @@ Trade-offs to weigh before adopting Tier 4:
   migration from the existing `accounts.sqlite`.
 
 Recommendation: stay on Tier 3 until API latency or throughput is a demonstrated
-problem; adopt Tier 4 per-concern (first the DB, then the compute) rather than all
-at once.
+problem; when adopting Tier 4, follow [tier4/README.md](tier4/README.md) (it swaps
+the DB and compute together behind the same CloudFront `/api/*` behavior).
 
 ## Recommended path
 
