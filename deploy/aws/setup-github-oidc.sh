@@ -23,6 +23,11 @@ INSTANCE_ID="${TPLH_INSTANCE_ID:-${INSTANCE_ID:-}}"
 
 : "${GITHUB_REPO:?set GITHUB_REPO (owner/repo)}"
 : "${GITHUB_REF:=refs/heads/main}"
+: "${S3_BUCKET:?set S3_BUCKET in config.sh}"
+DIST_ID="${CLOUDFRONT_DISTRIBUTION_ID:-}"
+[[ -n "$DIST_ID" ]] || DIST_ID="$(aws cloudfront list-distributions \
+  --query "DistributionList.Items[?Comment=='$PROJECT'].Id | [0]" --output text 2>/dev/null | sed 's/None//')"
+[[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run provision-cdn.sh first)"
 
 # --- OIDC provider -----------------------------------------------------------
 if aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$PROVIDER_ARN" >/dev/null 2>&1; then
@@ -79,6 +84,24 @@ perm="$(cat <<JSON
       "Effect": "Allow",
       "Action": "ec2:DescribeInstances",
       "Resource": "*"
+    },
+    {
+      "Sid": "SyncStaticToS3",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}"
+    },
+    {
+      "Sid": "WriteStaticObjects",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/*"
+    },
+    {
+      "Sid": "InvalidateCloudFront",
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
+      "Resource": "arn:aws:cloudfront::${ACCOUNT_ID}:distribution/${DIST_ID}"
     }
   ]
 }
@@ -105,10 +128,12 @@ cat >&2 <<DONE
 $(ok "Set these GitHub repository secrets")
   (Settings -> Secrets and variables -> Actions -> New repository secret)
 
-    AWS_DEPLOY_ROLE_ARN = ${ROLE_ARN}
-    AWS_REGION          = ${AWS_REGION}
-    TPLH_INSTANCE_ID    = ${INSTANCE_ID}
+    AWS_DEPLOY_ROLE_ARN        = ${ROLE_ARN}
+    AWS_REGION                 = ${AWS_REGION}
+    TPLH_INSTANCE_ID           = ${INSTANCE_ID}
+    S3_BUCKET                  = ${S3_BUCKET}
+    CLOUDFRONT_DISTRIBUTION_ID = ${DIST_ID}
 
 Then pushes to '${GITHUB_REF##*/}' will deploy via .github/workflows/deploy-aws.yml
-(or run it manually from the Actions tab).
+(static -> S3 + CloudFront invalidation; API -> SSM). Or run it from the Actions tab.
 DONE

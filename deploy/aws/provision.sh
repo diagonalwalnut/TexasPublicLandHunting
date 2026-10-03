@@ -20,13 +20,21 @@ ROLE_NAME="$(res_name ec2-role)"
 PROFILE_NAME="$(res_name ec2-profile)"
 SERVER_NAME="$(res_name server)"
 
-# --- AMI (latest Amazon Linux 2023, x86_64) ----------------------------------
-log "resolving latest Amazon Linux 2023 AMI"
+# --- AMI (latest Amazon Linux 2023, arch from CPU_ARCH) ----------------------
+CPU_ARCH="${CPU_ARCH:-arm64}"
+case "$CPU_ARCH" in
+  arm64|x86_64) : ;;
+  *) die "CPU_ARCH must be arm64 or x86_64 (got '$CPU_ARCH')" ;;
+esac
+log "resolving latest Amazon Linux 2023 AMI ($CPU_ARCH)"
 AMI_ID="$(aws ssm get-parameters \
-  --names /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+  --names "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-${CPU_ARCH}" \
   --query 'Parameters[0].Value' --output text)"
 [[ "$AMI_ID" == ami-* ]] || die "could not resolve AL2023 AMI (got '$AMI_ID')"
-ok "AMI $AMI_ID"
+ok "AMI $AMI_ID ($CPU_ARCH)"
+case "$INSTANCE_TYPE" in
+  t4g.*|m6g.*|c6g.*|r6g.*|a1.*) [[ "$CPU_ARCH" == arm64 ]] || warn "INSTANCE_TYPE $INSTANCE_TYPE is Graviton but CPU_ARCH=$CPU_ARCH" ;;
+esac
 
 # --- key pair ----------------------------------------------------------------
 if aws ec2 describe-key-pairs --key-names "$KEY_NAME" >/dev/null 2>&1; then
@@ -111,6 +119,7 @@ else
     echo "PROJECT=${PROJECT}"
     echo "DOMAIN=${DOMAIN}"
     echo "DOMAIN_ALIASES=${DOMAIN_ALIASES:-}"
+    echo "API_ORIGIN_DOMAIN=${API_ORIGIN_DOMAIN:-}"
     echo "ADMIN_EMAIL=${ADMIN_EMAIL}"
     echo "REPO_SSH=${REPO_SSH}"
     echo "REPO_BRANCH=${REPO_BRANCH}"
@@ -186,19 +195,24 @@ save_output DOMAIN "$DOMAIN"
 
 cat >&2 <<DONE
 
-$(ok "Provisioning complete")
-  Instance : $INSTANCE_ID
+$(ok "API instance provisioned (Tier 3)")
+  Instance : $INSTANCE_ID  ($INSTANCE_TYPE, $CPU_ARCH)
   Public IP: $PUBLIC_IP
   Outputs  : $OUTPUTS_FILE
 
-Next steps:
-  1. Point DNS:  ${DOMAIN}  A  ->  ${PUBLIC_IP}   (and www if used)
+Next steps (Tier 3 = S3 + CloudFront static, this box = /api origin):
+  1. Point the API origin DNS at this box (needed for its TLS cert):
+       ${API_ORIGIN_DOMAIN:-origin-api.$DOMAIN}  A  ->  ${PUBLIC_IP}
   2. Install the GitHub deploy key so the box can pull the private repo:
        deploy/aws/make-deploy-key.sh
-  3. First deploy (build + publish):
+  3. Publish the API:
        ssh -i ${AWS_DIR}/${KEY_NAME}.pem ec2-user@${PUBLIC_IP} 'sudo bash /opt/tplh/deploy.sh'
-     (or, with SSM enabled, trigger the GitHub Actions "Deploy to AWS" workflow)
-  4. After DNS resolves, enable HTTPS:
+  4. After the origin DNS resolves, issue the origin TLS cert:
        ssh -i ${AWS_DIR}/${KEY_NAME}.pem ec2-user@${PUBLIC_IP} 'sudo bash /opt/tplh/setup-tls.sh'
-       (copy setup-tls.sh up first, or run it via SSM)
+  5. Create the S3 bucket + CloudFront distribution (static front):
+       deploy/aws/provision-cdn.sh
+  6. Point the public DNS at CloudFront (printed by provision-cdn.sh):
+       ${DOMAIN} (and ${DOMAIN_ALIASES:-www}) ->  <distribution>.cloudfront.net
+  7. Wire up CI (OIDC role + secrets), then push to deploy:
+       deploy/aws/setup-github-oidc.sh
 DONE
