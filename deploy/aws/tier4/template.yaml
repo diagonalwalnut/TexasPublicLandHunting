@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Texas Public Land Hunting - Tier 4 serverless accounts API.
+  PHP (Bref) on Lambda behind a Lambda Function URL (AWS_IAM, fronted by
+  CloudFront OAC) with a DynamoDB single-table backend. The static site keeps
+  using the Tier 3 S3 + CloudFront stack; this template only provides the API.
+
+Parameters:
+  TableName:
+    Type: String
+    Default: tplh_accounts
+    Description: DynamoDB single table (users / sessions / favorites / rate limits).
+  AppKeySsmParam:
+    Type: String
+    Default: /tplh/tier4/app_key
+    Description: SSM SecureString parameter holding the app HMAC key (create-app-key.sh).
+  AdminEmails:
+    Type: String
+    Default: ''
+    Description: Comma-separated admin email allowlist (role=admin for these users).
+  AllowedOrigins:
+    Type: String
+    Description: Space/comma-separated browser origin hostnames allowed (CSRF defense).
+  BrefFpmLayerArn:
+    Type: String
+    Description: >
+      Bref FPM runtime layer ARN for your region + architecture. Find the current
+      version at https://runtimes.bref.sh (account 534081306603). Example arm64:
+      arn:aws:lambda:us-east-1:534081306603:layer:arm-php-83-fpm:25
+  LambdaArch:
+    Type: String
+    Default: arm64
+    AllowedValues: [arm64, x86_64]
+  MemorySize:
+    Type: Number
+    Default: 1024
+    Description: Function memory (MB). Argon2id is CPU-heavy; 1024 keeps logins fast.
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Globals:
+  Function:
+    Timeout: 15
+
+Resources:
+  AccountsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: tplh
+        - Key: ManagedBy
+          Value: tplh-tier4
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-api'
+      RetentionInDays: !Ref LogRetentionDays
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-api'
+      Description: TPLH accounts API (Bref PHP + DynamoDB).
+      CodeUri: ./
+      Handler: src/index.php
+      Runtime: provided.al2023
+      Architectures:
+        - !Ref LambdaArch
+      MemorySize: !Ref MemorySize
+      Layers:
+        - !Ref BrefFpmLayerArn
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+      Environment:
+        Variables:
+          AUTH_TABLE: !Ref TableName
+          AUTH_APP_KEY_SSM: !Ref AppKeySsmParam
+          AUTH_ADMIN_EMAILS: !Ref AdminEmails
+          AUTH_ALLOWED_ORIGINS: !Ref AllowedOrigins
+          AUTH_FORCE_SECURE_COOKIE: '1'
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+        - Statement:
+            - Sid: ReadAppKeyParam
+              Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppKeySsmParam}'
+            - Sid: DecryptAppKeyViaSsm
+              Effect: Allow
+              Action: kms:Decrypt
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub 'ssm.${AWS::Region}.amazonaws.com'
+
+Outputs:
+  ApiFunctionName:
+    Description: Lambda function name.
+    Value: !Ref ApiFunction
+  ApiFunctionArn:
+    Description: Lambda function ARN.
+    Value: !GetAtt ApiFunction.Arn
+  ApiFunctionUrl:
+    Description: Lambda Function URL (CloudFront /api/* origin; IAM-authenticated).
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  TableName:
+    Description: DynamoDB table name.
+    Value: !Ref AccountsTable

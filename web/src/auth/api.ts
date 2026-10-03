@@ -1,4 +1,7 @@
-const API_BASE = "/api/index.php?action=";
+// REST-style base. The PHP router accepts both "/api/<action>" and the legacy
+// "/api/index.php?action=<action>" form, so this works on the Tier 3 (Apache)
+// and Tier 4 (Lambda Function URL via CloudFront) backends alike.
+const API_BASE = "/api/";
 
 export type Account = {
   id: string;
@@ -57,7 +60,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${encodeURIComponent(action)}`, {
+    res = await fetch(`${API_BASE}${action}`, {
       ...init,
       headers,
       credentials: "include",

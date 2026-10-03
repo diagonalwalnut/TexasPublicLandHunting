@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Instance bootstrap for Texas Public Land Hunting (Amazon Linux 2023).
+# Instance bootstrap for Texas Public Land Hunting (Amazon Linux 2023, Tier 3).
 #
-# provision.sh prepends a generated /opt/tplh/config.env writer to this file and
-# passes the whole thing as EC2 user-data, so cloud-init runs it as root on first
-# boot. It installs Apache + PHP-FPM + Node, lays out the release directories and
-# the PERSISTENT auth data dir, and configures an ACME-friendly vhost. It does
+# In Tier 3 the instance is API-ONLY: CloudFront serves the static site from S3
+# and routes only /api/* here. So this installs Apache + PHP-FPM (NO Node — the
+# frontend is built in CI), lays out the release dir + the PERSISTENT auth data
+# dir, and writes an ACME-friendly vhost that acts as CloudFront's origin.
+#
+# provision.sh prepends a generated /opt/tplh/config.env writer and passes the
+# whole thing as EC2 user-data (cloud-init runs it as root on first boot). It does
 # NOT clone the private repo (that needs the deploy key) — deploy.sh does that.
 set -euo pipefail
 
@@ -16,37 +19,31 @@ CONFIG_ENV="/opt/tplh/config.env"
 # shellcheck disable=SC1090
 source "$CONFIG_ENV"
 
-: "${DOMAIN:?}" "${ADMIN_EMAIL:?}" "${REPO_SSH:?}" "${REPO_BRANCH:?}"
+: "${ADMIN_EMAIL:?}" "${REPO_SSH:?}" "${REPO_BRANCH:?}"
 DATA_DIR="${DATA_DIR:-/var/lib/tplh/data}"
 APP_ROOT="${APP_ROOT:-/var/www/tplh}"
 ACME_ROOT="${ACME_ROOT:-/var/www/tplh/acme}"
-DOMAIN_ALIASES="${DOMAIN_ALIASES:-}"
+# ServerName for the origin vhost; CloudFront still forwards Host=DOMAIN, which
+# this (default) vhost also serves.
+ORIGIN_NAME="${API_ORIGIN_DOMAIN:-${DOMAIN:-localhost}}"
 
-# --- packages ----------------------------------------------------------------
+# --- packages (NO Node; build happens in CI) ---------------------------------
 echo "--- installing packages"
 dnf -y update || true
-# Apache, PHP 8 (with pdo_sqlite + argon2 via sodium), git, tooling.
 dnf -y install \
   httpd mod_ssl \
   php php-fpm php-pdo php-mbstring php-cli php-sodium php-opcache \
   git rsync tar findutils
 
-# Node.js 20 (Vite 7 needs Node >= 20.19). NodeSource gives a current 20.x.
-if ! command -v node >/dev/null 2>&1 || [[ "$(node -v 2>/dev/null | cut -c2-3)" -lt 20 ]]; then
-  echo "--- installing Node.js 20"
-  curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-  dnf -y install nodejs
-fi
-node -v && php -v | head -1
+php -v | head -1
 
 # --- directory layout --------------------------------------------------------
 echo "--- creating directories"
 install -d -m 0755 "$APP_ROOT" "$APP_ROOT/releases"
 install -d -m 0755 "$ACME_ROOT/.well-known/acme-challenge"
-# Persistent auth data (SQLite DB, app.key, admins.txt) OUTSIDE the release
-# dirs so redeploys never touch it. php-fpm runs as apache.
+# Persistent auth data (SQLite DB, app.key, admins.txt) OUTSIDE the release dirs
+# so redeploys never touch it. php-fpm runs as apache.
 install -d -o apache -g apache -m 0700 "$DATA_DIR"
-# Seed the admin allowlist file (in addition to the AUTH_ADMIN_EMAILS env).
 if [[ ! -f "$DATA_DIR/admins.txt" ]]; then
   printf '%s\n' "$ADMIN_EMAIL" > "$DATA_DIR/admins.txt"
   chown apache:apache "$DATA_DIR/admins.txt"
@@ -58,10 +55,8 @@ if [[ ! -e "$APP_ROOT/current" ]]; then
   ph="$APP_ROOT/releases/000000-placeholder"
   install -d -m 0755 "$ph"
   cat > "$ph/index.html" <<'HTML'
-<!doctype html><meta charset="utf-8"><title>Texas Public Land Hunting</title>
-<body style="font-family:system-ui;margin:4rem auto;max-width:40rem;padding:0 1rem">
-<h1>Texas Public Land Hunting</h1>
-<p>The server is provisioned. Run <code>deploy.sh</code> to publish the site.</p>
+<!doctype html><meta charset="utf-8"><title>TPLH API origin</title>
+<body><p>API origin provisioned. Run deploy.sh to publish the /api tree.</p>
 HTML
   chown -R apache:apache "$ph"
   ln -sfn "$ph" "$APP_ROOT/current"
@@ -69,7 +64,8 @@ fi
 
 # --- PHP-FPM: pass the app env into getenv() ---------------------------------
 # The app reads AUTH_DATA_DIR / AUTH_ADMIN_EMAILS via getenv(). With php-fpm,
-# Apache SetEnv does NOT reach PHP, so set them on the pool instead.
+# Apache SetEnv does NOT reach PHP, so set them on the pool instead (explicit
+# env[] lines are passed even though php-fpm's default clear_env=yes).
 POOL="/etc/php-fpm.d/www.conf"
 if ! grep -q 'tplh app env' "$POOL" 2>/dev/null; then
   echo "--- configuring php-fpm pool env"
@@ -81,23 +77,17 @@ if ! grep -q 'tplh app env' "$POOL" 2>/dev/null; then
   } >> "$POOL"
 fi
 
-# --- Apache vhost (HTTP) -----------------------------------------------------
-# Serves the SPA + PHP API from the current release, with .htaccess honored
-# (AllowOverride All). The ACME challenge Alias is served from a separate dir
-# with AllowOverride None so the app's force-HTTPS .htaccess cannot 301 the
-# Let's Encrypt HTTP-01 challenge before a certificate exists.
+# --- Apache vhost (origin) ---------------------------------------------------
+# Single default vhost: serves /api/* for any Host (CloudFront forwards the
+# viewer Host). AllowOverride All honors the app's api/.htaccess. The ACME Alias
+# is served with AllowOverride None so the app's force-HTTPS .htaccess cannot
+# 301 the Let's Encrypt HTTP-01 challenge.
 echo "--- writing Apache vhost"
-server_alias_line=""
-if [[ -n "$DOMAIN_ALIASES" ]]; then
-  server_alias_line="    ServerAlias ${DOMAIN_ALIASES}"
-fi
 cat > /etc/httpd/conf.d/tplh.conf <<CONF
 <VirtualHost *:80>
-    ServerName ${DOMAIN}
-${server_alias_line}
+    ServerName ${ORIGIN_NAME}
     DocumentRoot ${APP_ROOT}/current
 
-    # Let's Encrypt HTTP-01 challenge (must stay plain HTTP, no .htaccess).
     Alias /.well-known/acme-challenge ${ACME_ROOT}/.well-known/acme-challenge
     <Directory ${ACME_ROOT}>
         AllowOverride None
@@ -139,7 +129,6 @@ fi
 # --- start services ----------------------------------------------------------
 echo "--- enabling services"
 systemctl enable --now php-fpm
-# Validate config before (re)starting Apache.
 apachectl configtest
 systemctl enable --now httpd
 systemctl reload httpd || systemctl restart httpd
