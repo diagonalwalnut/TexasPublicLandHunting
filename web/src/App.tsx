@@ -89,6 +89,7 @@ export default function App() {
     return selected.countySlugs.map((slug) => counties[slug]).filter(Boolean);
   }, [selected, counties]);
   const selectedOpps = selected ? unitOpportunities(selected.id, opportunities, filters) : [];
+  const isCorps = selected?.source === "usace";
   const speciesLabels = useMemo(
     () => Object.fromEntries((meta?.species ?? []).map((s) => [s.id, s.label])),
     [meta],
@@ -118,7 +119,7 @@ export default function App() {
             Texas Public Land Hunting
           </h1>
           <p className="text-sm text-sand/80">
-            {meta ? `${meta.seasonYear} APH / walk-in units` : "Loading…"} · map and hunt report · unofficial planning aid
+            {meta ? `${meta.seasonYear} APH, walk-in & Corps of Engineers areas` : "Loading…"} · map and hunt report · unofficial planning aid
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -209,6 +210,16 @@ export default function App() {
                           ? "Click a colored region or a hunt unit"
                           : `Showing ${matchIds.size} matching unit${matchIds.size === 1 ? "" : "s"}`}
                     </div>
+                    <div className="mt-1 flex items-center gap-3 text-xs text-muted">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#2f6b4f" }} />
+                        TPWD / APH
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#a0522d" }} />
+                        Corps of Engineers
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -284,45 +295,104 @@ export default function App() {
               <p className="mb-2 text-sm">Includes: {selected.complexes.join(", ")}</p>
             )}
 
-            <div className="mb-3 flex flex-wrap gap-2 text-sm">
-              <ExternalLink className="text-moss underline" href={selected.pdfUrl}>
-                Official unit PDF
-              </ExternalLink>
-              <ExternalLink className="text-moss underline" href={selected.aerialPdfUrl}>
-                Aerial map
-              </ExternalLink>
-              <ExternalLink className="text-moss underline" href={selected.bookletUrl}>
-                {selected.bookletPage ? `Map booklet p. ${selected.bookletPage}` : "Map booklet"}
-              </ExternalLink>
-              <ExternalLink
-                className="text-moss underline"
-                href={
-                  selectedCountyPages[0]?.url ||
-                  "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons-by-county"
-                }
-              >
-                Outdoor Annual county
-              </ExternalLink>
-              <ExternalLink className="text-moss underline" href={selected.epostcardUrl}>
-                E-Postcard hunts
-              </ExternalLink>
-            </div>
+            {isCorps ? (
+              <>
+                <div className="mb-3 rounded border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
+                  <p className="font-semibold text-pine">
+                    {selected.managingAgency || "U.S. Army Corps of Engineers"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    Corps of Engineers hunting area — separate from the TPWD e-postcard draw.{" "}
+                    {selected.permitRequired
+                      ? "A Corps hunting permit is required."
+                      : "No Corps hunting permit required."}
+                  </p>
+                </div>
 
-            {selected.legalGameTags.length > 0 && (
-              <div className="mb-3">
-                <h3 className="text-sm font-semibold">Legal game (APH search)</h3>
-                <ul className="mt-1 flex flex-wrap gap-1">
-                  {selected.legalGameTags.map((tag) => (
-                    <li key={tag} className="rounded bg-sand px-2 py-0.5 text-xs">
-                      {tag}
-                    </li>
+                {selected.permitInfo && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold">Permit &amp; access</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-muted">{selected.permitInfo}</p>
+                    {selected.permitCost && (
+                      <p className="mt-1 text-sm">
+                        <span className="font-medium">Cost:</span> {selected.permitCost}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {selected.means && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold">Means &amp; methods</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-muted">{selected.means}</p>
+                  </div>
+                )}
+
+                <div className="mb-3 flex flex-wrap gap-2 text-sm">
+                  {selected.mapPdfUrl && (
+                    <ExternalLink className="text-moss underline" href={selected.mapPdfUrl}>
+                      Detailed hunt map (PDF)
+                    </ExternalLink>
+                  )}
+                  {(selected.links ?? []).map((link) => (
+                    <ExternalLink key={link.url} className="text-moss underline" href={link.url}>
+                      {link.label}
+                    </ExternalLink>
                   ))}
-                </ul>
-              </div>
-            )}
+                  <ExternalLink
+                    className="text-moss underline"
+                    href={
+                      selectedCountyPages[0]?.url ||
+                      "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons-by-county"
+                    }
+                  >
+                    Outdoor Annual county
+                  </ExternalLink>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-3 flex flex-wrap gap-2 text-sm">
+                  <ExternalLink className="text-moss underline" href={selected.pdfUrl}>
+                    Official unit PDF
+                  </ExternalLink>
+                  <ExternalLink className="text-moss underline" href={selected.aerialPdfUrl}>
+                    Aerial map
+                  </ExternalLink>
+                  <ExternalLink className="text-moss underline" href={selected.bookletUrl}>
+                    {selected.bookletPage ? `Map booklet p. ${selected.bookletPage}` : "Map booklet"}
+                  </ExternalLink>
+                  <ExternalLink
+                    className="text-moss underline"
+                    href={
+                      selectedCountyPages[0]?.url ||
+                      "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons-by-county"
+                    }
+                  >
+                    Outdoor Annual county
+                  </ExternalLink>
+                  <ExternalLink className="text-moss underline" href={selected.epostcardUrl}>
+                    E-Postcard hunts
+                  </ExternalLink>
+                </div>
 
-            {selected.legalGameText && (
-              <p className="mb-3 text-sm leading-relaxed text-muted">{selected.legalGameText}</p>
+                {selected.legalGameTags.length > 0 && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold">Legal game (APH search)</h3>
+                    <ul className="mt-1 flex flex-wrap gap-1">
+                      {selected.legalGameTags.map((tag) => (
+                        <li key={tag} className="rounded bg-sand px-2 py-0.5 text-xs">
+                          {tag}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {selected.legalGameText && (
+                  <p className="mb-3 text-sm leading-relaxed text-muted">{selected.legalGameText}</p>
+                )}
+              </>
             )}
 
             {selectedCountyPages.length > 0 && (

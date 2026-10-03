@@ -16,7 +16,13 @@ const TEXAS_BOUNDS: maplibregl.LngLatBoundsLike = [
   [-93.3, 36.6],
 ];
 
-type UnitProps = { id?: string; lon?: number | null; lat?: number | null; region?: string };
+type UnitProps = {
+  id?: string;
+  lon?: number | null;
+  lat?: number | null;
+  region?: string;
+  source?: string;
+};
 type RegionProps = { name?: string; lon?: number; lat?: number };
 type FeatureLike = {
   id?: string | number;
@@ -285,7 +291,14 @@ export default function HuntMap({
         source: "units",
         filter: POLY_GEOM,
         paint: {
-          "fill-color": ["case", ["boolean", ["feature-state", "selected"], false], "#c4a35a", "#2f6b4f"],
+          "fill-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#c4a35a",
+            ["==", ["get", "source"], "usace"],
+            "#a0522d",
+            "#2f6b4f",
+          ],
           "fill-opacity": 0.55,
         },
       });
@@ -295,7 +308,14 @@ export default function HuntMap({
         source: "units",
         filter: POLY_GEOM,
         paint: {
-          "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#c4a35a", "#1c3b2c"],
+          "line-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#c4a35a",
+            ["==", ["get", "source"], "usace"],
+            "#6b3410",
+            "#1c3b2c",
+          ],
           "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 3, 1.4],
         },
       });
@@ -306,7 +326,14 @@ export default function HuntMap({
         filter: POINT_GEOM,
         paint: {
           "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 8, 6],
-          "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#c4a35a", "#2f6b4f"],
+          "circle-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#c4a35a",
+            ["==", ["get", "source"], "usace"],
+            "#a0522d",
+            "#2f6b4f",
+          ],
           "circle-stroke-color": "#f4efe4",
           "circle-stroke-width": 1.5,
           "circle-opacity": 1,

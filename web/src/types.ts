@@ -5,7 +5,10 @@ export type AccessId =
   | "youth_adult"
   | "e_postcard"
   | "regular_permit"
-  | "drawn";
+  | "drawn"
+  | "corps_permit";
+
+export type UnitLink = { label: string; url: string };
 
 export type Unit = {
   id: string;
@@ -33,6 +36,14 @@ export type Unit = {
   bookletUrl?: string;
   lon: number | null;
   lat: number | null;
+  source?: "tpwd" | "usace";
+  managingAgency?: string;
+  permitRequired?: boolean;
+  permitInfo?: string;
+  permitCost?: string;
+  means?: string;
+  links?: UnitLink[];
+  mapPdfUrl?: string;
 };
 
 export type Opportunity = {
