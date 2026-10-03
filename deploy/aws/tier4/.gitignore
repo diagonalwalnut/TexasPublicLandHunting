@@ -1,0 +1,8 @@
+# Local secrets / machine-specific config (never commit)
+config.sh
+.outputs.env
+
+# Build + dependency artifacts
+vendor/
+.aws-sam/
+composer.phar
