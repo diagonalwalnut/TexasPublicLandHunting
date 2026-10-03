@@ -1,0 +1,7 @@
+# Local, secret, or generated artifacts — never commit these.
+config.sh
+*.pem
+deploy-key
+deploy-key.pub
+*.tfstate
+.outputs.env
