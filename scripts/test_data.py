@@ -27,6 +27,28 @@ def main() -> int:
     assert "dove" in species and "white_tailed_deer" in species
     assert meta["seasonYear"] == "2026-27"
     assert len(regions["features"]) == 8
+
+    # USACE (Army Corps of Engineers) areas are merged into the same dataset.
+    corps_units = [u for u in units if u.get("source") == "usace"]
+    assert len(corps_units) >= 18, len(corps_units)
+    assert {a["id"] for a in meta["access"]} >= {"corps_permit"}, meta["access"]
+    corps_opps = [o for o in opps if o["access"] == "corps_permit"]
+    assert corps_opps, "no corps opportunities"
+    by_id_all = {u["id"]: u for u in units}
+    whitney = by_id_all["usace-whitney"]
+    assert whitney["type"] == "corps_lake", whitney["type"]
+    assert "white_tailed_deer" in whitney["species"], whitney["species"]
+    whitney_deer = [
+        o for o in corps_opps if o["unitId"] == "usace-whitney" and o["species"] == "white_tailed_deer"
+    ]
+    assert whitney_deer and all(o["methods"] == ["archery"] for o in whitney_deer), whitney_deer
+    # GIS gap-fill raised the TPWD polygon count above the prior 154 baseline.
+    tpwd_polys = sum(
+        1
+        for f in geo["features"]
+        if f["geometry"]["type"] != "Point" and f["properties"].get("source") != "usace"
+    )
+    assert tpwd_polys >= 154, tpwd_polys
     with_county = sum(1 for u in units if u.get("countySlugs"))
     assert with_county >= 100, with_county
     counties = json.loads((DATA / "counties.json").read_text())
