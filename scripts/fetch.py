@@ -32,6 +32,14 @@ ARCGIS_POINTS = (
     "{layer}/query?where=1%3D1&outFields=*&f=geojson&outSR=4326&returnGeometry=true"
 )
 
+# Authoritative TPWD polygon boundaries (Public Hunt Area Polygon Features, layer 9).
+# Used to gap-fill units that are missing a polygon from the Details KMZ.
+ARCGIS_HUNT_POLYS = (
+    "https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer/"
+    "9/query?where=1%3D1&outFields=PH_UnitNum,Unit_Num,LocName,Class,Acres,CalcAcreage&"
+    "f=geojson&outSR=4326&returnGeometry=true"
+)
+
 
 def get(url: str) -> bytes:
     if not tpwd_url(url):
@@ -78,6 +86,14 @@ def fetch_core() -> None:
         dest = CACHE / name
         print(f"fetch {name}")
         download_file(ARCGIS_POINTS.format(layer=layer), dest)
+
+
+def fetch_gis() -> None:
+    """Download authoritative TPWD polygon boundaries for GIS gap-fill."""
+    CACHE.mkdir(parents=True, exist_ok=True)
+    dest = CACHE / "hunt_polys_arcgis.geojson"
+    print("fetch hunt_polys_arcgis.geojson")
+    download_file(ARCGIS_HUNT_POLYS, dest)
 
 
 def fetch_pdfs(limit: int | None = None) -> None:
@@ -150,9 +166,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdfs", action="store_true")
     parser.add_argument("--counties", action="store_true")
+    parser.add_argument("--gis", action="store_true")
     parser.add_argument("--pdf-limit", type=int, default=None)
     args = parser.parse_args()
     fetch_core()
+    if args.gis:
+        fetch_gis()
     if args.pdfs:
         fetch_pdfs(args.pdf_limit)
     if args.counties:

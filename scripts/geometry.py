@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
+from shapely.geometry.base import BaseGeometry
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
@@ -150,32 +151,99 @@ def parse_kml_polygons(path: Path, id_fields: tuple[str, ...]) -> dict[str, dict
 
     out: dict[str, dict[str, Any]] = {}
     for unit_id, parts in grouped.items():
-        preferred = [p for p in parts if p["class"] in PREFER_CLASSES]
-        use = preferred or parts
-        geoms = [p["geometry"] for p in use]
+        finalized = _finalize_group(parts)
+        if finalized:
+            out[unit_id] = finalized
+    return out
+
+
+def _finalize_group(parts: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Prefer hunt/boundary classes, dissolve, and simplify a unit's polygons."""
+    preferred = [p for p in parts if p["class"] in PREFER_CLASSES]
+    use = preferred or parts
+    geoms = [p["geometry"] for p in use]
+    try:
+        merged = unary_union(geoms)
+    except Exception:
+        merged = geoms[0]
+    if merged.is_empty:
+        return None
+    if merged.geom_type == "GeometryCollection":
+        polys = [g for g in merged.geoms if g.geom_type in {"Polygon", "MultiPolygon"}]
+        if not polys:
+            return None
+        merged = unary_union(polys)
+    if merged.geom_type not in {"Polygon", "MultiPolygon"}:
+        return None
+    simplified = merged.simplify(0.001, preserve_topology=True)
+    if simplified.is_empty:
+        simplified = merged
+    acres = next((p["acres"] for p in use if p["acres"]), None)
+    return {
+        "name": use[0].get("name"),
+        "acres": acres,
+        "geometry": simplified,
+        "pdf": use[0].get("pdf", ""),
+    }
+
+
+def parse_arcgis_polygons(fc: dict[str, Any], id_fields: tuple[str, ...]) -> dict[str, dict[str, Any]]:
+    """Parse an Esri/ArcGIS GeoJSON polygon FeatureCollection into unitId -> record.
+
+    Mirrors ``parse_kml_polygons`` (same class skip/prefer logic) so TPWD KMZ and
+    ArcGIS boundary layers resolve identically. Coordinates are assumed WGS84
+    (request with ``outSR=4326``).
+    """
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for feat in fc.get("features", []):
+        props = feat.get("properties") or {}
+        class_name = str(props.get("Class") or "")
+        if class_name in HUNT_SKIP_CLASSES:
+            continue
+        geom_json = feat.get("geometry") or {}
+        if geom_json.get("type") not in {"Polygon", "MultiPolygon"}:
+            continue
+        unit_id = ""
+        for field in id_fields:
+            raw = re.sub(r"[^0-9A-Za-z]", "", str(props.get(field) or ""))
+            if raw:
+                unit_id = raw
+                break
+        if not unit_id:
+            continue
         try:
-            merged = unary_union(geoms)
+            geom: BaseGeometry = shape(geom_json)
         except Exception:
-            merged = geoms[0]
-        if merged.is_empty:
             continue
-        if merged.geom_type == "GeometryCollection":
-            polys = [g for g in merged.geoms if g.geom_type in {"Polygon", "MultiPolygon"}]
-            if not polys:
-                continue
-            merged = unary_union(polys)
-        if merged.geom_type not in {"Polygon", "MultiPolygon"}:
+        if geom.is_empty:
             continue
-        simplified = merged.simplify(0.001, preserve_topology=True)
-        if simplified.is_empty:
-            simplified = merged
-        acres = next((p["acres"] for p in use if p["acres"]), None)
-        out[unit_id] = {
-            "name": use[0]["name"],
-            "acres": acres,
-            "geometry": simplified,
-            "pdf": use[0]["pdf"],
-        }
+        if not geom.is_valid:
+            geom = make_valid(geom)
+        if geom.geom_type not in {"Polygon", "MultiPolygon"}:
+            continue
+        acres = None
+        for key in ("Acres", "CalcAcreage", "ACRES"):
+            if props.get(key):
+                try:
+                    acres = float(str(props[key]).replace(",", ""))
+                except ValueError:
+                    acres = None
+                break
+        grouped[unit_id].append(
+            {
+                "name": props.get("LocName") or props.get("Name") or "",
+                "class": class_name,
+                "acres": acres,
+                "geometry": geom,
+                "pdf": props.get("MAPBOOK_PG") or "",
+            }
+        )
+
+    out: dict[str, dict[str, Any]] = {}
+    for unit_id, parts in grouped.items():
+        finalized = _finalize_group(parts)
+        if finalized:
+            out[unit_id] = finalized
     return out
 
 
