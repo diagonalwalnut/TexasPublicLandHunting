@@ -1,0 +1,538 @@
+[
+  {
+    "id": "usace-aquilla",
+    "name": "Aquilla Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Hill"],
+    "region": "Austin/Waco",
+    "lon": -97.22,
+    "lat": 31.90,
+    "acres": 4000,
+    "permitRequired": true,
+    "permitInfo": "USACE hunting permit required. Hunters 17 and older purchase a permit through Recreation.gov; one permit covers both Whitney and Aquilla Lakes for all authorized game and seasons. Hunters 12-16 must be accompanied by a permitted adult.",
+    "permitCost": "See Recreation.gov (combined Whitney/Aquilla permit).",
+    "means": "Archery only for deer and feral hog (crossbows allowed). Shotgun limited to non-toxic #2 shot or smaller for dove, squirrel, rabbit, waterfowl, and turkey. No rifles, pistols, muzzleloaders, slugs, sabots, or buckshot.",
+    "links": [
+      {"label": "Aquilla Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/aquilla/"},
+      {"label": "Permit (Recreation.gov)", "url": "https://www.recreation.gov/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only (crossbows allowed)."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only (crossbows allowed)."},
+      {"species": "turkey", "methods": ["shotgun"], "notes": "Shotgun, non-toxic #2 shot or smaller."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-bardwell",
+    "name": "Bardwell Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Ellis"],
+    "region": "Dallas/Ft. Worth",
+    "lon": -96.63,
+    "lat": 32.27,
+    "acres": 2528,
+    "permitRequired": false,
+    "permitInfo": "No USACE hunting permit required. Follow the Texas Outdoor Annual for Ellis County. Feral hog hunting is only permitted north of State Highway 34.",
+    "permitCost": "No permit required.",
+    "means": "Archery (crossbows allowed). Shotgun limited to non-toxic #2 shot or smaller for small game, upland and migratory birds, and waterfowl; rifled or sabot slugs allowed for feral hogs only. No rifles, pistols, muzzleloaders, or buckshot.",
+    "links": [
+      {"label": "Bardwell Lake (USACE)", "url": "https://www.swf-wc.usace.army.mil/bardwell/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "feral_hog", "methods": ["archery", "shotgun"], "notes": "North of SH 34 only; archery or shotgun with slugs."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]},
+      {"species": "other_migratory", "methods": ["shotgun"], "notes": "Snipe and rails."}
+    ]
+  },
+  {
+    "id": "usace-belton",
+    "name": "Belton Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Bell", "Coryell"],
+    "region": "Austin/Waco",
+    "lon": -97.48,
+    "lat": 31.14,
+    "acres": 3900,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required for white-tailed deer (archery-only quota hunt by lottery through Recreation.gov; applications in September). Other legal game is open per the Texas Outdoor Annual in designated areas. Feral hog hunting is year-round.",
+    "permitCost": "No fee; deer permit issued by lottery.",
+    "means": "Archery only for white-tailed deer and feral hog. Shotgun (non-toxic #2 shot or smaller) for all other species. No muzzleloaders, rifles, pistols, slugs, or shot larger than #2.",
+    "links": [
+      {"label": "Belton Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/belton/"},
+      {"label": "Deer permit lottery (Recreation.gov)", "url": "https://www.recreation.gov/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Permit only; archery-only lottery hunt."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only; year-round."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]},
+      {"species": "other_migratory", "methods": ["shotgun"], "notes": "Rails and snipe."}
+    ]
+  },
+  {
+    "id": "usace-benbrook",
+    "name": "Benbrook Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Tarrant"],
+    "region": "Dallas/Ft. Worth",
+    "lon": -97.45,
+    "lat": 32.63,
+    "acres": 1400,
+    "permitRequired": true,
+    "permitInfo": "USACE hunting permit required; the number of applicants is limited and hunters are selected by a random drawing for each season. Permits are valid September 1 to January 31. Contact the Benbrook Lake office for permit instructions.",
+    "permitCost": "No fee; permit by random drawing.",
+    "means": "Archery only for deer, turkey, and feral hog. Shotgun (non-toxic #2 shot or smaller) for other game. No pistols, rifles, muzzleloaders, slugs, or shot larger than #2.",
+    "links": [
+      {"label": "Benbrook Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/benbrook/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only."},
+      {"species": "turkey", "methods": ["archery"], "notes": "Archery only."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-georgetown",
+    "name": "Lake Georgetown",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Williamson"],
+    "region": "Austin/Waco",
+    "lon": -97.73,
+    "lat": 30.67,
+    "acres": 3000,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required. Deer and feral hog archery permits are by random drawing (archery proficiency test and hunter safety certification required); apply via Recreation.gov, normally June 1 through end of June. Small-game permits (50 total) are by random drawing with applications starting in July. Hunting runs September 27 through January 11.",
+    "permitCost": "$10 non-refundable archery application; $90 archery permit if drawn; $25 small-game application.",
+    "means": "Archery only for deer and feral hog. Shotgun only (non-toxic #2 shot or smaller) for small game and waterfowl. No rifles, pistols, muzzleloaders, slugs, or shot larger than #2.",
+    "links": [
+      {"label": "Lake Georgetown hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/georgetown/"},
+      {"label": "Archery deer permit (Recreation.gov)", "url": "https://www.recreation.gov/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only; drawn permit."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only; drawn permit."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-grapevine",
+    "name": "Grapevine Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Denton"],
+    "region": "Dallas/Ft. Worth",
+    "lon": -97.07,
+    "lat": 32.97,
+    "acres": 2300,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required. Archery deer permits are by lottery (apply July 1-31). 500 waterfowl permits are by lottery (shooting hours end at noon). 800 general hunting permits for other legal game are first-come, first-served starting August 15. Youth 16 and under may archery hunt deer without a permit but must file a waiver.",
+    "permitCost": "No fee; permits by lottery or first-come.",
+    "means": "Archery only for deer and feral hog. Shotgun (shot size #2 or smaller) for other game. No muzzleloaders, rifles, or pistols.",
+    "links": [
+      {"label": "Grapevine Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/grapevine/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only; lottery permit."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"], "notes": "500 permits by lottery; shooting ends at noon."}
+    ]
+  },
+  {
+    "id": "usace-lake-o-the-pines",
+    "name": "Lake O' the Pines",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Camp", "Harrison", "Marion", "Morris", "Upshur"],
+    "region": "Pineywoods",
+    "lon": -94.55,
+    "lat": 32.76,
+    "acres": 4500,
+    "permitRequired": false,
+    "permitInfo": "No USACE hunting permit required. Follow the Texas Outdoor Annual for Camp, Harrison, Marion, Morris, and Upshur counties. All hunting is prohibited June 1 through August 31. ATV permits for hunting areas south of the dam and west of Cypress Creek are available for persons with a permanent ambulatory disability.",
+    "permitCost": "No permit required.",
+    "means": "Archery, muzzleloading rifles, and shotguns allowed. Centerfire/rimfire rifles for deer or hogs allowed only south of the dam and west of Cypress Creek and north of Highway 155; all other areas use shotgun slugs/sabots, muzzleloaders, or archery. Shotguns limited to non-toxic #2 shot or smaller.",
+    "links": [
+      {"label": "Lake O' the Pines hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/lakeopines/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery", "muzzleloader", "shotgun", "firearm"], "notes": "Rifle only in designated areas; elsewhere archery, muzzleloader, or shotgun slugs."},
+      {"species": "feral_hog", "methods": ["archery", "muzzleloader", "shotgun", "firearm"], "notes": "Rifle only in designated areas; no dogs or night hunting for hogs."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-lavon",
+    "name": "Lavon Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Collin"],
+    "region": "Dallas/Ft. Worth",
+    "lon": -96.48,
+    "lat": 33.03,
+    "acres": 6500,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required for all hunters 17 and older (issued Aug 15 - Nov 15; returning hunters may reregister online at lavonlakehunting.tamu.edu). Deer hunting is closed until population data supports a harvest. Waterfowl allowed in Hunting Areas 1-14 only.",
+    "permitCost": "No fee; permit required for all species.",
+    "means": "Archery for feral hog in all areas; shotgun with slugs allowed for hogs in Areas 6-13. Shotgun (shot #2 or smaller) for other game. No rifles, handguns, airguns, or muzzleloaders. Deer hunting is prohibited.",
+    "links": [
+      {"label": "Lavon Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/lavon/"},
+      {"label": "Returning hunter registration", "url": "https://lavonlakehunting.tamu.edu/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "feral_hog", "methods": ["archery", "shotgun"], "notes": "Archery in all areas; shotgun slugs in Areas 6-13. Not allowed during deer season dates."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"], "notes": "Hunting Areas 1-14 only; non-toxic shot required."},
+      {"species": "other_migratory", "methods": ["shotgun"], "notes": "Snipe."}
+    ]
+  },
+  {
+    "id": "usace-lewisville",
+    "name": "Lewisville Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Denton"],
+    "region": "Dallas/Ft. Worth",
+    "lon": -96.97,
+    "lat": 33.09,
+    "acres": 9138,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required (valid hunter education and Texas license required). Archery white-tailed deer hunts in the Hickory Creek area are by lottery (apply July 1-31). The area north of Highway 380 is leased to the City of Denton (940-349-8230).",
+    "permitCost": "No fee; deer by lottery, general permit required.",
+    "means": "Archery only for feral hog and deer. Shotgun (#2 shot or smaller) for all other game. No rifles, pistols, or muzzleloaders.",
+    "links": [
+      {"label": "Lewisville Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/lewisville/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only; Hickory Creek lottery hunt."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only."},
+      {"species": "turkey", "methods": ["shotgun"]},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]},
+      {"species": "other_migratory", "methods": ["shotgun"], "notes": "Snipe and rails."},
+      {"species": "coyote", "methods": ["shotgun"], "notes": "Listed as legal game; shotgun #2 or smaller."}
+    ]
+  },
+  {
+    "id": "usace-navarro-mills",
+    "name": "Navarro Mills Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Hill", "Navarro"],
+    "region": "Austin/Waco",
+    "lon": -96.70,
+    "lat": 31.95,
+    "acres": 5500,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required for deer (archery only; printable forms on the lake website; post-season survey required). No permit needed for feral hog. Bag limits follow TPWD for Navarro and Hill counties.",
+    "permitCost": "No fee; deer permit required.",
+    "means": "Archery only for deer. Feral hog is archery only during any open white-tailed deer season and shotgun with slugs/sabots outside deer seasons. Other game is shotgun with non-toxic #2 shot or smaller. No rifles, pistols, or muzzleloaders.",
+    "links": [
+      {"label": "Navarro Mills Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/navarro/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only; permit required."},
+      {"species": "feral_hog", "methods": ["archery", "shotgun"], "notes": "Archery only during deer season; shotgun slugs outside deer seasons."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-proctor",
+    "name": "Proctor Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Comanche"],
+    "region": "Central Texas",
+    "lon": -98.49,
+    "lat": 32.03,
+    "acres": 2500,
+    "permitRequired": true,
+    "permitInfo": "Free USACE permit required for all hunters 17 and older; obtained in person or by mail at the lake office year-round. A permit covers the Sabana and Upper Leon Wildlife Management Areas and Rush Creek Hunting Area. Waterfowl in designated main-lake areas needs no permit. Deer, turkey, bobcat, and quail are prohibited.",
+    "permitCost": "Free permit required (hunters 17+).",
+    "means": "Archery (including crossbows) and shotgun (non-toxic #2 shot or smaller). No rifles, pistols, muzzleloaders, or slugs/sabots.",
+    "links": [
+      {"label": "Proctor Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/proctor/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "feral_hog", "methods": ["archery", "shotgun"], "notes": "Archery or shotgun (no slugs/sabots)."},
+      {"species": "waterfowl", "methods": ["shotgun"], "notes": "No permit needed in designated main-lake areas."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-sam-rayburn",
+    "name": "Sam Rayburn Reservoir",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Angelina", "Jasper", "Nacogdoches", "San Augustine", "Sabine"],
+    "region": "Pineywoods",
+    "lon": -94.10,
+    "lat": 31.06,
+    "acres": 6000,
+    "permitRequired": false,
+    "permitInfo": "No USACE hunting permit required. Follow the Texas Outdoor Annual for Angelina, Jasper, Nacogdoches, San Augustine, and Sabine counties. Baiting is prohibited for all species.",
+    "permitCost": "No permit required.",
+    "means": "Archery, muzzleloaders (during muzzleloader-only season), and shotgun slugs/sabots for deer and feral hog during the general season. Other game limited to non-toxic #2 shot or smaller. Centerfire and rimfire rifles and pistols prohibited.",
+    "links": [
+      {"label": "Sam Rayburn hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/samray/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery", "muzzleloader", "shotgun"], "notes": "Shotgun slugs/sabots during general season; no rifles."},
+      {"species": "feral_hog", "methods": ["archery", "muzzleloader", "shotgun"], "notes": "Dogs allowed outside deer seasons; no night hunting."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-somerville",
+    "name": "Somerville Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Burleson", "Washington"],
+    "region": "Austin/Waco",
+    "lon": -96.53,
+    "lat": 30.32,
+    "acres": 3000,
+    "permitRequired": true,
+    "permitInfo": "Season-long waterfowl blind locations and feral hog hunting compartments are by permit only; waterfowl blinds are assigned through a random lottery on Recreation.gov. A free first-come, first-served public waterfowl area is also available (no permanent blinds).",
+    "permitCost": "Administrative fee for a permanent (season-long) waterfowl blind; public area is free.",
+    "means": "Follow Texas Outdoor Annual means and methods for waterfowl and feral hog. Non-toxic shot required for waterfowl.",
+    "links": [
+      {"label": "Somerville Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/somerville/"},
+      {"label": "Waterfowl blind lottery (Recreation.gov)", "url": "https://www.recreation.gov/permits/5282828"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "waterfowl", "methods": ["shotgun"], "notes": "Permanent blind by paid lottery; free public area also available."},
+      {"species": "feral_hog", "methods": ["archery", "shotgun"], "notes": "Hunting compartments by permit."}
+    ]
+  },
+  {
+    "id": "usace-stillhouse-hollow",
+    "name": "Stillhouse Hollow Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Bell"],
+    "region": "Austin/Waco",
+    "lon": -97.53,
+    "lat": 31.02,
+    "acres": 4451,
+    "permitRequired": false,
+    "permitInfo": "No USACE hunting permit required. Hunting is allowed on designated Wildlife Management Areas only per the Texas Outdoor Annual for Bell County. Deer, feral hog, and other unlisted game may not be taken. There is no open turkey season (occasional draw hunts only).",
+    "permitCost": "No permit required.",
+    "means": "Shotgun only; shot type depends on species per state law. No archery, rifles, pistols, or muzzleloaders.",
+    "links": [
+      {"label": "Stillhouse Hollow Lake (USACE)", "url": "https://www.swf-wc.usace.army.mil/stillhouse/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]},
+      {"species": "other_migratory", "methods": ["shotgun"], "notes": "Rails and snipe."}
+    ]
+  },
+  {
+    "id": "usace-town-bluff",
+    "name": "Town Bluff Dam & B.A. Steinhagen Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Jasper", "Tyler"],
+    "region": "Pineywoods",
+    "lon": -94.18,
+    "lat": 30.85,
+    "acres": 875,
+    "permitRequired": false,
+    "permitInfo": "No USACE hunting permit required. Follow the Texas Outdoor Annual for Jasper and Tyler counties. Hog hunting is allowed only during deer season. Baiting is prohibited. Alligator only in conjunction with TPWD special hunts.",
+    "permitCost": "No permit required.",
+    "means": "Archery and muzzleloaders allowed. Shotgun slugs/sabots for deer and feral hog during general season; other game limited to non-toxic #2 shot or smaller. No rifles or pistols.",
+    "links": [
+      {"label": "Town Bluff / B.A. Steinhagen (USACE)", "url": "https://www.swf-wc.usace.army.mil/townbluff/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery", "muzzleloader", "shotgun"], "notes": "Shotgun slugs/sabots during general season; no rifles."},
+      {"species": "feral_hog", "methods": ["archery", "muzzleloader", "shotgun"], "notes": "Allowed only during deer season."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "quail", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-waco",
+    "name": "Waco Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["McLennan"],
+    "region": "Austin/Waco",
+    "lon": -97.22,
+    "lat": 31.57,
+    "acres": 3000,
+    "permitRequired": true,
+    "permitInfo": "USACE permit required for all hunters regardless of game, available through Recreation.gov (valid Aug 15 - Aug 31). Hunters 17 and older need a permit; ages 13-16 must be accompanied by a permitted hunter; under 13 may not hunt. Hunting is limited to designated Wildlife Management Areas. Small game may be hunted any time except during open deer season.",
+    "permitCost": "Permit required for all hunters (Recreation.gov).",
+    "means": "Archery only for deer, feral hog, and exotics, regardless of season. Shotgun (non-toxic #2 shot or smaller) for waterfowl, dove, and small game. No rifles, pistols, muzzleloaders, or slugs.",
+    "links": [
+      {"label": "Waco Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/waco/"},
+      {"label": "Permit (Recreation.gov)", "url": "https://www.recreation.gov/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only, regardless of season."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only, regardless of season."},
+      {"species": "exotic_mammals", "methods": ["archery"], "notes": "Archery only, regardless of season."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-whitney",
+    "name": "Whitney Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Bosque", "Hill"],
+    "region": "Austin/Waco",
+    "lon": -97.36,
+    "lat": 31.92,
+    "acres": 14000,
+    "permitRequired": true,
+    "permitInfo": "USACE hunting permit required. Hunters 17 and older purchase a permit through Recreation.gov; one permit covers both Whitney and Aquilla Lakes for all authorized game and seasons. Hunters 12-16 must be accompanied by a permitted adult.",
+    "permitCost": "See Recreation.gov (combined Whitney/Aquilla permit).",
+    "means": "Archery only for deer and feral hog (crossbows allowed). Shotgun limited to non-toxic #2 shot or smaller for dove, squirrel, rabbit, waterfowl, and turkey. No rifles, pistols, muzzleloaders, slugs, sabots, or buckshot.",
+    "links": [
+      {"label": "Whitney Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/whitney/"},
+      {"label": "Permit (Recreation.gov)", "url": "https://www.recreation.gov/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery"], "notes": "Archery only (crossbows allowed)."},
+      {"species": "feral_hog", "methods": ["archery"], "notes": "Archery only (crossbows allowed)."},
+      {"species": "turkey", "methods": ["shotgun"], "notes": "Shotgun, non-toxic #2 shot or smaller."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  },
+  {
+    "id": "usace-wright-patman",
+    "name": "Wright Patman Lake",
+    "managingAgency": "USACE Fort Worth District",
+    "counties": ["Bowie", "Cass"],
+    "region": "Pineywoods",
+    "lon": -94.17,
+    "lat": 33.30,
+    "acres": 54358,
+    "permitRequired": true,
+    "permitInfo": "No hunting user fee, but an ATV permit ($20) is required to use ATVs in the Clear Springs and Big Creek Wildlife Management Areas (3,700 acres). ATV permits are distributed first-come at the Clear Springs Park gate house (proof of a certified ATV safety course required). Baiting with corn is allowed by hand spreading or small hanging feeders. Eastern wild turkey hunting is not allowed.",
+    "permitCost": "No hunting fee; $20 ATV permit (Archery, Rifle 1, Rifle 2).",
+    "means": "Archery, muzzleloaders, and shotguns allowed. Rifles authorized in all areas except due east of US Highway 59, where deer and hogs are restricted to shotgun slugs and archery. Shotguns limited to non-toxic #2 shot or smaller.",
+    "links": [
+      {"label": "Wright Patman Lake hunting (USACE)", "url": "https://www.swf-wc.usace.army.mil/wrightpatman/"},
+      {"label": "TPWD Outdoor Annual seasons", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"}
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {"species": "white_tailed_deer", "methods": ["archery", "muzzleloader", "shotgun", "firearm"], "notes": "Rifle allowed except east of US 59 (shotgun slugs/archery there)."},
+      {"species": "feral_hog", "methods": ["archery", "muzzleloader", "shotgun", "firearm"], "notes": "Rifle allowed except east of US 59."},
+      {"species": "dove", "methods": ["shotgun"]},
+      {"species": "squirrel", "methods": ["shotgun"]},
+      {"species": "rabbit", "methods": ["shotgun"]},
+      {"species": "waterfowl", "methods": ["shotgun"]}
+    ]
+  }
+]

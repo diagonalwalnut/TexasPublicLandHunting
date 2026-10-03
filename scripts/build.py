@@ -10,11 +10,13 @@ from pathlib import Path
 from shapely.geometry import Point, mapping
 
 from booklet import BOOKLET_URL, load_booklet_pages, lookup_unit
+from corps import build_corps
 from county_seasons import load_counties, lookup_county, split_counties, windows_from_county
 from geometry import (
     centroid_point,
     dissolve,
     geom_to_geojson,
+    parse_arcgis_polygons,
     parse_gpx_points,
     parse_kml_polygons,
 )
@@ -126,6 +128,15 @@ def build() -> None:
         CACHE / "kmz_dove" / "doc.kml",
         ("LEASE_NUM", "Unit_Num"),
     )
+    # Authoritative TPWD boundary layer (ArcGIS), used only to gap-fill units that
+    # are missing a polygon from the Details KMZ. Never replaces a good KMZ polygon.
+    arcgis_polys: dict[str, dict] = {}
+    arcgis_path = CACHE / "hunt_polys_arcgis.geojson"
+    if arcgis_path.exists():
+        arcgis_polys = parse_arcgis_polygons(
+            json.loads(arcgis_path.read_text()),
+            ("Unit_Num", "PH_UnitNum"),
+        )
     points = load_points()
     county_index = load_counties(CACHE / "counties")
     booklet = load_booklet_pages(CACHE / "pwd_bk_w7000_0112a.pdf")
@@ -162,6 +173,18 @@ def build() -> None:
                 if acres is None:
                     acres = blob.get("acres")
         geom = dissolve(geoms, simplify=0.0008) if geoms else None
+
+        # GIS gap-fill: if no KMZ polygon, try the authoritative TPWD boundary layer.
+        if geom is None and arcgis_polys:
+            gis_geoms = []
+            for uid in ids:
+                blob = arcgis_polys.get(uid)
+                if blob:
+                    gis_geoms.append(blob["geometry"])
+                    if acres is None:
+                        acres = blob.get("acres")
+            if gis_geoms:
+                geom = dissolve(gis_geoms, simplify=0.0008)
 
         lonlat = None
         if geom is not None:
@@ -335,6 +358,14 @@ def build() -> None:
         props["lat"] = unit["lat"]
         features.append({"type": "Feature", "id": unit["id"], "properties": props, "geometry": geometry})
 
+    # Merge in USACE (Army Corps of Engineers) hunting areas. Corps units carry
+    # their own geometry/opportunities and a distinct access category, so they
+    # flow through the same units.json / opportunities.json / units.geojson.
+    corps_units, corps_opps, corps_features = build_corps(county_index)
+    units.extend(corps_units)
+    opportunities.extend(corps_opps)
+    features.extend(corps_features)
+
     region_features = []
     colors = {
         "Panhandle": "#c4a35a",
@@ -399,6 +430,10 @@ def build() -> None:
                 "name": "TPWD Public Hunt Locator Map (ArcGIS)",
                 "url": "https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer",
             },
+            {
+                "name": "USACE Fort Worth District Public Hunting Guide",
+                "url": "https://www.swf-wc.usace.army.mil/",
+            },
         ],
         "species": [{"id": k, "label": SPECIES[k]} for k in species_in_use],
         "methods": [
@@ -415,6 +450,7 @@ def build() -> None:
             {"id": "e_postcard", "label": "E-Postcard"},
             {"id": "regular_permit", "label": "Regular (daily) permit"},
             {"id": "drawn", "label": "Drawn / special permit"},
+            {"id": "corps_permit", "label": "Corps / USACE permit"},
         ],
         "regions": sorted({u["region"] for u in units if u["region"]}),
         "counties": sorted({c for u in units for c in u["counties"]}),

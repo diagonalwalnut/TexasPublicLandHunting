@@ -200,6 +200,7 @@ export const ACCESS_LABEL: Record<string, string> = {
   e_postcard: "E-Postcard",
   regular_permit: "Regular (daily) permit",
   drawn: "Drawn / special permit",
+  corps_permit: "Corps / USACE permit",
 };
 
 export const TYPE_LABEL: Record<string, string> = {
@@ -207,5 +208,6 @@ export const TYPE_LABEL: Record<string, string> = {
   state_park: "State park",
   dove_lease: "Dove / small-game lease",
   phl: "Public hunting land",
+  corps_lake: "Corps of Engineers lake",
   other: "Public hunt area",
 };
