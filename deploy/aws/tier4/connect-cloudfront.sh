@@ -79,9 +79,11 @@ rm -f "$cfg_raw" "$cfg_new"
 ok "distribution updated"
 
 # --- allow CloudFront to invoke the Function URL -----------------------------
-log "granting cloudfront.amazonaws.com lambda:InvokeFunctionUrl"
+FUNC_NAME="$(resolve_function_name)"
+[[ -n "$FUNC_NAME" ]] || die "could not resolve the Lambda function name (run 'sam deploy' first)"
+log "granting cloudfront.amazonaws.com lambda:InvokeFunctionUrl on $FUNC_NAME"
 if aws lambda add-permission \
-  --function-name "$LAMBDA_FUNCTION" \
+  --function-name "$FUNC_NAME" \
   --statement-id "AllowCloudFrontServicePrincipal" \
   --action lambda:InvokeFunctionUrl \
   --principal cloudfront.amazonaws.com \
