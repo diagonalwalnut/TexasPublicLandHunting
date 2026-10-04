@@ -13,6 +13,11 @@ S3 + CloudFront stack unchanged; Tier 4 only replaces the stateful `/api/*` back
 No EC2, no Apache, no ALB, no API Gateway. The same CloudFront distribution and S3
 bucket from Tier 3 are reused; only the `/api/*` origin is swapped.
 
+> **New to AWS?** [`SETUP-FROM-SCRATCH.md`](./SETUP-FROM-SCRATCH.md) is a
+> beginner's walkthrough that assumes no prior AWS knowledge: create and secure
+> an account, install the tools, get a domain, and deploy end to end. The section
+> below is the condensed reference for people already comfortable with AWS.
+
 ## Architecture
 
 ```mermaid
