@@ -49,14 +49,14 @@ export ADMIN_EMAIL="you@example.com"
 
 # ---- Static hosting (S3 + CloudFront) ---------------------------------------
 # Globally-unique S3 bucket that holds the built dist/ (private; OAC-only).
-export S3_BUCKET="tplh-site-REPLACE-WITH-SOMETHING-UNIQUE"
+export S3_BUCKET="tplh-site-TexasPublicLandHunt-2026"
 # ACM certificate ARN for DOMAIN (+aliases) in us-east-1. Leave blank to have
 # provision-cdn.sh request and validate one (DNS-validated).
 export ACM_CERT_ARN=""
 # Optional Route 53 hosted zone id. If set, provision-cdn.sh creates the ACM
 # validation records and the apex/www alias records automatically. Blank = you
 # add DNS records manually.
-export HOSTED_ZONE_ID=""
+export HOSTED_ZONE_ID="Z00357652RQLSX1TWD9SD"
 
 # ---- Feature toggles ---------------------------------------------------------
 # Elastic IP so the /api origin address is stable (recommended/required).
