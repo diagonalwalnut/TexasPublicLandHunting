@@ -20,8 +20,10 @@ export PROJECT="tplh"
 export STACK_NAME="tplh-tier4-api"
 # DynamoDB table (single-table design: users / sessions / favorites / rate limits).
 export DDB_TABLE="tplh_accounts"
-# Lambda function name (also used to find the Function URL).
-export LAMBDA_FUNCTION="tplh-api"
+# Fallback Lambda function name. The real name is read from the SAM stack output
+# (SAM names it "<STACK_NAME>-api", e.g. tplh-tier4-api-api); this value is only
+# used if that lookup fails.
+export LAMBDA_FUNCTION="tplh-tier4-api-api"
 # Lambda architecture: arm64 (Graviton, cheaper/faster) or x86_64. Must match the
 # Bref layer you reference in template.yaml.
 export LAMBDA_ARCH="arm64"

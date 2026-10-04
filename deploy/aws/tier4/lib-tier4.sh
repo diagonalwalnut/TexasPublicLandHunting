@@ -39,15 +39,28 @@ resolve_distribution_id() {
   printf '%s' "$id"
 }
 
+# Resolve the deployed Lambda's real (physical) function name. SAM names the
+# function "${AWS::StackName}-api", which need not equal LAMBDA_FUNCTION, so we
+# read the ApiFunctionName stack output first and fall back to LAMBDA_FUNCTION.
+resolve_function_name() {
+  local name=""
+  name="$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+    --query "Stacks[0].Outputs[?OutputKey=='ApiFunctionName'].OutputValue | [0]" \
+    --output text 2>/dev/null | sed 's/None//')"
+  [[ -z "$name" ]] && name="${LAMBDA_FUNCTION:-}"
+  printf '%s' "$name"
+}
+
 # Resolve the Function URL for the deployed Lambda (from the SAM stack output,
 # else by function name).
 resolve_function_url() {
-  local url=""
+  local url="" name=""
   url="$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
     --query "Stacks[0].Outputs[?OutputKey=='ApiFunctionUrl'].OutputValue | [0]" \
     --output text 2>/dev/null | sed 's/None//')"
   if [[ -z "$url" ]]; then
-    url="$(aws lambda get-function-url-config --function-name "${LAMBDA_FUNCTION}" \
+    name="$(resolve_function_name)"
+    url="$(aws lambda get-function-url-config --function-name "$name" \
       --query FunctionUrl --output text 2>/dev/null | sed 's/None//')"
   fi
   printf '%s' "$url"
