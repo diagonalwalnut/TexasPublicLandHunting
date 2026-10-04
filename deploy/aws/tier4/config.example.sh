@@ -32,12 +32,12 @@ export LAMBDA_MEMORY="1024"
 # SSM Parameter (SecureString) that holds the app HMAC key (session/CSRF hashing).
 # Created once by create-app-key.sh; the Lambda reads it at runtime.
 export APP_KEY_SSM_PARAM="/tplh/tier4/app_key"
-
+export API_ORIGIN_DOMAIN="huntpubliclandintexas.com"
 # ---- Static hosting (reused from Tier 3) ------------------------------------
 # These are produced by the Tier 3 deploy/aws/provision-cdn.sh (.outputs.env) or
 # can be set explicitly. Tier 4 reuses the SAME S3 bucket + CloudFront
 # distribution; it only swaps the /api/* origin from EC2 to the Function URL.
-export S3_BUCKET="tplh-site-REPLACE-WITH-SOMETHING-UNIQUE"
+export S3_BUCKET="tplh-site-TexasPublicLandHunt-2026"
 # CloudFront distribution id (from Tier 3). Leave blank to resolve by Comment.
 export CLOUDFRONT_DISTRIBUTION_ID=""
 
@@ -50,7 +50,7 @@ export DOMAIN_ALIASES="www.huntpubliclandintexas.com"
 export ALLOWED_ORIGINS="huntpubliclandintexas.com www.huntpubliclandintexas.com"
 # Comma-separated admin email allowlist (users with these emails get role=admin).
 export ADMIN_EMAILS="you@example.com"
-
+export HOSTED_ZONE_ID="Z00357652RQLSX1TWD9SD"
 # ---- GitHub Actions OIDC (setup-github-oidc-tier4.sh) ------------------------
 export GITHUB_REPO="diagonalwalnut/TexasPublicLandHunting"
 export GITHUB_REF="refs/heads/main"
