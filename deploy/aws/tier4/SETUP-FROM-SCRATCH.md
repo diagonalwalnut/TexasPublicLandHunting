@@ -192,11 +192,19 @@ aws route53 list-hosted-zones \
 
 ## 6. Get the code and the Bref layer ARN
 
-**Clone the repository** and move into the Tier 4 directory:
+**Clone the repository** over HTTPS (the repo is public, so this needs no SSH key
+or login) and move into the Tier 4 directory:
 ```bash
-git clone git@github.com:diagonalwalnut/TexasPublicLandHunting.git
+git clone https://github.com/diagonalwalnut/TexasPublicLandHunting.git
 cd TexasPublicLandHunting/deploy/aws/tier4
 ```
+
+> The URL must be the full `https://github.com/...` address. Do **not** put your
+> email in it — a value shaped like `you@example.com:owner/repo.git` is read by
+> Git as an SSH host and fails with *"could not read from the remote
+> repository."* If you prefer SSH, the address is
+> `git@github.com:diagonalwalnut/TexasPublicLandHunting.git`, but that first
+> requires [adding an SSH key to your GitHub account](https://docs.github.com/authentication/connecting-to-github-with-ssh).
 
 **Find the current Bref layer ARN.** Bref is the open-source project that lets
 PHP run on Lambda; it publishes a ready-made "layer" you attach to the function.
