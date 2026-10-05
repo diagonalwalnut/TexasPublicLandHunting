@@ -65,8 +65,9 @@ Resources:
         Enabled: true
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
-      SSESpecification:
-        SSEEnabled: true
+      # Encryption at rest stays on via the AWS owned key. Do not set
+      # SSESpecification here: SSEEnabled without a key uses alias/aws/dynamodb,
+      # and accounts whose managed key is missing fail table creation.
       Tags:
         - Key: Project
           Value: tplh
