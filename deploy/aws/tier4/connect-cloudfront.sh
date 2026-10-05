@@ -18,6 +18,7 @@ set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/lib-tier4.sh"
 load_config_t4
 preflight_aws
+log "connect-cloudfront.sh api-routing-2"
 
 : "${STACK_NAME:?set STACK_NAME in config.sh}" "${LAMBDA_FUNCTION:?set LAMBDA_FUNCTION}"
 
@@ -72,6 +73,17 @@ ok "lambda OAC $OAC_ID"
 cfg_raw="$(mktemp)"; cfg_new="$(mktemp)"
 aws cloudfront get-distribution-config --id "$DIST_ID" > "$cfg_raw"
 ETAG="$(jq -r '.ETag' "$cfg_raw")"
+log "distribution before update:"
+jq -r '
+  .DistributionConfig
+  | "  origins: " + ([.Origins.Items[] | "\(.Id)=\(.DomainName)"] | join(" ")),
+    "  behaviors: " + (
+        if ((.CacheBehaviors.Items // []) | length) == 0 then "(none)"
+        else ([.CacheBehaviors.Items[] | "\(.PathPattern)->\(.TargetOriginId)"] | join(" "))
+        end
+      ),
+    "  custom errors: " + ((.CustomErrorResponses.Quantity // 0) | tostring)
+' "$cfg_raw" >&2
 
 jq -f "$T4_DIR/cloudfront-api.jq" \
   --arg dom "$FURL_DOMAIN" --arg oac "$OAC_ID" \
@@ -114,21 +126,42 @@ else
 fi
 
 # Invalidate only after the new config is live. Invalidating first lets the
-# still-deployed S3 behavior cache /index.html for /api/* again.
-log "waiting for distribution $DIST_ID to deploy"
+# still-deployed S3 behavior cache /index.html for /api/* again. /* is required
+# as well: a 403/404 rewritten to /index.html is cached on the default behavior.
+log "waiting for distribution $DIST_ID to deploy (often 5-15 minutes; leave this running)"
 aws cloudfront wait distribution-deployed --id "$DIST_ID"
-log "invalidating /api/*"
-aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths '/api/*' >/dev/null
+log "invalidating /* and /api/*"
+aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths '/*' '/api/*' >/dev/null
 save_output CLOUDFRONT_DISTRIBUTION_ID "$DIST_ID"
 save_output LAMBDA_OAC_ID "$OAC_ID"
 save_output API_FUNCTION_URL "$FURL"
+
+log "checking https://$DOMAIN/api/health"
+health_hdr="$(mktemp)"; health_body="$(mktemp)"
+health_ok=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+  curl -sS -D "$health_hdr" -o "$health_body" "https://$DOMAIN/api/health" --max-time 25 || true
+  if grep -qi '^content-type: application/json' "$health_hdr" && grep -q '"ok":true' "$health_body"; then
+    health_ok=1
+    break
+  fi
+  log "health is not JSON yet; waiting for the invalidation"
+  sleep 10
+done
+if [[ "$health_ok" != 1 ]]; then
+  echo "---- https://$DOMAIN/api/health headers ----" >&2
+  cat "$health_hdr" >&2 || true
+  echo "---- body ----" >&2
+  head -c 400 "$health_body" >&2 || true
+  echo >&2
+  die "account health is still the website HTML. The distribution update did not take effect."
+fi
+rm -f "$health_hdr" "$health_body"
 
 cat >&2 <<DONE
 
 $(ok "CloudFront now routes /api/* to the Lambda Function URL (Tier 4)")
   Distribution : $DIST_ID
   API origin   : $FURL_DOMAIN  (OAC $OAC_ID, IAM-signed)
-  Check        : curl -sS -D- -o /dev/null https://$DOMAIN/api/health
-                 expect content-type: application/json and a body {"ok":true,...}
-                 text/html from AmazonS3 means this update is not live yet
+  Health       : {"ok":true} from https://$DOMAIN/api/health
 DONE
