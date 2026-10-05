@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 /**
- * Tier 4 data layer: DynamoDB single-table backend.
+ * Accounts data layer: DynamoDB single-table backend.
  *
- * Drop-in replacement for the SQLite store.php used by the EC2 (Tier 3) build.
+ * The local dev server uses the SQLite store under web/public/api/lib/store.php.
  * Every tplh_* function keeps the same signature so index.php is reused verbatim.
  *
  * Single table (default name tplh_accounts), composite key PK + SK, TTL attr "ttl":

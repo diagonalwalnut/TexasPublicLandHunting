@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 /**
- * Password hashing for the Tier 4 (Bref/Lambda) build.
+ * Password hashing for the Lambda accounts API.
  *
  * Prefers Argon2id via libsodium (sodium_crypto_pwhash_str), which the Bref PHP
  * runtime ships. libsodium and PHP's password_hash() both emit the standard
- * "$argon2id$v=19$m=..,t=..,p=.." PHC string, so hashes created by the Tier 3
+ * "$argon2id$v=19$m=..,t=..,p=.." PHC string, so hashes created by the local SQLite API
  * SQLite build verify here unchanged (and vice versa). Falls back to PHP
  * PASSWORD_ARGON2ID, then bcrypt, if libsodium is unavailable.
  */

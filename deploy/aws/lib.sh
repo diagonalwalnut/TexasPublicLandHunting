@@ -17,8 +17,10 @@ die()  { _c "0;31"; printf 'ERROR: %s\n' "$*" >&2; _c "0"; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"; }
 
 load_config() {
-  # Auto-load config.sh from the script dir if the caller has not already.
-  if [[ -z "${PROJECT:-}" && -f "$AWS_DIR/config.sh" ]]; then
+  # Always load this directory's config. An already-exported PROJECT must not
+  # skip config.sh, or STACK_NAME is missing and connect-cloudfront.sh refuses
+  # to run.
+  if [[ -f "$AWS_DIR/config.sh" ]]; then
     # shellcheck disable=SC1091
     source "$AWS_DIR/config.sh"
   fi
@@ -40,32 +42,42 @@ preflight_aws() {
 # ---- naming ------------------------------------------------------------------
 res_name() { printf '%s-%s' "$PROJECT" "$1"; }   # res_name sg -> tplh-sg
 
-# ---- tag helpers -------------------------------------------------------------
-# Standard tag spec for create calls: tagspec <resource-type> <Name>
-tagspec() {
-  printf 'ResourceType=%s,Tags=[{Key=Name,Value=%s},{Key=Project,Value=%s},{Key=ManagedBy,Value=tplh-deploy}]' \
-    "$1" "$2" "$PROJECT"
+# CloudFront distribution id: explicit config, then .outputs.env, then by Comment.
+resolve_distribution_id() {
+  local id="${CLOUDFRONT_DISTRIBUTION_ID:-}"
+  if [[ -z "$id" && -f "$AWS_DIR/.outputs.env" ]]; then
+    id="$(grep '^CLOUDFRONT_DISTRIBUTION_ID=' "$AWS_DIR/.outputs.env" 2>/dev/null | tail -1 | cut -d= -f2-)"
+  fi
+  if [[ -z "$id" ]]; then
+    id="$(aws cloudfront list-distributions \
+      --query "DistributionList.Items[?Comment=='$PROJECT'].Id | [0]" \
+      --output text 2>/dev/null | sed 's/None//')"
+  fi
+  printf '%s' "$id"
 }
 
-# Find the running/pending app instance id (by Project + Name tag), or "".
-find_instance_id() {
-  aws ec2 describe-instances \
-    --filters "Name=tag:Project,Values=$PROJECT" \
-              "Name=tag:Name,Values=$(res_name server)" \
-              "Name=instance-state-name,Values=pending,running,stopping,stopped" \
-    --query 'Reservations[].Instances[0].InstanceId' --output text 2>/dev/null \
-    | tr -d '\n' | sed 's/None//'
+# SAM names the function "${AWS::StackName}-api". Read that from the stack, then
+# fall back to LAMBDA_FUNCTION.
+resolve_function_name() {
+  local name=""
+  name="$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+    --query "Stacks[0].Outputs[?OutputKey=='ApiFunctionName'].OutputValue | [0]" \
+    --output text 2>/dev/null | sed 's/None//')"
+  [[ -z "$name" ]] && name="${LAMBDA_FUNCTION:-}"
+  printf '%s' "$name"
 }
 
-instance_public_ip() {
-  aws ec2 describe-instances --instance-ids "$1" \
-    --query 'Reservations[0].Instances[0].PublicIpAddress' --output text 2>/dev/null \
-    | sed 's/None//'
-}
-
-default_vpc_id() {
-  aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" \
-    --query 'Vpcs[0].VpcId' --output text 2>/dev/null | sed 's/None//'
+resolve_function_url() {
+  local url="" name=""
+  url="$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+    --query "Stacks[0].Outputs[?OutputKey=='ApiFunctionUrl'].OutputValue | [0]" \
+    --output text 2>/dev/null | sed 's/None//')"
+  if [[ -z "$url" ]]; then
+    name="$(resolve_function_name)"
+    url="$(aws lambda get-function-url-config --function-name "$name" \
+      --query FunctionUrl --output text 2>/dev/null | sed 's/None//')"
+  fi
+  printf '%s' "$url"
 }
 
 # Persist a key=value output for later scripts (teardown, deploy, CI setup).

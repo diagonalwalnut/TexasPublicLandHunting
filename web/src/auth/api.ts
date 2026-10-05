@@ -1,6 +1,6 @@
 // REST-style base. The PHP router accepts both "/api/<action>" and the legacy
-// "/api/index.php?action=<action>" form, so this works on the Tier 3 (Apache)
-// and Tier 4 (Lambda Function URL via CloudFront) backends alike.
+// "/api/index.php?action=<action>" form, so this works against the local PHP
+// dev server and the Lambda Function URL behind CloudFront.
 const API_BASE = "/api/";
 
 export type Account = {

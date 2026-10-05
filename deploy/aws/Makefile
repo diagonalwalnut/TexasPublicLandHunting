@@ -10,11 +10,11 @@ build-ApiFunction:
 	  echo "php is not installed, so composer cannot run." >&2; \
 	  echo "On AWS CloudShell:" >&2; \
 	  echo "  sudo dnf install -y php-cli php-xml php-mbstring php-sodium unzip" >&2; \
-	  echo "Then rerun sam build from deploy/aws/tier4." >&2; \
+	  echo "Then rerun sam build from deploy/aws." >&2; \
 	  exit 127; \
 	}
 	@command -v composer >/dev/null 2>&1 || { \
-	  echo "composer is not on PATH. From deploy/aws/tier4:" >&2; \
+	  echo "composer is not on PATH. From deploy/aws:" >&2; \
 	  echo "  mkdir -p \"$$HOME/bin\"" >&2; \
 	  echo "  php -r \"copy('https://getcomposer.org/installer','composer-setup.php');\"" >&2; \
 	  echo "  php composer-setup.php --install-dir=\"$$HOME/bin\" --filename=composer && rm composer-setup.php" >&2; \

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Point the existing Tier 3 CloudFront distribution's /api/* behavior at the
-# Tier 4 Lambda Function URL instead of the EC2 origin:
+# Point the CloudFront distribution's /api/* behavior at the accounts Lambda
+# Function URL:
 #   * create a CloudFront Origin Access Control of type "lambda" (SigV4),
 #   * create api-origin and the /api/* behavior when the distribution does not
 #     have them yet (an S3-only distribution serves /api/* as the cached homepage),
@@ -12,11 +12,11 @@
 #   * grant cloudfront.amazonaws.com lambda:InvokeFunctionUrl on this dist,
 #   * wait until the distribution is deployed, then invalidate /api/*.
 #
-# Prereqs: the Tier 3 distribution exists (provision-cdn.sh) and `sam deploy` has
-# created the function + Function URL. Run: deploy/aws/tier4/connect-cloudfront.sh
+# Prereqs: the distribution exists (provision-cdn.sh) and `sam deploy` has
+# created the function + Function URL. Run: deploy/aws/connect-cloudfront.sh
 set -euo pipefail
-source "$(dirname -- "${BASH_SOURCE[0]}")/lib-tier4.sh"
-load_config_t4
+source "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+load_config
 preflight_aws
 log "connect-cloudfront.sh api-routing-2"
 
@@ -27,11 +27,11 @@ STACK_STATUS="$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
 case "$STACK_STATUS" in
   CREATE_COMPLETE|UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE) ;;
   "")
-    die "stack $STACK_NAME was not found. From deploy/aws/tier4 run: sam build && sam deploy"
+    die "stack $STACK_NAME was not found. From deploy/aws run: sam build && sam deploy"
     ;;
   *)
     die "stack $STACK_NAME is $STACK_STATUS, so account create/login cannot work yet.
-If the status is CREATE_FAILED, the DynamoDB table was not created. From deploy/aws/tier4:
+If the status is CREATE_FAILED, the DynamoDB table was not created. From deploy/aws:
   aws cloudformation delete-stack --stack-name $STACK_NAME
   aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
   sam build && sam deploy
@@ -48,7 +48,7 @@ CACHE_DISABLED="4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
 ORP_ALLVIEWER_NO_HOST="b689b0a8-53d0-40ab-baf2-68738e2966ac"
 
 DIST_ID="$(resolve_distribution_id)"
-[[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run the Tier 3 provision-cdn.sh first, or set CLOUDFRONT_DISTRIBUTION_ID)"
+[[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run ./provision-cdn.sh first, or set CLOUDFRONT_DISTRIBUTION_ID)"
 DIST_ARN="arn:aws:cloudfront::${ACCOUNT_ID}:distribution/${DIST_ID}"
 ok "distribution $DIST_ID"
 
@@ -85,7 +85,7 @@ jq -r '
     "  custom errors: " + ((.CustomErrorResponses.Quantity // 0) | tostring)
 ' "$cfg_raw" >&2
 
-jq -f "$T4_DIR/cloudfront-api.jq" \
+jq -f "$AWS_DIR/cloudfront-api.jq" \
   --arg dom "$FURL_DOMAIN" --arg oac "$OAC_ID" \
   --arg orp "$ORP_ALLVIEWER_NO_HOST" --arg cache "$CACHE_DISABLED" \
   "$cfg_raw" > "$cfg_new"
@@ -160,7 +160,7 @@ rm -f "$health_hdr" "$health_body"
 
 cat >&2 <<DONE
 
-$(ok "CloudFront now routes /api/* to the Lambda Function URL (Tier 4)")
+$(ok "CloudFront now routes /api/* to the accounts Lambda Function URL")
   Distribution : $DIST_ID
   API origin   : $FURL_DOMAIN  (OAC $OAC_ID, IAM-signed)
   Health       : {"ok":true} from https://$DOMAIN/api/health

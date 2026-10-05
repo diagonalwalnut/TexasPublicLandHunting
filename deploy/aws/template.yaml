@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Texas Public Land Hunting - Tier 4 serverless accounts API.
+  Texas Public Land Hunting accounts API.
   PHP (Bref) on Lambda behind a Lambda Function URL (AWS_IAM, fronted by
-  CloudFront OAC) with a DynamoDB single-table backend. The static site keeps
-  using the Tier 3 S3 + CloudFront stack; this template only provides the API.
+  CloudFront OAC) with a DynamoDB single-table backend. The static site is
+  the S3 + CloudFront distribution from provision-cdn.sh.
 
 Parameters:
   TableName:

@@ -5,3 +5,6 @@ deploy-key
 deploy-key.pub
 *.tfstate
 .outputs.env
+vendor/
+.aws-sam/
+composer.phar

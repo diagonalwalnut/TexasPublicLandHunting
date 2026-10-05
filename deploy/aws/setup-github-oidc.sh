@@ -1,41 +1,35 @@
 #!/usr/bin/env bash
-# Create an IAM OIDC identity provider for GitHub Actions and a deploy role that
-# GitHub can assume (no long-lived AWS keys). The role may only trigger a deploy
-# via SSM on THIS project's instance.
+# Create (or reuse) the GitHub OIDC provider and a deploy role scoped to this
+# site: build/deploy the SAM stack (Lambda + Function URL + DynamoDB), sync
+# static files to S3, and invalidate CloudFront. No long-lived keys.
 #
-# After running, set these GitHub repo secrets (printed at the end):
-#   AWS_DEPLOY_ROLE_ARN, AWS_REGION, TPLH_INSTANCE_ID
+# After running, set the printed GitHub repo secrets:
+#   AWS_DEPLOY_ROLE_ARN, AWS_REGION, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID,
+#   BREF_FPM_LAYER_ARN, ALLOWED_ORIGINS, ADMIN_EMAILS (optional)
 #
 # Usage: deploy/aws/setup-github-oidc.sh
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
 load_config
 preflight_aws
-load_outputs
 
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 PROVIDER_HOST="token.actions.githubusercontent.com"
 PROVIDER_ARN="arn:aws:iam::${ACCOUNT_ID}:oidc-provider/${PROVIDER_HOST}"
-ROLE_NAME="$(res_name gha-deploy)"
-INSTANCE_ID="${TPLH_INSTANCE_ID:-${INSTANCE_ID:-}}"
-[[ -n "$INSTANCE_ID" ]] || INSTANCE_ID="$(find_instance_id)"
-[[ -n "$INSTANCE_ID" ]] || die "no instance id (run provision.sh first or export INSTANCE_ID)"
+ROLE_NAME="$(res_name gha-deploy-tier4)"
 
 : "${GITHUB_REPO:?set GITHUB_REPO (owner/repo)}"
 : "${GITHUB_REF:=refs/heads/main}"
 : "${S3_BUCKET:?set S3_BUCKET in config.sh}"
-DIST_ID="${CLOUDFRONT_DISTRIBUTION_ID:-}"
-[[ -n "$DIST_ID" ]] || DIST_ID="$(aws cloudfront list-distributions \
-  --query "DistributionList.Items[?Comment=='$PROJECT'].Id | [0]" --output text 2>/dev/null | sed 's/None//')"
-[[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run provision-cdn.sh first)"
+: "${STACK_NAME:?set STACK_NAME}" "${DDB_TABLE:?set DDB_TABLE}"
+DIST_ID="$(resolve_distribution_id)"
+[[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run ./provision-cdn.sh first)"
 
 # --- OIDC provider -----------------------------------------------------------
 if aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$PROVIDER_ARN" >/dev/null 2>&1; then
   ok "OIDC provider already exists"
 else
   log "creating GitHub OIDC provider"
-  # GitHub's current root CA thumbprint; IAM still requires one even though it is
-  # no longer used for validation of this well-known provider.
   aws iam create-open-id-connect-provider \
     --url "https://${PROVIDER_HOST}" \
     --client-id-list "sts.amazonaws.com" \
@@ -43,7 +37,6 @@ else
   ok "OIDC provider created"
 fi
 
-# --- trust + permission policies ---------------------------------------------
 trust="$(cat <<JSON
 {
   "Version": "2012-10-17",
@@ -65,28 +58,7 @@ perm="$(cat <<JSON
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "SendDeployCommand",
-      "Effect": "Allow",
-      "Action": "ssm:SendCommand",
-      "Resource": [
-        "arn:aws:ec2:${AWS_REGION}:${ACCOUNT_ID}:instance/${INSTANCE_ID}",
-        "arn:aws:ssm:${AWS_REGION}::document/AWS-RunShellScript"
-      ]
-    },
-    {
-      "Sid": "ReadCommandResults",
-      "Effect": "Allow",
-      "Action": ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations", "ssm:ListCommands"],
-      "Resource": "*"
-    },
-    {
-      "Sid": "DescribeInstances",
-      "Effect": "Allow",
-      "Action": "ec2:DescribeInstances",
-      "Resource": "*"
-    },
-    {
-      "Sid": "SyncStaticToS3",
+      "Sid": "StaticToS3",
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
       "Resource": "arn:aws:s3:::${S3_BUCKET}"
@@ -102,6 +74,60 @@ perm="$(cat <<JSON
       "Effect": "Allow",
       "Action": ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
       "Resource": "arn:aws:cloudfront::${ACCOUNT_ID}:distribution/${DIST_ID}"
+    },
+    {
+      "Sid": "SamArtifacts",
+      "Effect": "Allow",
+      "Action": ["s3:CreateBucket", "s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:GetBucketLocation", "s3:PutBucketPolicy", "s3:GetBucketPolicy", "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning"],
+      "Resource": ["arn:aws:s3:::aws-sam-cli-managed-default*", "arn:aws:s3:::aws-sam-cli-managed-default*/*"]
+    },
+    {
+      "Sid": "CloudFormation",
+      "Effect": "Allow",
+      "Action": ["cloudformation:*"],
+      "Resource": [
+        "arn:aws:cloudformation:${AWS_REGION}:${ACCOUNT_ID}:stack/${STACK_NAME}/*",
+        "arn:aws:cloudformation:${AWS_REGION}:${ACCOUNT_ID}:stack/aws-sam-cli-managed-default/*"
+      ]
+    },
+    {
+      "Sid": "CloudFormationRead",
+      "Effect": "Allow",
+      "Action": ["cloudformation:Describe*", "cloudformation:List*", "cloudformation:Get*", "cloudformation:ValidateTemplate", "cloudformation:CreateChangeSet"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LambdaManage",
+      "Effect": "Allow",
+      "Action": ["lambda:*"],
+      "Resource": [
+        "arn:aws:lambda:${AWS_REGION}:${ACCOUNT_ID}:function:${STACK_NAME}-api",
+        "arn:aws:lambda:${AWS_REGION}:${ACCOUNT_ID}:function:${STACK_NAME}-api:*"
+      ]
+    },
+    {
+      "Sid": "LambdaLayers",
+      "Effect": "Allow",
+      "Action": ["lambda:GetLayerVersion"],
+      "Resource": "arn:aws:lambda:${AWS_REGION}:*:layer:*:*"
+    },
+    {
+      "Sid": "DynamoManage",
+      "Effect": "Allow",
+      "Action": ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:DescribeTable", "dynamodb:DescribeContinuousBackups", "dynamodb:UpdateContinuousBackups", "dynamodb:DescribeTimeToLive", "dynamodb:UpdateTimeToLive", "dynamodb:UpdateTable", "dynamodb:TagResource", "dynamodb:ListTagsOfResource"],
+      "Resource": "arn:aws:dynamodb:${AWS_REGION}:${ACCOUNT_ID}:table/${DDB_TABLE}"
+    },
+    {
+      "Sid": "LogsManage",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:DeleteLogGroup", "logs:DescribeLogGroups", "logs:PutRetentionPolicy", "logs:TagResource", "logs:ListTagsForResource"],
+      "Resource": "arn:aws:logs:${AWS_REGION}:${ACCOUNT_ID}:log-group:/aws/lambda/${STACK_NAME}-api*"
+    },
+    {
+      "Sid": "ExecutionRole",
+      "Effect": "Allow",
+      "Action": ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PassRole", "iam:TagRole", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies"],
+      "Resource": "arn:aws:iam::${ACCOUNT_ID}:role/${STACK_NAME}-*"
     }
   ]
 }
@@ -118,7 +144,7 @@ else
     --tags "Key=Project,Value=$PROJECT" >/dev/null
 fi
 aws iam put-role-policy --role-name "$ROLE_NAME" \
-  --policy-name "$(res_name gha-deploy-policy)" --policy-document "$perm" >/dev/null
+  --policy-name "$(res_name gha-deploy-tier4-policy)" --policy-document "$perm" >/dev/null
 ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
 save_output GHA_DEPLOY_ROLE_ARN "$ROLE_ARN"
 ok "role ready: $ROLE_ARN"
@@ -130,10 +156,12 @@ $(ok "Set these GitHub repository secrets")
 
     AWS_DEPLOY_ROLE_ARN        = ${ROLE_ARN}
     AWS_REGION                 = ${AWS_REGION}
-    TPLH_INSTANCE_ID           = ${INSTANCE_ID}
     S3_BUCKET                  = ${S3_BUCKET}
     CLOUDFRONT_DISTRIBUTION_ID = ${DIST_ID}
+    BREF_FPM_LAYER_ARN         = (current Bref FPM layer, https://runtimes.bref.sh)
+    ALLOWED_ORIGINS            = ${ALLOWED_ORIGINS:-your.domain www.your.domain}
+    ADMIN_EMAILS               = ${ADMIN_EMAILS:-}
 
-Then pushes to '${GITHUB_REF##*/}' will deploy via .github/workflows/deploy-aws.yml
-(static -> S3 + CloudFront invalidation; API -> SSM). Or run it from the Actions tab.
+Then run .github/workflows/deploy-aws.yml from the Actions tab (it is
+manual-dispatch).
 DONE

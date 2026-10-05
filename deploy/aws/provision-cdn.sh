@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Tier 3 static front: private S3 bucket + CloudFront distribution that serves the
-# built site from S3 (default behavior, cached) and routes /api/* to the EC2 API
-# origin (uncached, cookies/CSRF/Host forwarded). Also creates the OAC, a
-# response-headers policy (ported from web/public/.htaccess), and the public ACM
-# certificate. Idempotent-ish: reuses resources it can find by name/comment.
+# Static front: private S3 bucket + CloudFront distribution that serves the
+# built site from S3 (default behavior, cached) and reserves /api/* for the
+# accounts API. connect-cloudfront.sh later points that behavior at Lambda.
+# Also creates the OAC, a response-headers policy (ported from
+# web/public/.htaccess), and the public ACM certificate. Idempotent-ish:
+# reuses resources it can find by name/comment.
 #
-# Run AFTER provision.sh (and ideally after the API origin has TLS via
-# setup-tls.sh). Usage: deploy/aws/provision-cdn.sh
+# Usage: deploy/aws/provision-cdn.sh
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
 load_config
@@ -250,7 +250,7 @@ fi
 
 cat >&2 <<DONE
 
-$(ok "CloudFront front provisioned (Tier 3)")
+$(ok "CloudFront front provisioned")
   Bucket       : $S3_BUCKET
   Distribution : $DIST_ID
   CF domain    : $DIST_DOMAIN
@@ -261,7 +261,7 @@ Next steps:
        $DOMAIN  ->  $DIST_DOMAIN   (A/ALIAS at apex, CNAME for www)
      Apex domains need an ALIAS/ANAME (Route 53 alias, or a provider that
      flattens CNAMEs). CloudFront propagation takes ~5-15 min.
-  2. Publish static + API via CI (deploy/aws/setup-github-oidc.sh), or manually:
+  2. Publish the site via CI (deploy/aws/setup-github-oidc.sh), or manually:
        (cd web && npm ci && npm run build)
        aws s3 sync web/dist/ s3://$S3_BUCKET/ --delete --exclude 'api/*'
        aws cloudfront create-invalidation --distribution-id $DIST_ID --paths '/*'

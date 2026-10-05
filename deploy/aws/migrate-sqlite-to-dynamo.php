@@ -2,8 +2,8 @@
 declare(strict_types=1);
 
 /**
- * One-off migration: copy users + favorites from a Tier 3 accounts.sqlite into
- * the Tier 4 DynamoDB table. Sessions and rate_limits are intentionally skipped
+ * One-off migration: copy users + favorites from an accounts.sqlite file into
+ * the DynamoDB table. Sessions and rate_limits are intentionally skipped
  * (ephemeral; users simply sign in again). Password hashes are copied verbatim
  * (standard $argon2id$ PHC strings verify unchanged under the Bref build).
  *
@@ -12,11 +12,11 @@ declare(strict_types=1);
  *
  * Usage:
  *   AWS_REGION=us-east-1 AUTH_TABLE=tplh_accounts \
- *     php deploy/aws/tier4/migrate-sqlite-to-dynamo.php /path/to/accounts.sqlite [--dry-run]
+ *     php deploy/aws/migrate-sqlite-to-dynamo.php /path/to/accounts.sqlite [--dry-run]
  *
  * Local test against DynamoDB Local:
  *   AUTH_DDB_ENDPOINT=http://127.0.0.1:8000 AWS_REGION=us-east-1 \
- *     AUTH_TABLE=tplh_accounts php deploy/aws/tier4/migrate-sqlite-to-dynamo.php sample.sqlite
+ *     AUTH_TABLE=tplh_accounts php deploy/aws/migrate-sqlite-to-dynamo.php sample.sqlite
  */
 
 require __DIR__ . '/vendor/autoload.php';

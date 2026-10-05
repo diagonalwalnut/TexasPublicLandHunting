@@ -1,4 +1,4 @@
-# Setting up the AWS environment from scratch (Tier 4)
+# Setting up the AWS environment from scratch
 
 This guide takes you from **nothing** (no AWS account, no tools installed) to a
 **live, serverless deployment** of Texas Public Land Hunting on AWS. It assumes
@@ -7,7 +7,7 @@ This guide takes you from **nothing** (no AWS account, no tools installed) to a
 If you already know AWS, the condensed command sequence is in
 [`README.md`](./README.md); this document is the slow, explained version.
 
-> **What you are building (Tier 4):** the website's files are served worldwide
+> **What you are building:** the website's files are served worldwide
 > from a cache (CloudFront) in front of private storage (S3). The login/accounts
 > API runs as on-demand code (AWS Lambda) that only runs — and only costs money —
 > when someone calls it, with a database (DynamoDB) that scales to zero. There is
@@ -83,7 +83,7 @@ tighter, least-privilege alternative is noted at the end of this section.)
 > **Least-privilege alternative (optional, do later):** AdministratorAccess is
 > convenient for the first run. Once everything works, you can delete this user
 > and let CI deploy instead using **GitHub OIDC** (no stored keys at all) via
-> [`setup-github-oidc-tier4.sh`](./setup-github-oidc-tier4.sh) — see [§11](#11-optional-automate-deploys-with-github-actions).
+> [`setup-github-oidc.sh`](./setup-github-oidc.sh) — see [§11](#11-optional-automate-deploys-with-github-actions).
 
 ---
 
@@ -193,10 +193,10 @@ aws route53 list-hosted-zones \
 ## 6. Get the code and the Bref layer ARN
 
 **Clone the repository** over HTTPS (the repo is public, so this needs no SSH key
-or login) and move into the Tier 4 directory:
+or login) and move into the deploy directory:
 ```bash
 git clone https://github.com/diagonalwalnut/TexasPublicLandHunting.git
-cd TexasPublicLandHunting/deploy/aws/tier4
+cd TexasPublicLandHunting/deploy/aws
 ```
 
 > The URL must be the full `https://github.com/...` address. Do **not** put your
@@ -223,45 +223,29 @@ project uses by default.)
 
 ## 7. Configure the project
 
-There are **two** small config files to fill in: one for the shared static front
-(created by the Tier 3 tooling) and one for the Tier 4 API. Both copy an example
-to a git-ignored `config.sh`.
-
-### 7a. Static-front config (`deploy/aws/config.sh`)
+One config file covers the static site and the accounts API. Copy the example
+to a git-ignored `config.sh`:
 
 ```bash
-cd ..                       # into deploy/aws
 cp config.example.sh config.sh
 ```
 
 Edit `config.sh` and set:
 
-- `S3_BUCKET` — a **globally unique** bucket name (bucket names are shared across
-  *all* AWS customers), e.g. `tplh-site-yourname-2026`.
+- `S3_BUCKET` — a **globally unique, all-lowercase** bucket name (bucket names are
+  shared across *all* AWS customers), e.g. `tplh-site-yourname-2026`.
 - `DOMAIN` and `DOMAIN_ALIASES` — your public hostnames.
-- `HOSTED_ZONE_ID` — paste the id from §5 to automate DNS.
-- `API_ORIGIN_DOMAIN` — **for Tier 4 this is a placeholder.** You are not running
-  the EC2 server, so set it to any hostname you control (e.g. your `DOMAIN`); the
-  Tier 4 step in §9 overwrites this origin with the Lambda Function URL. You can
-  ignore the other EC2-related values (`INSTANCE_TYPE`, `KEY_NAME`, `REPO_SSH`,
-  etc.) — Tier 4 never runs `provision.sh`.
+- `HOSTED_ZONE_ID` — paste the id from §5 to automate DNS. Leave it empty to add
+  records yourself.
+- `API_ORIGIN_DOMAIN` — a placeholder hostname you control (your `DOMAIN` is
+  fine). `./connect-cloudfront.sh` in §9 replaces this origin with the Lambda
+  Function URL.
+- `ALLOWED_ORIGINS` — hostnames the API accepts browser logins from, normally
+  the domain and `www`.
+- `ADMIN_EMAILS` — any email listed here becomes an admin on next sign-in.
 
-### 7b. Tier 4 API config (`deploy/aws/tier4/config.sh`)
-
-```bash
-cd tier4
-cp config.example.sh config.sh
-```
-
-Edit `config.sh` and set `DOMAIN`, `DOMAIN_ALIASES`, `ALLOWED_ORIGINS` (the
-hostnames the API accepts browser logins from — normally the same as your
-domain + `www`), and `ADMIN_EMAILS` (any email listed here becomes an admin on
-next sign-in). Leave `S3_BUCKET` / `CLOUDFRONT_DISTRIBUTION_ID` to be filled in
-from the front you create in §8 (the scripts also auto-read them from the Tier 3
-outputs file).
-
-Finally, put the Bref ARN from §6 into **`deploy/aws/tier4/samconfig.toml`** on
-the `BrefFpmLayerArn=...` line, and set `AllowedOrigins=` there to your hostnames.
+Finally, put the Bref ARN from §6 into **`deploy/aws/samconfig.toml`** on the
+`BrefFpmLayerArn=...` line, and set `AllowedOrigins=` there to your hostnames.
 
 > **Never commit `config.sh`.** It (and `*.pem`, `.outputs.env`, `vendor/`) is
 > already git-ignored so your settings and secrets stay local.
@@ -274,7 +258,6 @@ From `deploy/aws` run the front-end provisioner. It creates the private S3
 bucket, the CloudFront distribution, and the free HTTPS certificate:
 
 ```bash
-cd ..            # into deploy/aws
 ./provision-cdn.sh
 ```
 
@@ -292,7 +275,7 @@ domain** (e.g. `d1234.cloudfront.net`) and saves them to `deploy/aws/.outputs.en
 cache). The `--exclude 'api/*'` keeps the PHP API out of S3 — it lives in Lambda:
 
 ```bash
-cd ../..                               # repo root
+cd ..                                  # repo root
 (cd web && npm ci && npm run build)
 source deploy/aws/.outputs.env         # loads S3_BUCKET + CLOUDFRONT_DISTRIBUTION_ID
 aws s3 sync web/dist/ "s3://$S3_BUCKET/" --delete --exclude 'api/*'
@@ -307,10 +290,10 @@ aws cloudfront create-invalidation \
 
 ## 9. Deploy the serverless API (Lambda + DynamoDB)
 
-All commands run from `deploy/aws/tier4`:
+All commands run from `deploy/aws`:
 
 ```bash
-cd deploy/aws/tier4
+cd deploy/aws
 ```
 
 **1) Create the app signing key (once).** This writes a random secret to SSM
@@ -350,7 +333,7 @@ AWS_REGION=us-east-1 AUTH_TABLE=tplh_accounts \
 AWS_REGION=us-east-1 AUTH_TABLE=tplh_accounts \
   php migrate-sqlite-to-dynamo.php /path/to/accounts.sqlite             # for real
 ```
-Existing passwords keep working — the hash format is identical across tiers.
+Existing password hashes keep working.
 
 **5) Point CloudFront's `/api/*` at the Lambda.** This swaps the placeholder
 origin for the real Function URL and locks it so only CloudFront can call it:
@@ -404,15 +387,15 @@ So you never need local access keys again, let CI deploy on demand using GitHub
 OIDC (a short-lived, keyless trust between GitHub and AWS):
 
 ```bash
-cd deploy/aws/tier4
-./setup-github-oidc-tier4.sh
+cd deploy/aws
+./setup-github-oidc.sh
 ```
 
 It prints the **repository secrets** to add in GitHub → *Settings → Secrets and
 variables → Actions*: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, `S3_BUCKET`,
 `CLOUDFRONT_DISTRIBUTION_ID`, `BREF_FPM_LAYER_ARN`, `ALLOWED_ORIGINS`, and
 optionally `ADMIN_EMAILS`. Then run the
-[`deploy-aws-tier4.yml`](../../../.github/workflows/deploy-aws-tier4.yml)
+[`deploy-aws.yml`](../../.github/workflows/deploy-aws.yml)
 workflow (manual "Run workflow" by default).
 
 ---
@@ -436,14 +419,14 @@ for the breakdown.
 
 Remove the serverless API (leaves the S3 + CloudFront front intact):
 ```bash
-cd deploy/aws/tier4
-./teardown-tier4.sh                     # delete the stack + OAC
-./teardown-tier4.sh --purge-key --yes   # also delete the SSM app key, no prompt
+cd deploy/aws
+./teardown.sh                     # delete the stack + OAC
+./teardown.sh --purge-key --yes   # also delete the SSM app key, no prompt
 ```
 
-To also remove the static front, bucket, distribution, and certificate, use the
-Tier 3 teardown (`deploy/aws/teardown.sh`). Deleting a CloudFront distribution is
-slow (it must disable first); be patient.
+That leaves the S3 bucket and CloudFront distribution in place. Deleting a
+CloudFront distribution is a separate console step and is slow (it must be
+disabled first).
 
 ---
 
@@ -453,9 +436,9 @@ slow (it must disable first); be patient.
 | --- | --- |
 | `aws sts get-caller-identity` fails | Re-run `aws configure`; check the key was copied correctly and region is `us-east-1`. |
 | `provision-cdn.sh` stops at ACM validation | Add the printed CNAME at your DNS provider and re-run, or set `HOSTED_ZONE_ID` to automate. |
-| `sam build` says `env: 'php': No such file or directory` | CloudShell has Composer but not PHP. Run `sudo dnf install -y php-cli php-xml php-mbstring php-sodium unzip`, then `sam build` again from `deploy/aws/tier4`. |
+| `sam build` says `env: 'php': No such file or directory` | CloudShell has Composer but not PHP. Run `sudo dnf install -y php-cli php-xml php-mbstring php-sodium unzip`, then `sam build` again from `deploy/aws`. |
 | `/api/health` returns the website HTML, or the dialog says "Accounts not available" | `/api/*` is still the S3 site. `curl -sSI https://YOUR_DOMAIN/api/health` shows `server: AmazonS3` and `content-type: text/html`. Pull the latest main and re-run `./connect-cloudfront.sh`. When it finishes, the same curl is `application/json` and the body is `{"ok":true,...}`. |
-| `connect-cloudfront.sh` says `STACK_NAME: set STACK_NAME` | `deploy/aws/tier4/config.sh` was skipped. Copy `config.example.sh` to `config.sh` in that directory and run the script again. Do not `source` the Tier 3 config in the same shell first. |
+| `connect-cloudfront.sh` says `STACK_NAME: set STACK_NAME` | `deploy/aws/config.sh` is missing. Copy `config.example.sh` to `config.sh` in that directory and run the script again. |
 | `sam deploy` rejects `AdminEmails=` | Delete the `AdminEmails=` line from `samconfig.toml`, or set it to a real email. An empty override is invalid. |
 | Stack `CREATE_FAILED` on `AccountsTable` / KMS key does not exist | Delete the failed stack (`aws cloudformation delete-stack --stack-name tplh-tier4-api`, wait for `stack-delete-complete`) and `sam deploy` again. The template uses DynamoDB's default AWS owned key. |
 | `/api/health` returns 403 via your domain | You skipped or mis-ran `connect-cloudfront.sh` (CloudFront isn't allowed to call the Function URL yet). Re-run it. |

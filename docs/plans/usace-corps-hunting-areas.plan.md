@@ -118,7 +118,7 @@ flowchart LR
 
 ## 7. Delivery
 - Create a new branch off `main` (e.g. `cursor/usace-corps-hunting-4654`), commit the dataset, pipeline, and frontend changes, push, and open a PR into `main`.
-- Rebuild `web/dist` and refresh the deployment zip artifact for manual HostGator upload (FTP from the Cloud Agent remains blocked by the documented data-channel limitation).
+- Rebuild `web/dist` and publish the static files with the S3 sync in deploy/aws/README.md.
 
 ## Notes / risks
 - The dominant cost and risk is accurate per-lake research and (for Tier B) hand-digitization; the error-rate gate keeps questionable boundaries out in favor of point + official PDF.

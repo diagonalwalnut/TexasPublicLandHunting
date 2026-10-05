@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # One-time: create the app HMAC key as an SSM SecureString. The Lambda reads it
-# at runtime to hash session + CSRF tokens (same role as the Tier 3 app.key file).
+# at runtime to hash session + CSRF tokens.
 # Safe to re-run: it will NOT overwrite an existing key unless --force is given.
 #
-# Usage: deploy/aws/tier4/create-app-key.sh [--force]
+# Usage: deploy/aws/create-app-key.sh [--force]
 set -euo pipefail
-source "$(dirname -- "${BASH_SOURCE[0]}")/lib-tier4.sh"
-load_config_t4
+source "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+load_config
 preflight_aws
 
 : "${APP_KEY_SSM_PARAM:?set APP_KEY_SSM_PARAM in config.sh}"
@@ -28,5 +28,5 @@ aws ssm put-parameter \
   --value "$KEY" \
   --overwrite \
   --tier Standard \
-  --description "TPLH Tier 4 app HMAC key (session/CSRF token hashing)" >/dev/null
+  --description "TPLH app HMAC key (session/CSRF token hashing)" >/dev/null
 ok "app key written to SSM SecureString: $APP_KEY_SSM_PARAM"

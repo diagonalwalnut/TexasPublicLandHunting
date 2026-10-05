@@ -1,10 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// Tier 4 (Bref/Lambda) front controller. CloudFront routes /api/* to the Lambda
-// Function URL; Bref's FPM runtime runs this script as the web entrypoint. The
-// router logic below is shared verbatim with the Tier 3 (EC2) build; only the
-// data layer (lib/store.php -> DynamoDB) and lib/http.php (origin/IP) differ.
+// Accounts API front controller. CloudFront routes /api/* to the Lambda
+// Function URL; Bref's FPM runtime runs this script as the web entrypoint.
+// The local dev server uses the SQLite copy under web/public/api/.
 require __DIR__ . '/../vendor/autoload.php';
 
 require_once __DIR__ . '/lib/http.php';

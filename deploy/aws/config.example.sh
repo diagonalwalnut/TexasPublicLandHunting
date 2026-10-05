@@ -1,68 +1,56 @@
 # shellcheck shell=bash
-# Configuration for the Texas Public Land Hunting AWS deployment (Tier 3).
+# Configuration for the Texas Public Land Hunting AWS deployment.
 #
-# Tier 3 = static site on S3 + CloudFront, PHP/SQLite API on a slim Graviton EC2
-# box, built in CI. See SCALING-TIERS.md for the rationale and the other tiers.
-#
+# Static site on S3 + CloudFront, accounts API on Lambda + DynamoDB.
 # Copy this file to config.sh and edit the values. config.sh is auto-loaded by
-# every script and is git-ignored. Never commit real values, keys, or account ids.
+# every script here and is git-ignored. Never commit real values or account ids.
 
 # ---- AWS target --------------------------------------------------------------
-# Keep everything in us-east-1: CloudFront's ACM certificate MUST live there.
+# Keep everything in us-east-1: CloudFront's ACM certificate MUST live there,
+# and the Function URL and DynamoDB live alongside it.
 export AWS_REGION="us-east-1"
 # Short name used to tag/name every resource this tooling creates.
 export PROJECT="tplh"
 
-# ---- EC2 API instance (Graviton / arm64) -------------------------------------
-# API-only in Tier 3 (no build on the box), so a small burstable box is plenty.
-export INSTANCE_TYPE="t4g.micro"
-# CPU architecture: arm64 (Graviton, cheaper) or x86_64.
-export CPU_ARCH="arm64"
-# Root EBS volume size in GiB (gp3). API + OS + SQLite fit easily in 10.
-export VOLUME_SIZE="10"
+# ---- Accounts API (Lambda + DynamoDB) ---------------------------------------
+# CloudFormation/SAM stack name. This is the live stack name; do not rename it
+# on an account that already deployed tplh-tier4-api.
+export STACK_NAME="tplh-tier4-api"
+# DynamoDB table (single-table design: users / sessions / favorites / rate limits).
+export DDB_TABLE="tplh_accounts"
+# Fallback Lambda function name. The real name is read from the SAM stack output
+# (SAM names it "<STACK_NAME>-api", e.g. tplh-tier4-api-api); this value is only
+# used if that lookup fails.
+export LAMBDA_FUNCTION="tplh-tier4-api-api"
+# Lambda architecture: arm64 (Graviton) or x86_64. Must match the Bref layer in
+# samconfig.toml.
+export LAMBDA_ARCH="arm64"
+# Function memory (MB). Argon2id (libsodium) is CPU-heavy; 1024 keeps logins fast.
+export LAMBDA_MEMORY="1024"
+# SSM Parameter (SecureString) that holds the app HMAC key (session/CSRF hashing).
+# Created once by create-app-key.sh; the Lambda reads it at runtime.
+export APP_KEY_SSM_PARAM="/tplh/tier4/app_key"
 
-# ---- SSH access --------------------------------------------------------------
-export KEY_NAME="tplh-admin"
-# Optional: path to an existing SSH *public* key to import instead of creating one.
-export SSH_PUBKEY_PATH=""
-# CIDR allowed to reach port 22. Lock to your IP, e.g. 203.0.113.4/32.
-# Find your IP with: curl -s https://checkip.amazonaws.com
-export SSH_ALLOW_CIDR="0.0.0.0/0"
-
-# ---- Application source (GitHub) --------------------------------------------
-# Private repo: the instance clones over SSH with a read-only deploy key
-# (make-deploy-key.sh). CI builds the frontend from the same repo.
-export REPO_SSH="git@github.com:diagonalwalnut/TexasPublicLandHunting.git"
-export REPO_BRANCH="main"
+# ---- Static hosting ----------------------------------------------------------
+# Globally unique, all-lowercase bucket name.
+export S3_BUCKET="tplh-site-texaspubliclandhunt-2026"
+# CloudFront distribution id. Leave blank to resolve by Comment (== PROJECT).
+export CLOUDFRONT_DISTRIBUTION_ID=""
+# Placeholder hostname provision-cdn.sh uses for the /api origin. connect-cloudfront.sh
+# replaces it with the Lambda Function URL. Any hostname you control is fine.
+export API_ORIGIN_DOMAIN="huntpubliclandintexas.com"
+# Route 53 hosted zone id, or empty to add DNS records yourself.
+export HOSTED_ZONE_ID=""
 
 # ---- Domains -----------------------------------------------------------------
-# Public site, served by CloudFront.
 export DOMAIN="huntpubliclandintexas.com"
-# Extra public hostnames for the CloudFront cert (space-separated).
+# Space-separated extra public hostnames.
 export DOMAIN_ALIASES="www.huntpubliclandintexas.com"
-# CloudFront's custom origin for /api/*. Point this hostname (A record) at the
-# instance's Elastic IP; the instance gets a Let's Encrypt cert for it so the
-# CloudFront->origin hop is HTTPS. Keep it distinct from DOMAIN.
-export API_ORIGIN_DOMAIN="origin-api.huntpubliclandintexas.com"
-# Email for Let's Encrypt (origin cert) AND the app admin allowlist.
-export ADMIN_EMAIL="you@example.com"
-
-# ---- Static hosting (S3 + CloudFront) ---------------------------------------
-# Globally-unique S3 bucket that holds the built dist/ (private; OAC-only).
-export S3_BUCKET="tplh-site-TexasPublicLandHunt-2026"
-# ACM certificate ARN for DOMAIN (+aliases) in us-east-1. Leave blank to have
-# provision-cdn.sh request and validate one (DNS-validated).
-export ACM_CERT_ARN=""
-# Optional Route 53 hosted zone id. If set, provision-cdn.sh creates the ACM
-# validation records and the apex/www alias records automatically. Blank = you
-# add DNS records manually.
-export HOSTED_ZONE_ID="Z00357652RQLSX1TWD9SD"
-
-# ---- Feature toggles ---------------------------------------------------------
-# Elastic IP so the /api origin address is stable (recommended/required).
-export ALLOCATE_EIP="1"
-# SSM instance profile so GitHub Actions can deploy the API with no inbound SSH.
-export ENABLE_SSM="1"
+# Origins the API accepts browser requests from (CSRF defense). Space/comma
+# separated hostnames; viewer Origin/Referer is matched against this list.
+export ALLOWED_ORIGINS="huntpubliclandintexas.com www.huntpubliclandintexas.com"
+# Comma-separated admin email allowlist (users with these emails get role=admin).
+export ADMIN_EMAILS="you@example.com"
 
 # ---- GitHub Actions OIDC (setup-github-oidc.sh) ------------------------------
 export GITHUB_REPO="diagonalwalnut/TexasPublicLandHunting"

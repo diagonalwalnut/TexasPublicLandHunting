@@ -1,6 +1,6 @@
 version = 0.1
 
-# Default SAM deploy configuration for the Tier 4 accounts API.
+# Default SAM deploy configuration for the accounts API.
 # Edit the parameter_overrides for your account, then run:
 #   sam build && sam deploy
 #

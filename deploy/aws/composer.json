@@ -1,6 +1,6 @@
 {
     "name": "tplh/tier4-api",
-    "description": "Texas Public Land Hunting accounts API (Tier 4: PHP/Bref on Lambda + DynamoDB).",
+    "description": "Texas Public Land Hunting accounts API (PHP/Bref on Lambda + DynamoDB).",
     "type": "project",
     "license": "proprietary",
     "require": {

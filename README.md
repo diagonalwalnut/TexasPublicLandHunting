@@ -40,8 +40,8 @@ Optional: `python3 scripts/fetch.py --pdfs` downloads unit map PDFs so `build.py
 - `scripts/` — fetch and join TPWD sources
 - `data/` — compiled GeoJSON/JSON checked in for the static site
 - `web/` — Vite + React + MapLibre map and filterable hunt report
-- `web/public/api/` — HostGator PHP accounts API (username/email + password, saved units)
-- `.github/workflows/hostgator.yml` — optional FTP upload to HostGator
+- `web/public/api/` — local development accounts API (PHP + SQLite). Production accounts run on Lambda; see [HOSTING.md](HOSTING.md)
+- `deploy/aws/` — S3, CloudFront, and the Lambda accounts API
 
 Local `npm run dev` starts Vite and a PHP API on `127.0.0.1:8088` (`php-cli` and `php-sqlite3` required).
 
@@ -49,7 +49,7 @@ Local `npm run dev` starts Vite and a PHP API on `127.0.0.1:8088` (`php-cli` and
 
 Hunters create an account with a **username**, **email**, and **password**, then **save units**. Sign-in accepts username or email plus password. The map and report still work if the PHP API is down.
 
-On HostGator the API is `https://huntpubliclandintexas.com/api/` (Apache + PHP). Account data lives in a SQLite file under `api/data/`, which Apache refuses to serve. That directory must be writable by PHP (`chmod 700` is enough). The file is created on first sign-up.
+In production the API is `https://huntpubliclandintexas.com/api/` on Lambda. Locally, `npm run dev` serves the same routes from `web/public/api/` with SQLite under `api/data/`. That directory must be writable by PHP. The database file is created on first sign-up.
 
 There are no frontend auth secrets. Do not commit `api/data/*.sqlite` or `api/data/*.key`.
 
