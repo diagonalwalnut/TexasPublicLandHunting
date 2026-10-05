@@ -15,7 +15,10 @@ source "$T4_DIR/../lib.sh"
 OUTPUTS_FILE="$T4_DIR/.outputs.env"
 
 load_config_t4() {
-  if [[ -z "${PROJECT:-}" && -f "$T4_DIR/config.sh" ]]; then
+  # Always load this directory's config. PROJECT is also set by the Tier 3
+  # config, so treating "PROJECT is set" as "Tier 4 config is loaded" skipped
+  # STACK_NAME and connect-cloudfront.sh then refused to run.
+  if [[ -f "$T4_DIR/config.sh" ]]; then
     # shellcheck disable=SC1091
     source "$T4_DIR/config.sh"
   fi

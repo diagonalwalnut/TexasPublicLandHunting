@@ -144,6 +144,9 @@ for a in ${DOMAIN_ALIASES:-}; do aliases_items="$aliases_items,\"$a\""; alias_qt
 
 if [[ -z "$DIST_ID" ]]; then
   log "creating CloudFront distribution"
+  # No custom error responses. A distribution-wide 403/404 -> /index.html rule
+  # also rewrites /api/* and, on the cached default behavior, stores that HTML
+  # for the default TTL. The site itself is served from / via DefaultRootObject.
   dist_cfg="$(mktemp)"
   cat > "$dist_cfg" <<JSON
 {
@@ -194,13 +197,6 @@ if [[ -z "$DIST_ID" ]]; then
         "CachePolicyId": "$CACHE_DISABLED",
         "OriginRequestPolicyId": "$ORP_ALLVIEWER"
       }
-    ]
-  },
-  "CustomErrorResponses": {
-    "Quantity": 2,
-    "Items": [
-      { "ErrorCode": 403, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 10 },
-      { "ErrorCode": 404, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 10 }
     ]
   },
   "ViewerCertificate": {

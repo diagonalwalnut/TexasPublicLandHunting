@@ -446,6 +446,10 @@ slow (it must disable first); be patient.
 | `aws sts get-caller-identity` fails | Re-run `aws configure`; check the key was copied correctly and region is `us-east-1`. |
 | `provision-cdn.sh` stops at ACM validation | Add the printed CNAME at your DNS provider and re-run, or set `HOSTED_ZONE_ID` to automate. |
 | `sam build` fails | Make sure **Docker is running** (`docker info`) and `composer install` succeeded. |
+| `/api/health` returns the website HTML, or the dialog says "Accounts not available" | `/api/*` is still the S3 site. `curl -sSI https://YOUR_DOMAIN/api/health` shows `server: AmazonS3` and `content-type: text/html`. Pull the latest main and re-run `./connect-cloudfront.sh`. When it finishes, the same curl is `application/json` and the body is `{"ok":true,...}`. |
+| `connect-cloudfront.sh` says `STACK_NAME: set STACK_NAME` | `deploy/aws/tier4/config.sh` was skipped. Copy `config.example.sh` to `config.sh` in that directory and run the script again. Do not `source` the Tier 3 config in the same shell first. |
+| `sam deploy` rejects `AdminEmails=` | Delete the `AdminEmails=` line from `samconfig.toml`, or set it to a real email. An empty override is invalid. |
+| Stack `CREATE_FAILED` on `AccountsTable` / KMS key does not exist | Delete the failed stack (`aws cloudformation delete-stack --stack-name tplh-tier4-api`, wait for `stack-delete-complete`) and `sam deploy` again. The template uses DynamoDB's default AWS owned key. |
 | `/api/health` returns 403 via your domain | You skipped or mis-ran `connect-cloudfront.sh` (CloudFront isn't allowed to call the Function URL yet). Re-run it. |
 | Function URL returns 403 when hit directly | **Expected** — it's private by design (IAM-authenticated; only CloudFront can call it). |
 | Sign-in fails in the browser | Check `ALLOWED_ORIGINS` (config + `samconfig.toml`) lists your exact hostname(s); redeploy with `sam deploy`. |
