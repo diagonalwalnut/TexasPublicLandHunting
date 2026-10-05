@@ -26,7 +26,15 @@ load_config() {
   fi
   : "${AWS_REGION:?set AWS_REGION (copy config.example.sh to config.sh)}"
   : "${PROJECT:?set PROJECT}"
+  # Static-site config.sh files written before the accounts API have no stack
+  # name. These match samconfig.toml and the live stack, and never override a
+  # value already set in config.sh.
+  : "${STACK_NAME:=tplh-tier4-api}"
+  : "${DDB_TABLE:=tplh_accounts}"
+  : "${LAMBDA_FUNCTION:=${STACK_NAME}-api}"
+  : "${APP_KEY_SSM_PARAM:=/tplh/tier4/app_key}"
   export AWS_DEFAULT_REGION="$AWS_REGION"
+  export STACK_NAME DDB_TABLE LAMBDA_FUNCTION APP_KEY_SSM_PARAM
 }
 
 preflight_aws() {
