@@ -20,7 +20,7 @@ preflight_aws
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 # Managed origin-request policy: forward all viewer headers EXCEPT Host (required
 # for Lambda Function URL + OAC so the SigV4 Host matches the origin).
-ORP_ALLVIEWER_NO_HOST="b689b0a8-53d0-4db0-add3-3aadf24d9b9f"
+ORP_ALLVIEWER_NO_HOST="b689b0a8-53d0-40ab-baf2-68738e2966ac"
 
 DIST_ID="$(resolve_distribution_id)"
 [[ -n "$DIST_ID" ]] || die "no CloudFront distribution found (run the Tier 3 provision-cdn.sh first, or set CLOUDFRONT_DISTRIBUTION_ID)"

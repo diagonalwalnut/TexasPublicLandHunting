@@ -107,25 +107,55 @@ function tplh_origin_allowed(): bool
 }
 
 /**
- * Hashed client IP for rate-limit keys. Behind CloudFront the viewer address is
- * the first entry of X-Forwarded-For (or the CloudFront-Viewer-Address header);
- * REMOTE_ADDR would be the CloudFront edge, not the user.
+ * Host from a "host:port" or "[ipv6]:port" value. A bare IPv6 address is unchanged.
+ */
+function tplh_ip_without_port(string $hostPort): string
+{
+    $hostPort = trim($hostPort);
+    if ($hostPort === '') {
+        return '';
+    }
+    if ($hostPort[0] === '[') {
+        $end = strpos($hostPort, ']');
+        if ($end !== false) {
+            return substr($hostPort, 1, $end - 1);
+        }
+    }
+    if (substr_count($hostPort, ':') === 1) {
+        return explode(':', $hostPort, 2)[0];
+    }
+    return $hostPort;
+}
+
+/**
+ * Hashed client IP for rate-limit keys.
+ *
+ * CloudFront-Viewer-Address is set by CloudFront and is not a viewer-supplied
+ * hop. X-Forwarded-For is forwarded in full, so its first entry is whatever the
+ * caller sent; CloudFront appends the viewer address at the end. REMOTE_ADDR on
+ * Lambda is the CloudFront edge, used only when neither header is present.
  */
 function tplh_client_ip(): string
 {
     $ip = '';
-    $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-    if (is_string($xff) && $xff !== '') {
-        $ip = trim(explode(',', $xff)[0]);
+    $cf = $_SERVER['HTTP_CLOUDFRONT_VIEWER_ADDRESS'] ?? '';
+    if (is_string($cf) && $cf !== '') {
+        $ip = tplh_ip_without_port($cf);
     }
     if ($ip === '') {
-        $cf = $_SERVER['HTTP_CLOUDFRONT_VIEWER_ADDRESS'] ?? '';
-        if (is_string($cf) && $cf !== '') {
-            $ip = trim(preg_replace('/:\d+$/', '', $cf) ?? '', '[]');
+        $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if (is_string($xff) && $xff !== '') {
+            $parts = array_values(array_filter(
+                array_map('trim', explode(',', $xff)),
+                static fn (string $part): bool => $part !== ''
+            ));
+            if ($parts !== []) {
+                $ip = tplh_ip_without_port($parts[count($parts) - 1]);
+            }
         }
     }
     if ($ip === '') {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = is_string($_SERVER['REMOTE_ADDR'] ?? null) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
     }
     return hash('sha256', $ip);
 }
