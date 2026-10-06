@@ -99,6 +99,9 @@ Resources:
         AuthType: AWS_IAM
       Environment:
         Variables:
+          # The published layer is Bref 3's unified runtime (arm-php-83). HTTP
+          # scripts need the FPM mode; the default function mode returns 502.
+          BREF_RUNTIME: fpm
           AUTH_TABLE: !Ref TableName
           AUTH_APP_KEY_SSM: !Ref AppKeySsmParam
           AUTH_ADMIN_EMAILS: !Ref AdminEmails
@@ -108,6 +111,11 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
         - Statement:
+            - Sid: TransactAccountWrites
+              Effect: Allow
+              Action:
+                - dynamodb:TransactWriteItems
+              Resource: !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
             - Sid: ReadAppKeyParam
               Effect: Allow
               Action: ssm:GetParameter

@@ -51,8 +51,9 @@ export class ApiError extends Error {
 
 async function readError(res: Response): Promise<string> {
   try {
-    const data = (await res.json()) as { error?: string };
+    const data = (await res.json()) as { error?: string; message?: string };
     if (data.error) return data.error;
+    if (data.message) return data.message;
   } catch {
     /* not JSON */
   }
@@ -65,6 +66,8 @@ async function readError(res: Response): Promise<string> {
 
 // CloudFront signs POST bodies to the Lambda Function URL. Lambda rejects the
 // call unless the browser sends the SHA-256 of those exact bytes.
+// CloudFront signs POST/PUT/PATCH to the Lambda Function URL. Lambda rejects
+// those calls unless the viewer sends the SHA-256 of the exact body bytes.
 async function sha256Hex(text: string): Promise<string | null> {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) return null;

@@ -9,7 +9,10 @@
 #     to set Host = Function URL domain for signing), and allow POST,
 #   * remove the distribution-wide 403/404 -> /index.html rules, which turn API
 #     errors into a 200 HTML page and then cache that page,
-#   * grant cloudfront.amazonaws.com lambda:InvokeFunctionUrl on this dist,
+#   * grant cloudfront.amazonaws.com lambda:InvokeFunctionUrl and
+#     lambda:InvokeFunction on this distribution (function URLs created after
+#     October 2025 reject the call with 403 AccessDeniedException if either
+#     permission is missing),
 #   * wait until the distribution is deployed, then invalidate /api/*.
 #
 # Prereqs: the distribution exists (provision-cdn.sh) and `sam deploy` has
@@ -18,7 +21,7 @@ set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
 load_config
 preflight_aws
-log "connect-cloudfront.sh api-routing-2"
+log "connect-cloudfront.sh api-routing-3"
 
 : "${STACK_NAME:?set STACK_NAME in config.sh}" "${LAMBDA_FUNCTION:?set LAMBDA_FUNCTION}"
 
@@ -110,20 +113,46 @@ rm -f "$cfg_raw" "$cfg_new"
 ok "distribution update submitted"
 
 # --- allow CloudFront to invoke the Function URL -----------------------------
+# Function URLs created after October 2025 require both actions. A missing
+# lambda:InvokeFunction returns 403 AccessDeniedException from the function
+# URL even when InvokeFunctionUrl is already granted.
 FUNC_NAME="$(resolve_function_name)"
 [[ -n "$FUNC_NAME" ]] || die "could not resolve the Lambda function name (run 'sam deploy' first)"
-log "granting cloudfront.amazonaws.com lambda:InvokeFunctionUrl on $FUNC_NAME"
-if aws lambda add-permission \
-  --function-name "$FUNC_NAME" \
-  --statement-id "AllowCloudFrontServicePrincipal" \
-  --action lambda:InvokeFunctionUrl \
-  --principal cloudfront.amazonaws.com \
-  --source-arn "$DIST_ARN" \
-  --function-url-auth-type AWS_IAM >/dev/null 2>&1; then
-  ok "invoke permission added"
-else
-  ok "invoke permission already present"
-fi
+grant_cloudfront_invoke() {
+  local action="$1" sid="$2" err rc=0
+  err="$(mktemp)"
+  # `|| rc=$?` so a rejected add-permission does not abort before we can tell
+  # "already granted" from a real failure.
+  if [[ "$action" == "lambda:InvokeFunctionUrl" ]]; then
+    aws lambda add-permission \
+      --function-name "$FUNC_NAME" \
+      --statement-id "$sid" \
+      --action "$action" \
+      --principal cloudfront.amazonaws.com \
+      --source-arn "$DIST_ARN" \
+      --function-url-auth-type AWS_IAM >/dev/null 2>"$err" || rc=$?
+  else
+    aws lambda add-permission \
+      --function-name "$FUNC_NAME" \
+      --statement-id "$sid" \
+      --action "$action" \
+      --principal cloudfront.amazonaws.com \
+      --source-arn "$DIST_ARN" >/dev/null 2>"$err" || rc=$?
+  fi
+  if [[ "$rc" -eq 0 ]]; then
+    ok "$action granted"
+  elif grep -q 'ResourceConflictException' "$err"; then
+    ok "$action already granted"
+  else
+    cat "$err" >&2
+    rm -f "$err"
+    die "could not grant $action on $FUNC_NAME for $DIST_ARN"
+  fi
+  rm -f "$err"
+}
+log "granting CloudFront invoke on $FUNC_NAME"
+grant_cloudfront_invoke lambda:InvokeFunctionUrl AllowCloudFrontServicePrincipal
+grant_cloudfront_invoke lambda:InvokeFunction AllowCloudFrontServicePrincipalInvokeFunction
 
 # Invalidate only after the new config is live. Invalidating first lets the
 # still-deployed S3 behavior cache /index.html for /api/* again. /* is required
@@ -154,7 +183,15 @@ if [[ "$health_ok" != 1 ]]; then
   echo "---- body ----" >&2
   head -c 400 "$health_body" >&2 || true
   echo >&2
-  die "account health is still the website HTML. The distribution update did not take effect."
+  if grep -q 'AccessDeniedException' "$health_body" || grep -q 'Function URL authorization' "$health_body"; then
+    die "CloudFront reached Lambda, and Lambda returned 403 AccessDeniedException.
+The function policy needs both lambda:InvokeFunctionUrl and lambda:InvokeFunction for $DIST_ARN.
+Re-run ./connect-cloudfront.sh."
+  fi
+  if grep -qi '^content-type: text/html' "$health_hdr"; then
+    die "account health is still the website HTML. The distribution update did not take effect."
+  fi
+  die "account health did not return {\"ok\":true}."
 fi
 rm -f "$health_hdr" "$health_body"
 
