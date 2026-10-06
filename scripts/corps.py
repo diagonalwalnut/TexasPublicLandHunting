@@ -202,6 +202,11 @@ def build_corps(
             "lon": round(lon, 5) if lon is not None else None,
             "lat": round(lat, 5) if lat is not None else None,
         }
+        if geom is not None:
+            unit["boundaryNote"] = (
+                "Map boundary is the Corps project land from USGS PAD-US, "
+                "not the hunt compartments in the lake PDF."
+            )
         units.append(unit)
 
         unit_methods: set[str] = set()
