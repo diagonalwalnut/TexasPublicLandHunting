@@ -354,6 +354,26 @@ function tplh_update_user_access(string $userId, ?string $role, ?array $betas): 
     $stmt->execute($params);
 }
 
+function tplh_delete_user(string $userId): void
+{
+    $db = tplh_db();
+    $db->beginTransaction();
+    try {
+        $sessions = $db->prepare('DELETE FROM sessions WHERE user_id = :id');
+        $sessions->execute([':id' => $userId]);
+        $favorites = $db->prepare('DELETE FROM favorites WHERE user_id = :id');
+        $favorites->execute([':id' => $userId]);
+        $user = $db->prepare('DELETE FROM users WHERE id = :id');
+        $user->execute([':id' => $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+}
+
 function tplh_update_password_hash(string $userId, string $hash): void
 {
     $stmt = tplh_db()->prepare(

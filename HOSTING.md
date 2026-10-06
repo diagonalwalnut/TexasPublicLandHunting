@@ -11,4 +11,4 @@ How to create the bucket, distribution, certificate, and function is [deploy/aws
 
 `web/public/api/` is only the local development API (`npm run dev` starts it with PHP and SQLite). It is not uploaded as the production accounts service. Production deploys exclude `api/*` from the S3 sync.
 
-Admin is the `role` stored on the account. Emails in `ADMIN_EMAILS` (Lambda environment `AUTH_ADMIN_EMAILS`) or, for local PHP, `AUTH_ADMIN_EMAILS` or `api/data/admins.txt` are promoted to admin and are not demoted by that list. Admins manage users from the Users screen and can grant the Oregon beta to a regular account. Admins can open every beta.
+Admin is the `role` stored on the account. Emails in `ADMIN_EMAILS` (Lambda environment `AUTH_ADMIN_EMAILS`) or, for local PHP, `AUTH_ADMIN_EMAILS` or `api/data/admins.txt` are promoted to admin and are not demoted by that list. Admins manage users from the Users screen, can grant the Oregon beta to a regular account, and can delete another account. An admin cannot delete the account they are signed in with. Admins can open every beta.

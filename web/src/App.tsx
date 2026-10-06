@@ -268,9 +268,11 @@ export default function App() {
               <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
                 <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
               </div>
-              <div className={`absolute inset-0 ${view === "users" ? "z-10" : "hidden"}`}>
-                <UsersView currentUserId={user?.id ?? ""} />
-              </div>
+              {view === "users" && user && (
+                <div className="absolute inset-0 z-10">
+                  <UsersView key={user.id} currentUserId={user.id} />
+                </div>
+              )}
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
                   units={units}

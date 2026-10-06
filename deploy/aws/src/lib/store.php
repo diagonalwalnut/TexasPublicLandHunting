@@ -117,6 +117,93 @@ function tplh_delete_item(string $pk, string $sk): void
     ]);
 }
 
+/** @param list<array{PK:string,SK:string}> $keys */
+function tplh_batch_delete_keys(array $keys): void
+{
+    $unique = [];
+    foreach ($keys as $key) {
+        $pk = (string) ($key['PK'] ?? '');
+        $sk = (string) ($key['SK'] ?? '');
+        if ($pk === '' || $sk === '') {
+            continue;
+        }
+        $unique[$pk . "\0" . $sk] = ['PK' => $pk, 'SK' => $sk];
+    }
+    $pending = array_values($unique);
+    $guard = 0;
+    while ($pending !== [] && $guard < 8) {
+        $guard++;
+        $chunk = array_splice($pending, 0, 25);
+        $requests = [];
+        foreach ($chunk as $key) {
+            $requests[] = ['DeleteRequest' => ['Key' => [
+                'PK' => ['S' => $key['PK']],
+                'SK' => ['S' => $key['SK']],
+            ]]];
+        }
+        $res = tplh_ddb()->batchWriteItem([
+            'RequestItems' => [tplh_table() => $requests],
+        ]);
+        foreach ($res['UnprocessedItems'][tplh_table()] ?? [] as $req) {
+            $raw = $req['DeleteRequest']['Key'] ?? null;
+            if (is_array($raw) && isset($raw['PK']['S'], $raw['SK']['S'])) {
+                $pending[] = ['PK' => $raw['PK']['S'], 'SK' => $raw['SK']['S']];
+            }
+        }
+    }
+    if ($pending !== []) {
+        throw new RuntimeException('Could not delete every account record.');
+    }
+}
+
+/** @return list<array{PK:string,SK:string}> */
+function tplh_query_keys(string $pk, string $skPrefix): array
+{
+    $keys = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'KeyConditionExpression' => 'PK = :pk AND begins_with(SK, :sk)',
+        'ExpressionAttributeValues' => tplh_marshaler()->marshalItem([
+            ':pk' => $pk,
+            ':sk' => $skPrefix,
+        ]),
+        'ProjectionExpression' => 'PK, SK',
+    ];
+    do {
+        $res = tplh_ddb()->query($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_marshaler()->unmarshalItem($item);
+            $keys[] = ['PK' => (string) ($row['PK'] ?? ''), 'SK' => (string) ($row['SK'] ?? '')];
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    return $keys;
+}
+
+/** @return list<array{PK:string,SK:string}> */
+function tplh_session_keys_for_user(string $userId): array
+{
+    $keys = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'FilterExpression' => 'SK = :sk AND user_id = :uid',
+        'ExpressionAttributeValues' => [
+            ':sk' => ['S' => 'SESSION'],
+            ':uid' => ['S' => $userId],
+        ],
+        'ProjectionExpression' => 'PK, SK',
+    ];
+    do {
+        $res = tplh_ddb()->scan($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_marshaler()->unmarshalItem($item);
+            $keys[] = ['PK' => (string) ($row['PK'] ?? ''), 'SK' => (string) ($row['SK'] ?? '')];
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    return $keys;
+}
+
 // ---- app key + token hashing ------------------------------------------------
 
 function tplh_app_key(): string
@@ -417,6 +504,38 @@ function tplh_update_user_access(string $userId, ?string $role, ?array $betas): 
         $args['ExpressionAttributeNames'] = $names;
     }
     tplh_ddb()->updateItem($args);
+}
+
+function tplh_delete_user(string $userId): void
+{
+    $user = tplh_user_by_id($userId);
+    if (!$user) {
+        return;
+    }
+    tplh_batch_delete_keys(tplh_session_keys_for_user($userId));
+    tplh_batch_delete_keys(tplh_query_keys('USER#' . $userId, 'FAV#'));
+    $username = (string) ($user['username'] ?? '');
+    $email = (string) ($user['email'] ?? '');
+    $t = tplh_table();
+    $items = [[
+        'Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'USER#' . $userId], 'SK' => ['S' => 'PROFILE']],
+        ],
+    ]];
+    if ($username !== '') {
+        $items[] = ['Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'USERNAME#' . $username], 'SK' => ['S' => 'UNAME']],
+        ]];
+    }
+    if ($email !== '') {
+        $items[] = ['Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'EMAIL#' . $email], 'SK' => ['S' => 'EMAIL']],
+        ]];
+    }
+    tplh_ddb()->transactWriteItems(['TransactItems' => $items]);
 }
 
 function tplh_update_password_hash(string $userId, string $hash): void

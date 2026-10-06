@@ -144,7 +144,7 @@ try {
     }
 
     if (!$current || !$session) {
-        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/admin/users/update'], true)) {
+        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/admin/users/update', '/admin/users/delete'], true)) {
             tplh_fail(401, 'Sign in to continue.');
         }
         tplh_fail(404, 'Not found.');
@@ -237,6 +237,26 @@ try {
         tplh_update_user_access($userId, $role, $betas);
         $fresh = tplh_user_by_id($userId);
         tplh_ok(['user' => tplh_admin_user_row($fresh ?? $target)]);
+    }
+
+    if ($path === '/admin/users/delete' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Admin access is required.');
+        }
+        $userId = tplh_str(tplh_json_input(), 'user_id', 64);
+        if (preg_match('/^[a-f0-9]{32}$/', $userId) !== 1) {
+            tplh_fail(400, 'That user was not found.');
+        }
+        if ($userId === $current['id']) {
+            tplh_fail(400, 'You cannot delete your own account.');
+        }
+        $target = tplh_user_by_id($userId);
+        if (!$target) {
+            tplh_fail(404, 'That user was not found.');
+        }
+        tplh_delete_user($userId);
+        tplh_ok(['ok' => true]);
     }
 
     tplh_fail(404, 'Not found.');

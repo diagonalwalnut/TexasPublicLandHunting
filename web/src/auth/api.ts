@@ -183,6 +183,13 @@ export async function updateAdminUser(input: {
   return data.user;
 }
 
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await request<{ ok: boolean }>("/admin/users/delete", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 export async function probeApi(): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}health`, { credentials: "include" });
