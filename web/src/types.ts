@@ -44,6 +44,7 @@ export type Unit = {
   means?: string;
   links?: UnitLink[];
   mapPdfUrl?: string;
+  boundaryNote?: string;
 };
 
 export type Opportunity = {

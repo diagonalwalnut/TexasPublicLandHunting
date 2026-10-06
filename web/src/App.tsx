@@ -9,7 +9,8 @@ import AccountBar from "./auth/AccountBar";
 import AuthModal from "./auth/AuthModal";
 import FavoriteButton from "./auth/FavoriteButton";
 import FavoritesView from "./FavoritesView";
-import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
+import UsersView from "./UsersView";
+import type { CountyAnimal, CountyHunting, CountySeason, Filters, Meta, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
   METHOD_LABEL,
@@ -20,6 +21,104 @@ import {
   regionMatchCounts,
   unitOpportunities,
 } from "./filters";
+
+function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
+  if (season.access === "youth" || season.access === "youth_adult") return false;
+  if (/dusky|veteran|falcon/i.test(season.title)) return false;
+  if (season.methods.includes("any_legal") || allowed.has("any_legal")) return true;
+  return season.methods.some((method) => allowed.has(method));
+}
+
+function CorpsLegalGame({
+  unit,
+  pages,
+  opportunities,
+  speciesLabels,
+  speciesOrder,
+}: {
+  unit: Unit;
+  pages: CountyHunting[];
+  opportunities: Opportunity[];
+  speciesLabels: Record<string, string>;
+  speciesOrder: string[];
+}) {
+  const order = new Map(speciesOrder.map((id, index) => [id, index]));
+  const speciesIds = [...unit.species].sort(
+    (a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999) || a.localeCompare(b),
+  );
+  const cards = speciesIds.map((species) => {
+    const opps = opportunities.filter((opp) => opp.species === species);
+    const allowed = new Set(opps.flatMap((opp) => opp.methods));
+    const animals: { page: CountyHunting; animal: CountyAnimal }[] = [];
+    for (const page of pages) {
+      const animal = page.animals.find((item) => item.species === species);
+      if (animal) animals.push({ page, animal });
+    }
+    const label = animals[0]?.animal.label || speciesLabels[species] || opps[0]?.speciesLabel || species;
+    const zone = animals.find((row) => row.animal.zone)?.animal.zone ?? "";
+    const bagLimit = animals.find((row) => row.animal.bagLimit)?.animal.bagLimit ?? "";
+    const lines: { key: string; text: string }[] = [];
+    const severalCounties = animals.length > 1;
+    for (const { page, animal } of animals) {
+      animal.seasons.forEach((season, index) => {
+        if (allowed.size > 0 && !seasonFitsLake(season, allowed)) return;
+        const prefix = severalCounties ? `${page.county}: ` : "";
+        const dates = season.windows.map((window) => formatRange(window.start, window.end)).join("; ");
+        lines.push({ key: `${page.county}-${season.title}-${index}`, text: `${prefix}${season.title}: ${dates}` });
+      });
+    }
+    if (lines.length === 0) {
+      for (const opp of opps) {
+        const method = METHOD_LABEL[opp.methods[0]] ?? opp.methods[0];
+        lines.push({ key: opp.id, text: `${method}: ${formatRange(opp.start, opp.end)}` });
+      }
+    }
+    const notes = [...new Set(opps.map((opp) => opp.notes.trim()).filter(Boolean))];
+    return { species, label, zone, bagLimit, lines, notes };
+  });
+
+  if (cards.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold">Legal game</h3>
+      <p className="mb-2 text-xs text-muted">
+        These are the species this lake allows. Dates follow the county Outdoor Annual for the methods the Corps permits.
+      </p>
+      {pages.map((page) => (
+        <ExternalLink
+          key={page.slug ?? page.county}
+          className="mb-1 block text-sm font-semibold text-moss underline"
+          href={page.url}
+        >
+          {page.county} County
+        </ExternalLink>
+      ))}
+      <ul className="mt-1 space-y-2">
+        {cards.map((card) => (
+          <li key={card.species} className="rounded bg-sand px-2 py-1.5 text-sm">
+            <div className="font-medium">
+              {card.label}
+              {card.zone ? <span className="font-normal text-muted"> · {card.zone}</span> : null}
+            </div>
+            {card.bagLimit ? <p className="text-xs text-muted">{card.bagLimit}</p> : null}
+            {card.notes.map((note) => (
+              <p key={note} className="text-xs text-muted">
+                {note}
+              </p>
+            ))}
+            {card.lines.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-xs">
+                {card.lines.map((line) => (
+                  <li key={line.key}>{line.text}</li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const EMPTY_FILTERS: Filters = {
   species: [],
@@ -35,6 +134,7 @@ const EMPTY_FILTERS: Filters = {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const canUseOregon = isAdmin || (user?.betas ?? []).includes("oregon");
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -42,12 +142,13 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
-  const [view, setView] = useState<"map" | "report" | "saved">("map");
+  const [view, setView] = useState<"map" | "report" | "saved" | "users">("map");
   const [oregonOpen, setOregonOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) setOregonOpen(false);
-  }, [isAdmin]);
+    if (!canUseOregon) setOregonOpen(false);
+    if (!isAdmin && view === "users") setView("map");
+  }, [canUseOregon, isAdmin, view]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,20 +256,35 @@ export default function App() {
           >
             TPWD APH
           </ExternalLink>
-          {isAdmin && (
+          {canUseOregon && (
             <button
               type="button"
               className={`rounded-full px-3 py-1 ${oregonOpen ? "bg-gold text-pine" : "border border-gold/60 text-gold"}`}
-              onClick={() => setOregonOpen(true)}
+              onClick={() => {
+                setView("map");
+                setOregonOpen(true);
+              }}
             >
               Oregon beta
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${view === "users" ? "bg-gold text-pine" : "border border-sand/30 hover:bg-white/10"}`}
+              onClick={() => {
+                setOregonOpen(false);
+                setView("users");
+              }}
+            >
+              Users
             </button>
           )}
           <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
         </div>
       </header>
 
-      {isAdmin && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
+      {canUseOregon && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
       <div className={`flex min-h-0 flex-1 flex-col md:flex-row ${oregonOpen ? "hidden" : ""}`}>
         <aside className="scrollbar-thin order-2 max-h-[42vh] shrink-0 overflow-y-auto border-t border-black/10 bg-sand p-4 md:order-1 md:max-h-none md:w-80 md:border-r md:border-t-0">
           <FilterPanel
@@ -250,6 +366,11 @@ export default function App() {
               <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
                 <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
               </div>
+              {view === "users" && user && (
+                <div className="absolute inset-0 z-10">
+                  <UsersView key={user.id} currentUserId={user.id} />
+                </div>
+              )}
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
                   units={units}
@@ -349,6 +470,14 @@ export default function App() {
                     Outdoor Annual county
                   </ExternalLink>
                 </div>
+                <CorpsLegalGame
+                  unit={selected}
+                  pages={selectedCountyPages}
+                  opportunities={opportunities.filter((opp) => opp.unitId === selected.id)}
+                  speciesLabels={speciesLabels}
+                  speciesOrder={(meta?.species ?? []).map((item) => item.id)}
+                />
+                {selected.boundaryNote && <p className="mb-3 text-xs text-muted">{selected.boundaryNote}</p>}
               </>
             ) : (
               <>
@@ -395,7 +524,7 @@ export default function App() {
               </>
             )}
 
-            {selectedCountyPages.length > 0 && (
+            {!isCorps && selectedCountyPages.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold">County seasons (Outdoor Annual)</h3>
                 <p className="mb-2 text-xs text-muted">

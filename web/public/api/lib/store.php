@@ -86,6 +86,9 @@ function tplh_db(): PDO
     if (!in_array('role', $userCols, true)) {
         $pdo->exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
     }
+    if (!in_array('betas', $userCols, true)) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN betas TEXT NOT NULL DEFAULT '[]'");
+    }
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS sessions (
             token_hash TEXT PRIMARY KEY,
@@ -192,26 +195,93 @@ function tplh_admin_emails(): array
     return $emails;
 }
 
+function tplh_beta_catalog(): array
+{
+    return [
+        ['id' => 'oregon', 'label' => 'Oregon beta'],
+    ];
+}
+
+function tplh_beta_ids(): array
+{
+    $ids = [];
+    foreach (tplh_beta_catalog() as $beta) {
+        $ids[] = (string) $beta['id'];
+    }
+    return $ids;
+}
+
+/** Keep only known beta ids. Accepts a JSON string or a list. */
+function tplh_parse_betas(mixed $raw): array
+{
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+    $known = array_fill_keys(tplh_beta_ids(), true);
+    $out = [];
+    foreach ($raw as $id) {
+        if (is_string($id) && isset($known[$id])) {
+            $out[$id] = true;
+        }
+    }
+    $ids = array_keys($out);
+    sort($ids);
+    return $ids;
+}
+
+function tplh_user_betas(array $row): array
+{
+    return tplh_parse_betas($row['betas'] ?? []);
+}
+
+/**
+ * The email allowlist promotes. It does not demote, so an admin granted in the
+ * Users screen stays an admin after the next sign-in.
+ */
 function tplh_sync_role(array $row): array
 {
-    $want = isset(tplh_admin_emails()[strtolower((string) $row['email'])]) ? 'admin' : 'user';
     $current = isset($row['role']) && $row['role'] === 'admin' ? 'admin' : 'user';
-    if ($current !== $want) {
-        $stmt = tplh_db()->prepare('UPDATE users SET role = :r, updated_at = :t WHERE id = :id');
-        $stmt->execute([':r' => $want, ':t' => time(), ':id' => $row['id']]);
-        $row['role'] = $want;
+    $allowlisted = isset(tplh_admin_emails()[strtolower((string) ($row['email'] ?? ''))]);
+    if ($allowlisted && $current !== 'admin') {
+        tplh_update_user_access((string) $row['id'], 'admin', null);
+        $row['role'] = 'admin';
     }
     return $row;
 }
 
-function tplh_public_user(array $row): array
+function tplh_is_admin(array $row): bool
 {
     $row = tplh_sync_role($row);
+    return ($row['role'] ?? '') === 'admin';
+}
+
+function tplh_public_user(array $row): array
+{
+    $summary = tplh_admin_user_row($row);
     return [
-        'id' => $row['id'],
-        'username' => $row['username'],
-        'email' => $row['email'],
-        'role' => ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
+        'id' => $summary['id'],
+        'username' => $summary['username'],
+        'email' => $summary['email'],
+        'role' => $summary['role'],
+        'betas' => $summary['role'] === 'admin' ? tplh_beta_ids() : $summary['betas'],
+    ];
+}
+
+function tplh_admin_user_row(array $row): array
+{
+    $row = tplh_sync_role($row);
+    $role = ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user';
+    return [
+        'id' => (string) $row['id'],
+        'username' => (string) $row['username'],
+        'email' => (string) $row['email'],
+        'role' => $role,
+        'betas' => tplh_user_betas($row),
+        'created_at' => (int) ($row['created_at'] ?? 0),
     ];
 }
 
@@ -255,6 +325,53 @@ function tplh_create_user(string $username, string $email, string $passwordHash)
         ':t' => $now,
     ]);
     return tplh_user_by_id($id) ?? [];
+}
+
+function tplh_list_users(): array
+{
+    $loaded = tplh_db()->query('SELECT * FROM users ORDER BY username COLLATE NOCASE')->fetchAll();
+    $rows = [];
+    foreach ($loaded as $row) {
+        $rows[] = tplh_admin_user_row($row);
+    }
+    return $rows;
+}
+
+function tplh_update_user_access(string $userId, ?string $role, ?array $betas): void
+{
+    $sets = ['updated_at = :t'];
+    $params = [':t' => time(), ':id' => $userId];
+    if ($role !== null) {
+        $sets[] = 'role = :r';
+        $params[':r'] = $role;
+    }
+    if ($betas !== null) {
+        $sets[] = 'betas = :b';
+        $params[':b'] = json_encode(tplh_parse_betas($betas));
+    }
+    $sql = 'UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id';
+    $stmt = tplh_db()->prepare($sql);
+    $stmt->execute($params);
+}
+
+function tplh_delete_user(string $userId): void
+{
+    $db = tplh_db();
+    $db->beginTransaction();
+    try {
+        $sessions = $db->prepare('DELETE FROM sessions WHERE user_id = :id');
+        $sessions->execute([':id' => $userId]);
+        $favorites = $db->prepare('DELETE FROM favorites WHERE user_id = :id');
+        $favorites->execute([':id' => $userId]);
+        $user = $db->prepare('DELETE FROM users WHERE id = :id');
+        $user->execute([':id' => $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
 }
 
 function tplh_update_password_hash(string $userId, string $hash): void

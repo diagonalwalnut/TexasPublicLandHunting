@@ -93,11 +93,11 @@ There are no frontend auth secrets. Do not commit `api/data/*.sqlite` or `api/da
 - Unique on `(user_id, unit_id)`. Queries are scoped to the session user.
 - Star control on the unit drawer and hunt-report rows. **Saved** lists favorited units; a click opens the map.
 
-## Oregon admin beta
+## Oregon beta
 
-Signed-in admins get an **Oregon beta** button. It maps ODFW wildlife management units and 2026 eastern deer hunt areas, filters by animal, season, and method (any legal weapon, centerfire, archery, muzzleloader, shotgun), and lists controlled hunts, general seasons, and game-bird dates. A licenses section covers over-the-counter, agent, internet, and draw purchases, plus preference points.
+Accounts with the Oregon beta get an **Oregon beta** button. It maps ODFW wildlife management units and 2026 eastern deer hunt areas, filters by animal, season, and method (any legal weapon, centerfire, archery, muzzleloader, shotgun), and lists controlled hunts, general seasons, and game-bird dates. A licenses section covers over-the-counter, agent, internet, and draw purchases, plus preference points.
 
-An account is an admin when its email is listed in the `AUTH_ADMIN_EMAILS` environment variable (comma-separated) or in `api/data/admins.txt` (one email per line). That file sits in the same directory Apache already refuses to serve. The role is not chosen at sign-up. Rebuild the dataset with `python3 scripts/oregon_build.py` after placing the 2026 regulations text or letting the script download the booklet PDF.
+An account's stored `role` is the source of truth. Emails in `AUTH_ADMIN_EMAILS` (comma-separated) or, for local PHP, `api/data/admins.txt` are promoted to admin on the next sign-in and are never demoted by that list. Admins can open every beta. From the Users screen an admin can promote another account, grant the Oregon beta to a regular account, or delete another account. An admin cannot delete the account they are signed in with. Rebuild the dataset with `python3 scripts/oregon_build.py` after placing the 2026 regulations text or letting the script download the booklet PDF.
 
 ## License / attribution
 

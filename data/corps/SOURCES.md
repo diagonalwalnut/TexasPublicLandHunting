@@ -61,12 +61,10 @@ areas:
 
 ## Geometry
 
-Hunt-unit boundary maps on the Corps mobile hunting-map viewer are currently
-offline (updated security requirements), so authoritative GIS for most hunt
-units is unavailable. Per the project's geometry policy (reuse GIS where it
-exists, hand-digitize where reliable, otherwise fall back to a point + official
-link), every Corps area is published as a point (`geometry: "point"`, tier 0)
-with a link to the official lake page where the detailed hunt map and permit
-application are posted. Individual areas can be upgraded to digitized or GIS
-polygons later by changing the `geometry` field and adding
-`data/corps/<id>.geojson`.
+Map polygons are Corps project land from the public USGS PAD-US 4.1 fee layer
+(`Mang_Name='USACE'`, Texas), queried from
+<https://edits.nationalmap.gov/arcgis/rest/services/PAD-US/PAD_US_Landforms/MapServer/0>.
+`scripts/corps_gis.py` matches each lake to that layer, keeps the polygon only
+when its centroid is near the curated coordinate, and writes
+`data/corps/<id>.geojson`. These shapes are the project boundary, not the hunt
+compartments drawn in the lake PDF. A lake that does not match stays a point.

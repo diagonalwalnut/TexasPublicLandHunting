@@ -8,6 +8,21 @@ export type Account = {
   username: string;
   email: string;
   role?: "admin" | "user";
+  betas?: string[];
+};
+
+export type BetaFeature = {
+  id: string;
+  label: string;
+};
+
+export type ManagedUser = {
+  id: string;
+  username: string;
+  email: string;
+  role: "admin" | "user";
+  betas: string[];
+  created_at: number;
 };
 
 export type AuthPayload = {
@@ -49,6 +64,8 @@ async function readError(res: Response): Promise<string> {
   return "Something went wrong. Try again.";
 }
 
+// CloudFront signs POST bodies to the Lambda Function URL. Lambda rejects the
+// call unless the browser sends the SHA-256 of those exact bytes.
 // CloudFront signs POST/PUT/PATCH to the Lambda Function URL. Lambda rejects
 // those calls unless the viewer sends the SHA-256 of the exact body bytes.
 async function sha256Hex(text: string): Promise<string | null> {
@@ -147,6 +164,33 @@ export async function removeFavorite(unitId: string): Promise<string[]> {
     body: JSON.stringify({ unit_id: unitId }),
   });
   return data.favorites;
+}
+
+export async function fetchAdminUsers(): Promise<{ users: ManagedUser[]; betas: BetaFeature[] }> {
+  const data = await request<{ users?: ManagedUser[]; betas?: BetaFeature[] }>("/admin/users");
+  return {
+    users: Array.isArray(data.users) ? data.users : [],
+    betas: Array.isArray(data.betas) ? data.betas : [],
+  };
+}
+
+export async function updateAdminUser(input: {
+  user_id: string;
+  role?: "admin" | "user";
+  betas?: string[];
+}): Promise<ManagedUser> {
+  const data = await request<{ user: ManagedUser }>("/admin/users/update", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return data.user;
+}
+
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await request<{ ok: boolean }>("/admin/users/delete", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
 }
 
 export async function probeApi(): Promise<boolean> {

@@ -8,7 +8,7 @@ declare(strict_types=1);
  * Every tplh_* function keeps the same signature so index.php is reused verbatim.
  *
  * Single table (default name tplh_accounts), composite key PK + SK, TTL attr "ttl":
- *   USER#<id>        / PROFILE          -> username,email,password_hash,role,created_at,updated_at
+ *   USER#<id>        / PROFILE          -> username,email,password_hash,role,betas,created_at,updated_at
  *   USERNAME#<lower> / UNAME            -> user_id                (uniqueness reservation)
  *   EMAIL#<lower>    / EMAIL            -> user_id                (uniqueness reservation)
  *   SESSION#<hash>   / SESSION          -> user_id,csrf_hash,created_at,expires_at,ttl
@@ -117,6 +117,93 @@ function tplh_delete_item(string $pk, string $sk): void
     ]);
 }
 
+/** @param list<array{PK:string,SK:string}> $keys */
+function tplh_batch_delete_keys(array $keys): void
+{
+    $unique = [];
+    foreach ($keys as $key) {
+        $pk = (string) ($key['PK'] ?? '');
+        $sk = (string) ($key['SK'] ?? '');
+        if ($pk === '' || $sk === '') {
+            continue;
+        }
+        $unique[$pk . "\0" . $sk] = ['PK' => $pk, 'SK' => $sk];
+    }
+    $pending = array_values($unique);
+    $guard = 0;
+    while ($pending !== [] && $guard < 8) {
+        $guard++;
+        $chunk = array_splice($pending, 0, 25);
+        $requests = [];
+        foreach ($chunk as $key) {
+            $requests[] = ['DeleteRequest' => ['Key' => [
+                'PK' => ['S' => $key['PK']],
+                'SK' => ['S' => $key['SK']],
+            ]]];
+        }
+        $res = tplh_ddb()->batchWriteItem([
+            'RequestItems' => [tplh_table() => $requests],
+        ]);
+        foreach ($res['UnprocessedItems'][tplh_table()] ?? [] as $req) {
+            $raw = $req['DeleteRequest']['Key'] ?? null;
+            if (is_array($raw) && isset($raw['PK']['S'], $raw['SK']['S'])) {
+                $pending[] = ['PK' => $raw['PK']['S'], 'SK' => $raw['SK']['S']];
+            }
+        }
+    }
+    if ($pending !== []) {
+        throw new RuntimeException('Could not delete every account record.');
+    }
+}
+
+/** @return list<array{PK:string,SK:string}> */
+function tplh_query_keys(string $pk, string $skPrefix): array
+{
+    $keys = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'KeyConditionExpression' => 'PK = :pk AND begins_with(SK, :sk)',
+        'ExpressionAttributeValues' => tplh_marshaler()->marshalItem([
+            ':pk' => $pk,
+            ':sk' => $skPrefix,
+        ]),
+        'ProjectionExpression' => 'PK, SK',
+    ];
+    do {
+        $res = tplh_ddb()->query($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_marshaler()->unmarshalItem($item);
+            $keys[] = ['PK' => (string) ($row['PK'] ?? ''), 'SK' => (string) ($row['SK'] ?? '')];
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    return $keys;
+}
+
+/** @return list<array{PK:string,SK:string}> */
+function tplh_session_keys_for_user(string $userId): array
+{
+    $keys = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'FilterExpression' => 'SK = :sk AND user_id = :uid',
+        'ExpressionAttributeValues' => [
+            ':sk' => ['S' => 'SESSION'],
+            ':uid' => ['S' => $userId],
+        ],
+        'ProjectionExpression' => 'PK, SK',
+    ];
+    do {
+        $res = tplh_ddb()->scan($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_marshaler()->unmarshalItem($item);
+            $keys[] = ['PK' => (string) ($row['PK'] ?? ''), 'SK' => (string) ($row['SK'] ?? '')];
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    return $keys;
+}
+
 // ---- app key + token hashing ------------------------------------------------
 
 function tplh_app_key(): string
@@ -204,31 +291,93 @@ function tplh_admin_emails(): array
     return $emails;
 }
 
+function tplh_beta_catalog(): array
+{
+    return [
+        ['id' => 'oregon', 'label' => 'Oregon beta'],
+    ];
+}
+
+function tplh_beta_ids(): array
+{
+    $ids = [];
+    foreach (tplh_beta_catalog() as $beta) {
+        $ids[] = (string) $beta['id'];
+    }
+    return $ids;
+}
+
+/** Keep only known beta ids. Accepts a JSON string or a list. */
+function tplh_parse_betas(mixed $raw): array
+{
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw = is_array($decoded) ? $decoded : [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+    $known = array_fill_keys(tplh_beta_ids(), true);
+    $out = [];
+    foreach ($raw as $id) {
+        if (is_string($id) && isset($known[$id])) {
+            $out[$id] = true;
+        }
+    }
+    $ids = array_keys($out);
+    sort($ids);
+    return $ids;
+}
+
+function tplh_user_betas(array $row): array
+{
+    return tplh_parse_betas($row['betas'] ?? []);
+}
+
+/**
+ * The email allowlist promotes. It does not demote, so an admin granted in the
+ * Users screen stays an admin after the next sign-in.
+ */
 function tplh_sync_role(array $row): array
 {
-    $want = isset(tplh_admin_emails()[strtolower((string) $row['email'])]) ? 'admin' : 'user';
     $current = isset($row['role']) && $row['role'] === 'admin' ? 'admin' : 'user';
-    if ($current !== $want) {
-        tplh_ddb()->updateItem([
-            'TableName' => tplh_table(),
-            'Key' => ['PK' => ['S' => 'USER#' . $row['id']], 'SK' => ['S' => 'PROFILE']],
-            'UpdateExpression' => 'SET #r = :r, updated_at = :t',
-            'ExpressionAttributeNames' => ['#r' => 'role'],
-            'ExpressionAttributeValues' => tplh_marshaler()->marshalItem([':r' => $want, ':t' => time()]),
-        ]);
-        $row['role'] = $want;
+    $allowlisted = isset(tplh_admin_emails()[strtolower((string) ($row['email'] ?? ''))]);
+    if ($allowlisted && $current !== 'admin') {
+        tplh_update_user_access((string) $row['id'], 'admin', null);
+        $row['role'] = 'admin';
     }
     return $row;
 }
 
-function tplh_public_user(array $row): array
+function tplh_is_admin(array $row): bool
 {
     $row = tplh_sync_role($row);
+    return ($row['role'] ?? '') === 'admin';
+}
+
+function tplh_public_user(array $row): array
+{
+    $summary = tplh_admin_user_row($row);
     return [
-        'id' => $row['id'],
-        'username' => $row['username'],
-        'email' => $row['email'],
-        'role' => ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
+        'id' => $summary['id'],
+        'username' => $summary['username'],
+        'email' => $summary['email'],
+        'role' => $summary['role'],
+        'betas' => $summary['role'] === 'admin' ? tplh_beta_ids() : $summary['betas'],
+    ];
+}
+
+function tplh_admin_user_row(array $row): array
+{
+    $row = tplh_sync_role($row);
+    $role = ($row['role'] ?? 'user') === 'admin' ? 'admin' : 'user';
+    return [
+        'id' => (string) $row['id'],
+        'username' => (string) $row['username'],
+        'email' => (string) $row['email'],
+        'role' => $role,
+        'betas' => tplh_user_betas($row),
+        'created_at' => (int) ($row['created_at'] ?? 0),
     ];
 }
 
@@ -246,6 +395,7 @@ function tplh_profile_row(?array $item): ?array
         'email' => (string) ($item['email'] ?? ''),
         'password_hash' => (string) ($item['password_hash'] ?? ''),
         'role' => (string) ($item['role'] ?? 'user'),
+        'betas' => tplh_parse_betas($item['betas'] ?? []),
         'created_at' => (int) ($item['created_at'] ?? 0),
         'updated_at' => (int) ($item['updated_at'] ?? 0),
     ];
@@ -283,6 +433,7 @@ function tplh_create_user(string $username, string $email, string $passwordHash)
                     'PK' => 'USER#' . $id, 'SK' => 'PROFILE',
                     'id' => $id, 'username' => $username, 'email' => $email,
                     'password_hash' => $passwordHash, 'role' => 'user',
+                    'betas' => '[]',
                     'created_at' => $now, 'updated_at' => $now,
                 ]),
                 'ConditionExpression' => 'attribute_not_exists(PK)',
@@ -305,6 +456,86 @@ function tplh_create_user(string $username, string $email, string $passwordHash)
         throw $e;
     }
     return tplh_user_by_id($id) ?? [];
+}
+
+function tplh_list_users(): array
+{
+    $rows = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'FilterExpression' => 'SK = :sk',
+        'ExpressionAttributeValues' => [':sk' => ['S' => 'PROFILE']],
+    ];
+    do {
+        $res = tplh_ddb()->scan($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_profile_row(tplh_marshaler()->unmarshalItem($item));
+            if ($row && $row['id'] !== '') {
+                $rows[] = tplh_admin_user_row($row);
+            }
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    usort($rows, static fn(array $a, array $b): int => strcasecmp($a['username'], $b['username']));
+    return $rows;
+}
+
+function tplh_update_user_access(string $userId, ?string $role, ?array $betas): void
+{
+    $names = [];
+    $values = [':t' => time()];
+    $sets = ['updated_at = :t'];
+    if ($role !== null) {
+        $names['#r'] = 'role';
+        $values[':r'] = $role;
+        $sets[] = '#r = :r';
+    }
+    if ($betas !== null) {
+        $values[':b'] = json_encode(tplh_parse_betas($betas));
+        $sets[] = 'betas = :b';
+    }
+    $args = [
+        'TableName' => tplh_table(),
+        'Key' => ['PK' => ['S' => 'USER#' . $userId], 'SK' => ['S' => 'PROFILE']],
+        'UpdateExpression' => 'SET ' . implode(', ', $sets),
+        'ExpressionAttributeValues' => tplh_marshaler()->marshalItem($values),
+    ];
+    if ($names !== []) {
+        $args['ExpressionAttributeNames'] = $names;
+    }
+    tplh_ddb()->updateItem($args);
+}
+
+function tplh_delete_user(string $userId): void
+{
+    $user = tplh_user_by_id($userId);
+    if (!$user) {
+        return;
+    }
+    tplh_batch_delete_keys(tplh_session_keys_for_user($userId));
+    tplh_batch_delete_keys(tplh_query_keys('USER#' . $userId, 'FAV#'));
+    $username = (string) ($user['username'] ?? '');
+    $email = (string) ($user['email'] ?? '');
+    $t = tplh_table();
+    $items = [[
+        'Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'USER#' . $userId], 'SK' => ['S' => 'PROFILE']],
+        ],
+    ]];
+    if ($username !== '') {
+        $items[] = ['Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'USERNAME#' . $username], 'SK' => ['S' => 'UNAME']],
+        ]];
+    }
+    if ($email !== '') {
+        $items[] = ['Delete' => [
+            'TableName' => $t,
+            'Key' => ['PK' => ['S' => 'EMAIL#' . $email], 'SK' => ['S' => 'EMAIL']],
+        ]];
+    }
+    tplh_ddb()->transactWriteItems(['TransactItems' => $items]);
 }
 
 function tplh_update_password_hash(string $userId, string $hash): void

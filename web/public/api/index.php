@@ -49,6 +49,19 @@ try {
         ]);
     }
 
+    if ($path === '/admin/users' && $method === 'GET') {
+        if (!$current || !$session) {
+            tplh_fail(401, 'Sign in to continue.');
+        }
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Admin access is required.');
+        }
+        tplh_ok([
+            'users' => tplh_list_users(),
+            'betas' => tplh_beta_catalog(),
+        ]);
+    }
+
     if ($path === '/signup' && $method === 'POST') {
         tplh_require_json_post();
         if (!tplh_rate_limit('signup:' . tplh_client_ip(), 8, 3600)) {
@@ -126,7 +139,7 @@ try {
     }
 
     if (!$current || !$session) {
-        if (in_array($path, ['/username', '/favorites', '/favorites/delete'], true)) {
+        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/admin/users/update', '/admin/users/delete'], true)) {
             tplh_fail(401, 'Sign in to continue.');
         }
         tplh_fail(404, 'Not found.');
@@ -171,6 +184,74 @@ try {
         }
         tplh_remove_favorite($current['id'], $unitId);
         tplh_ok(['favorites' => tplh_favorite_ids($current['id'])]);
+    }
+
+    if ($path === '/admin/users/update' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Admin access is required.');
+        }
+        $body = tplh_json_input();
+        $userId = tplh_str($body, 'user_id', 64);
+        if (preg_match('/^[a-f0-9]{32}$/', $userId) !== 1) {
+            tplh_fail(400, 'That user was not found.');
+        }
+        $target = tplh_user_by_id($userId);
+        if (!$target) {
+            tplh_fail(404, 'That user was not found.');
+        }
+        $role = null;
+        if (array_key_exists('role', $body)) {
+            $role = tplh_str($body, 'role', 16);
+            if ($role !== 'admin' && $role !== 'user') {
+                tplh_fail(400, 'Role must be admin or user.');
+            }
+            if ($userId === $current['id'] && $role === 'user') {
+                tplh_fail(400, 'You cannot remove your own admin role.');
+            }
+        }
+        $betas = null;
+        if (array_key_exists('betas', $body)) {
+            if (!is_array($body['betas'])) {
+                tplh_fail(400, 'Betas must be a list.');
+            }
+            $known = array_fill_keys(tplh_beta_ids(), true);
+            $betas = [];
+            foreach ($body['betas'] as $id) {
+                if (!is_string($id) || !isset($known[$id])) {
+                    tplh_fail(400, 'Unknown beta.');
+                }
+                $betas[$id] = true;
+            }
+            $betas = array_keys($betas);
+            sort($betas);
+        }
+        if ($role === null && $betas === null) {
+            tplh_fail(400, 'Nothing to update.');
+        }
+        tplh_update_user_access($userId, $role, $betas);
+        $fresh = tplh_user_by_id($userId);
+        tplh_ok(['user' => tplh_admin_user_row($fresh ?? $target)]);
+    }
+
+    if ($path === '/admin/users/delete' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Admin access is required.');
+        }
+        $userId = tplh_str(tplh_json_input(), 'user_id', 64);
+        if (preg_match('/^[a-f0-9]{32}$/', $userId) !== 1) {
+            tplh_fail(400, 'That user was not found.');
+        }
+        if ($userId === $current['id']) {
+            tplh_fail(400, 'You cannot delete your own account.');
+        }
+        $target = tplh_user_by_id($userId);
+        if (!$target) {
+            tplh_fail(404, 'That user was not found.');
+        }
+        tplh_delete_user($userId);
+        tplh_ok(['ok' => true]);
     }
 
     tplh_fail(404, 'Not found.');
