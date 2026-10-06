@@ -4,9 +4,10 @@ version = 0.1
 # Edit the parameter_overrides for your account, then run:
 #   sam build && sam deploy
 #
-# BrefFpmLayerArn MUST be set to the current Bref FPM layer for your region and
-# architecture (https://runtimes.bref.sh, account 534081306603). AllowedOrigins
-# must list your public hostnames. AdminEmails is optional.
+# BrefFpmLayerArn is the Bref 3 unified arm64 PHP 8.3 layer
+# (https://runtimes.bref.sh, account 873528684822). The template sets
+# BREF_RUNTIME=fpm so that layer serves HTTP. AllowedOrigins must list your
+# public hostnames. AdminEmails is optional.
 
 [default.global.parameters]
 stack_name = "tplh-tier4-api"

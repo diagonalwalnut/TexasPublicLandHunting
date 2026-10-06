@@ -36,8 +36,9 @@ export class ApiError extends Error {
 
 async function readError(res: Response): Promise<string> {
   try {
-    const data = (await res.json()) as { error?: string };
+    const data = (await res.json()) as { error?: string; message?: string };
     if (data.error) return data.error;
+    if (data.message) return data.message;
   } catch {
     /* not JSON */
   }
@@ -48,12 +49,26 @@ async function readError(res: Response): Promise<string> {
   return "Something went wrong. Try again.";
 }
 
+// CloudFront signs POST/PUT/PATCH to the Lambda Function URL. Lambda rejects
+// those calls unless the viewer sends the SHA-256 of the exact body bytes.
+async function sha256Hex(text: string): Promise<string | null> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  const digest = await subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const action = path.replace(/^\//, "");
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+  const method = (init.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    const hash = await sha256Hex(typeof init.body === "string" ? init.body : "");
+    if (hash) headers.set("x-amz-content-sha256", hash);
   }
   if (init.method && init.method !== "GET" && action !== "signup" && action !== "signin" && action !== "signout") {
     if (csrfToken) headers.set("X-CSRF-Token", csrfToken);

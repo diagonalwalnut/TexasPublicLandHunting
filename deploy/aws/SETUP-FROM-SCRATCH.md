@@ -441,7 +441,9 @@ disabled first).
 | `connect-cloudfront.sh` says `STACK_NAME: set STACK_NAME` | `deploy/aws/config.sh` is missing. Copy `config.example.sh` to `config.sh` in that directory and run the script again. |
 | `sam deploy` rejects `AdminEmails=` | Delete the `AdminEmails=` line from `samconfig.toml`, or set it to a real email. An empty override is invalid. |
 | Stack `CREATE_FAILED` on `AccountsTable` / KMS key does not exist | Delete the failed stack (`aws cloudformation delete-stack --stack-name tplh-tier4-api`, wait for `stack-delete-complete`) and `sam deploy` again. The template uses DynamoDB's default AWS owned key. |
-| `/api/health` returns 403 via your domain | You skipped or mis-ran `connect-cloudfront.sh` (CloudFront isn't allowed to call the Function URL yet). Re-run it. |
+| `/api/health` returns 403 JSON `AccessDeniedException` | CloudFront is reaching Lambda. The function policy is missing `lambda:InvokeFunction` (required for function URLs created after October 2025). Re-run `./connect-cloudfront.sh`, or add that permission for this distribution. `ResourceConflictException` on that statement id means it is already there. |
+| `/api/health` returns `Internal Server Error` (502) | The function is running Bref's function runtime. It needs `BREF_RUNTIME=fpm`. Set that environment variable on `tplh-tier4-api-api`, or redeploy the template that sets it. CloudWatch log group `/aws/lambda/tplh-tier4-api-api` has the PHP error. |
+| Create account or sign-in returns `InvalidSignatureException` | POST bodies must send `x-amz-content-sha256`. Rebuild `web/` and sync `web/dist` to S3. |
 | Function URL returns 403 when hit directly | **Expected** — it's private by design (IAM-authenticated; only CloudFront can call it). |
 | Sign-in fails in the browser | Check `ALLOWED_ORIGINS` (config + `samconfig.toml`) lists your exact hostname(s); redeploy with `sam deploy`. |
 | Site shows old content after deploy | Run a CloudFront invalidation: `aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths '/*'`. |
