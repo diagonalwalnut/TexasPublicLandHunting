@@ -10,7 +10,7 @@ import AuthModal from "./auth/AuthModal";
 import FavoriteButton from "./auth/FavoriteButton";
 import FavoritesView from "./FavoritesView";
 import UsersView from "./UsersView";
-import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
+import type { CountyAnimal, CountyHunting, CountySeason, Filters, Meta, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
   METHOD_LABEL,
@@ -21,6 +21,104 @@ import {
   regionMatchCounts,
   unitOpportunities,
 } from "./filters";
+
+function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
+  if (season.access === "youth" || season.access === "youth_adult") return false;
+  if (/dusky|veteran|falcon/i.test(season.title)) return false;
+  if (season.methods.includes("any_legal") || allowed.has("any_legal")) return true;
+  return season.methods.some((method) => allowed.has(method));
+}
+
+function CorpsLegalGame({
+  unit,
+  pages,
+  opportunities,
+  speciesLabels,
+  speciesOrder,
+}: {
+  unit: Unit;
+  pages: CountyHunting[];
+  opportunities: Opportunity[];
+  speciesLabels: Record<string, string>;
+  speciesOrder: string[];
+}) {
+  const order = new Map(speciesOrder.map((id, index) => [id, index]));
+  const speciesIds = [...unit.species].sort(
+    (a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999) || a.localeCompare(b),
+  );
+  const cards = speciesIds.map((species) => {
+    const opps = opportunities.filter((opp) => opp.species === species);
+    const allowed = new Set(opps.flatMap((opp) => opp.methods));
+    const animals: { page: CountyHunting; animal: CountyAnimal }[] = [];
+    for (const page of pages) {
+      const animal = page.animals.find((item) => item.species === species);
+      if (animal) animals.push({ page, animal });
+    }
+    const label = animals[0]?.animal.label || speciesLabels[species] || opps[0]?.speciesLabel || species;
+    const zone = animals.find((row) => row.animal.zone)?.animal.zone ?? "";
+    const bagLimit = animals.find((row) => row.animal.bagLimit)?.animal.bagLimit ?? "";
+    const lines: { key: string; text: string }[] = [];
+    const severalCounties = animals.length > 1;
+    for (const { page, animal } of animals) {
+      animal.seasons.forEach((season, index) => {
+        if (allowed.size > 0 && !seasonFitsLake(season, allowed)) return;
+        const prefix = severalCounties ? `${page.county}: ` : "";
+        const dates = season.windows.map((window) => formatRange(window.start, window.end)).join("; ");
+        lines.push({ key: `${page.county}-${season.title}-${index}`, text: `${prefix}${season.title}: ${dates}` });
+      });
+    }
+    if (lines.length === 0) {
+      for (const opp of opps) {
+        const method = METHOD_LABEL[opp.methods[0]] ?? opp.methods[0];
+        lines.push({ key: opp.id, text: `${method}: ${formatRange(opp.start, opp.end)}` });
+      }
+    }
+    const notes = [...new Set(opps.map((opp) => opp.notes.trim()).filter(Boolean))];
+    return { species, label, zone, bagLimit, lines, notes };
+  });
+
+  if (cards.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold">Legal game</h3>
+      <p className="mb-2 text-xs text-muted">
+        These are the species this lake allows. Dates follow the county Outdoor Annual for the methods the Corps permits.
+      </p>
+      {pages.map((page) => (
+        <ExternalLink
+          key={page.slug ?? page.county}
+          className="mb-1 block text-sm font-semibold text-moss underline"
+          href={page.url}
+        >
+          {page.county} County
+        </ExternalLink>
+      ))}
+      <ul className="mt-1 space-y-2">
+        {cards.map((card) => (
+          <li key={card.species} className="rounded bg-sand px-2 py-1.5 text-sm">
+            <div className="font-medium">
+              {card.label}
+              {card.zone ? <span className="font-normal text-muted"> · {card.zone}</span> : null}
+            </div>
+            {card.bagLimit ? <p className="text-xs text-muted">{card.bagLimit}</p> : null}
+            {card.notes.map((note) => (
+              <p key={note} className="text-xs text-muted">
+                {note}
+              </p>
+            ))}
+            {card.lines.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-xs">
+                {card.lines.map((line) => (
+                  <li key={line.key}>{line.text}</li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const EMPTY_FILTERS: Filters = {
   species: [],
@@ -372,6 +470,14 @@ export default function App() {
                     Outdoor Annual county
                   </ExternalLink>
                 </div>
+                <CorpsLegalGame
+                  unit={selected}
+                  pages={selectedCountyPages}
+                  opportunities={opportunities.filter((opp) => opp.unitId === selected.id)}
+                  speciesLabels={speciesLabels}
+                  speciesOrder={(meta?.species ?? []).map((item) => item.id)}
+                />
+                {selected.boundaryNote && <p className="mb-3 text-xs text-muted">{selected.boundaryNote}</p>}
               </>
             ) : (
               <>
@@ -418,7 +524,7 @@ export default function App() {
               </>
             )}
 
-            {selectedCountyPages.length > 0 && (
+            {!isCorps && selectedCountyPages.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold">County seasons (Outdoor Annual)</h3>
                 <p className="mb-2 text-xs text-muted">

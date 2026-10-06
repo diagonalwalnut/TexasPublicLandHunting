@@ -17,6 +17,8 @@ export default function UsersView({ currentUserId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [role, setRole] = useState<"all" | "admin" | "user">("all");
 
   useEffect(() => {
     let cancel = false;
@@ -77,11 +79,76 @@ export default function UsersView({ currentUserId }: Props) {
         </p>
       </header>
       {error && <p className="mb-3 text-sm text-red-800">{error}</p>}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <label className="text-sm">
+          <span className="mb-1 block text-muted">Search</span>
+          <input
+            className="rounded border border-black/15 bg-white px-2 py-1"
+            value={query}
+            placeholder="Username or email"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-muted">Role</span>
+          <select
+            className="rounded border border-black/15 bg-white px-2 py-1"
+            value={role}
+            onChange={(event) => {
+              const next = event.target.value;
+              setRole(next === "admin" || next === "user" ? next : "all");
+            }}
+          >
+            <option value="all">All</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </label>
+      </div>
       {loading ? (
         <p className="text-sm text-muted">Loading users…</p>
       ) : users.length === 0 ? (
         <p className="text-sm text-muted">No accounts yet.</p>
       ) : (
+        <UserList
+          users={users.filter((user) => {
+            const needle = query.trim().toLowerCase();
+            const matchesQuery =
+              needle === "" ||
+              user.username.toLowerCase().includes(needle) ||
+              user.email.toLowerCase().includes(needle);
+            return matchesQuery && (role === "all" || user.role === role);
+          })}
+          currentUserId={currentUserId}
+          betas={betas}
+          savingId={savingId}
+          onSave={save}
+          onRemove={remove}
+        />
+      )}
+    </div>
+  );
+}
+
+function UserList({
+  users,
+  currentUserId,
+  betas,
+  savingId,
+  onSave,
+  onRemove,
+}: {
+  users: ManagedUser[];
+  currentUserId: string;
+  betas: BetaFeature[];
+  savingId: string | null;
+  onSave: (user: ManagedUser, patch: { role?: "admin" | "user"; betas?: string[] }) => Promise<void>;
+  onRemove: (user: ManagedUser) => Promise<void>;
+}) {
+  if (users.length === 0) {
+    return <p className="text-sm text-muted">No accounts match.</p>;
+  }
+  return (
         <ul className="space-y-3">
           {users.map((user) => {
             const saving = savingId === user.id;
@@ -102,7 +169,7 @@ export default function UsersView({ currentUserId }: Props) {
                         disabled={saving || isSelfAdmin}
                         onChange={(event) => {
                           const role = event.target.value === "admin" ? "admin" : "user";
-                          void save(user, { role });
+                          void onSave(user, { role });
                         }}
                       >
                         <option value="user">User</option>
@@ -113,7 +180,7 @@ export default function UsersView({ currentUserId }: Props) {
                       type="button"
                       className="rounded border border-red-900/30 px-2 py-1 text-sm text-red-900 disabled:opacity-40"
                       disabled={saving || user.id === currentUserId}
-                      onClick={() => void remove(user)}
+                      onClick={() => void onRemove(user)}
                     >
                       Delete
                     </button>
@@ -133,7 +200,7 @@ export default function UsersView({ currentUserId }: Props) {
                               const next = event.target.checked
                                 ? [...user.betas, beta.id]
                                 : user.betas.filter((id) => id !== beta.id);
-                              void save(user, { betas: next });
+                              void onSave(user, { betas: next });
                             }}
                           />
                           {beta.label}
@@ -151,7 +218,5 @@ export default function UsersView({ currentUserId }: Props) {
             );
           })}
         </ul>
-      )}
-    </div>
   );
 }

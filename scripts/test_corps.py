@@ -11,7 +11,14 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from corps import ALLOWED_LINK_SUFFIXES, CORPS_ACCESS, VALID_METHODS, build_corps, load_areas  # noqa: E402
+from corps import (  # noqa: E402
+    ALLOWED_LINK_SUFFIXES,
+    CORPS_ACCESS,
+    CORPS_DIR,
+    VALID_METHODS,
+    build_corps,
+    load_areas,
+)
 from county_seasons import load_counties  # noqa: E402
 from species import SPECIES  # noqa: E402
 
@@ -82,6 +89,20 @@ def main() -> int:
     deer_opps = [o for o in whitney_opps if o["species"] == "white_tailed_deer"]
     assert deer_opps, "no deer opportunities for Whitney"
     assert all(o["methods"] == ["archery"] for o in deer_opps), deer_opps
+
+    species = {o["species"] for o in opps}
+    assert "dove" in species and len(species) > 1, species
+    aquilla_dove = [o for o in opp_by_unit["usace-aquilla"] if o["species"] == "dove"]
+    assert aquilla_dove, "Aquilla should keep a dove season"
+    assert all(o["methods"] == ["shotgun"] for o in aquilla_dove), aquilla_dove
+
+    for area in areas:
+        path = CORPS_DIR / f"{area['id']}.geojson"
+        feat = next(f for f in features if f["id"] == area["id"])
+        if path.exists():
+            assert feat["geometry"]["type"] in {"Polygon", "MultiPolygon"}, area["id"]
+            unit = by_unit[area["id"]]
+            assert "PAD-US" in unit.get("boundaryNote", ""), area["id"]
 
     print(f"ok: {len(areas)} Corps areas, {len(opps)} opportunities, {len(features)} features")
     return 0
