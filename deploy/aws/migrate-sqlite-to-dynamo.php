@@ -67,11 +67,19 @@ $put = static function (array $item) use ($ddb, $m, $table, $dryRun): void {
 
 $users = 0;
 $favorites = 0;
-foreach ($pdo->query('SELECT id, username, email, password_hash, role, created_at, updated_at FROM users') as $u) {
+$userCols = [];
+foreach ($pdo->query('PRAGMA table_info(users)') as $col) {
+    $userCols[] = $col['name'];
+}
+$hasBetas = in_array('betas', $userCols, true);
+$userSql = 'SELECT id, username, email, password_hash, role, created_at, updated_at'
+    . ($hasBetas ? ', betas' : '')
+    . ' FROM users';
+foreach ($pdo->query($userSql) as $u) {
     $id = (string) $u['id'];
     $username = (string) $u['username'];
     $email = (string) $u['email'];
-    $put([
+    $profile = [
         'PK' => 'USER#' . $id, 'SK' => 'PROFILE',
         'id' => $id,
         'username' => $username,
@@ -80,7 +88,11 @@ foreach ($pdo->query('SELECT id, username, email, password_hash, role, created_a
         'role' => ($u['role'] ?? 'user') === 'admin' ? 'admin' : 'user',
         'created_at' => (int) ($u['created_at'] ?? time()),
         'updated_at' => (int) ($u['updated_at'] ?? time()),
-    ]);
+    ];
+    if ($hasBetas) {
+        $profile['betas'] = (string) ($u['betas'] ?? '[]');
+    }
+    $put($profile);
     $put(['PK' => 'USERNAME#' . strtolower($username), 'SK' => 'UNAME', 'user_id' => $id]);
     $put(['PK' => 'EMAIL#' . strtolower($email), 'SK' => 'EMAIL', 'user_id' => $id]);
     $users++;

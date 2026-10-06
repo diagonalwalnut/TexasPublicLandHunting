@@ -9,6 +9,7 @@ import AccountBar from "./auth/AccountBar";
 import AuthModal from "./auth/AuthModal";
 import FavoriteButton from "./auth/FavoriteButton";
 import FavoritesView from "./FavoritesView";
+import UsersView from "./UsersView";
 import type { CountyHunting, Filters, Meta, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
@@ -35,6 +36,7 @@ const EMPTY_FILTERS: Filters = {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const canUseOregon = isAdmin || (user?.betas ?? []).includes("oregon");
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -42,12 +44,13 @@ export default function App() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
-  const [view, setView] = useState<"map" | "report" | "saved">("map");
+  const [view, setView] = useState<"map" | "report" | "saved" | "users">("map");
   const [oregonOpen, setOregonOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) setOregonOpen(false);
-  }, [isAdmin]);
+    if (!canUseOregon) setOregonOpen(false);
+    if (!isAdmin && view === "users") setView("map");
+  }, [canUseOregon, isAdmin, view]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,20 +158,35 @@ export default function App() {
           >
             TPWD APH
           </ExternalLink>
-          {isAdmin && (
+          {canUseOregon && (
             <button
               type="button"
               className={`rounded-full px-3 py-1 ${oregonOpen ? "bg-gold text-pine" : "border border-gold/60 text-gold"}`}
-              onClick={() => setOregonOpen(true)}
+              onClick={() => {
+                setView("map");
+                setOregonOpen(true);
+              }}
             >
               Oregon beta
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 ${view === "users" ? "bg-gold text-pine" : "border border-sand/30 hover:bg-white/10"}`}
+              onClick={() => {
+                setOregonOpen(false);
+                setView("users");
+              }}
+            >
+              Users
             </button>
           )}
           <AccountBar savedActive={view === "saved"} onOpenSaved={() => setView("saved")} />
         </div>
       </header>
 
-      {isAdmin && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
+      {canUseOregon && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
       <div className={`flex min-h-0 flex-1 flex-col md:flex-row ${oregonOpen ? "hidden" : ""}`}>
         <aside className="scrollbar-thin order-2 max-h-[42vh] shrink-0 overflow-y-auto border-t border-black/10 bg-sand p-4 md:order-1 md:max-h-none md:w-80 md:border-r md:border-t-0">
           <FilterPanel
@@ -249,6 +267,9 @@ export default function App() {
               </div>
               <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
                 <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
+              </div>
+              <div className={`absolute inset-0 ${view === "users" ? "z-10" : "hidden"}`}>
+                <UsersView currentUserId={user?.id ?? ""} />
               </div>
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
