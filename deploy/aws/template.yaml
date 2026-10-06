@@ -111,6 +111,11 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
         - Statement:
+            - Sid: TransactAccountWrites
+              Effect: Allow
+              Action:
+                - dynamodb:TransactWriteItems
+              Resource: !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
             - Sid: ReadAppKeyParam
               Effect: Allow
               Action: ssm:GetParameter

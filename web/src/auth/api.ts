@@ -36,8 +36,9 @@ export class ApiError extends Error {
 
 async function readError(res: Response): Promise<string> {
   try {
-    const data = (await res.json()) as { error?: string };
+    const data = (await res.json()) as { error?: string; message?: string };
     if (data.error) return data.error;
+    if (data.message) return data.message;
   } catch {
     /* not JSON */
   }
