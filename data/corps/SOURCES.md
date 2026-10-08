@@ -64,8 +64,10 @@ areas:
 The Fort Worth District mobile hunting maps (`usace-swf.maps.arcgis.com` and
 the Whitney Experience Builder app) return 403. Those services are not used.
 
-Whitney and Aquilla polygons are the hatched hunting areas on the 2025 scans,
-georeferenced from town labels and clipped to the PAD-US project:
+Whitney and Aquilla polygons are the hunting compartments on the 2025 scans.
+Each compartment is a green outline with a hatch; the land inside that outline
+is included, not only the hatch strokes. Town labels georeference the scan, and
+the result is clipped to the PAD-US project:
 
 - Whitney: <https://www.swf-wc.usace.army.mil/whitney/maps/WH_2025_Map.pdf>
 - Aquilla: <https://www.swf-wc.usace.army.mil/whitney/maps/AQ_2025_Map.pdf>

@@ -158,10 +158,11 @@ def apply_hunt_maps() -> list[dict]:
 
 
 def _original_project(area_id: str):
+    """PAD-US project polygon, from the commit before hunt-map edits."""
     import subprocess
 
     raw = subprocess.check_output(
-        ["git", "show", f"HEAD:data/corps/{area_id}.geojson"], cwd=ROOT
+        ["git", "show", f"b42c394:data/corps/{area_id}.geojson"], cwd=ROOT
     )
     geom = make_valid(shape(json.loads(raw)["features"][0]["geometry"]))
     if not geom.is_valid:

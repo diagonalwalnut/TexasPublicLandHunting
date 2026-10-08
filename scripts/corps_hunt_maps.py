@@ -109,6 +109,35 @@ def _close(mask: np.ndarray, radius: int) -> np.ndarray:
     return ~_dilate(~_dilate(mask, radius), radius)
 
 
+def _fill_holes(mask: np.ndarray) -> np.ndarray:
+    """Keep land enclosed by a green hunt outline.
+
+    The scan draws each compartment as a green ring with a hatch inside. The
+    hatch does not cover the fields, so a mask of green pixels alone leaves
+    those interiors out. Anything the ring encloses is hunt land.
+    """
+    height, width = mask.shape
+    outside = np.zeros(mask.shape, dtype=bool)
+    queue: deque[tuple[int, int]] = deque()
+    for x in range(width):
+        for y in (0, height - 1):
+            if not mask[y, x] and not outside[y, x]:
+                outside[y, x] = True
+                queue.append((y, x))
+    for y in range(height):
+        for x in (0, width - 1):
+            if not mask[y, x] and not outside[y, x]:
+                outside[y, x] = True
+                queue.append((y, x))
+    while queue:
+        y, x = queue.pop()
+        for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+            if 0 <= ny < height and 0 <= nx < width and not mask[ny, nx] and not outside[ny, nx]:
+                outside[ny, nx] = True
+                queue.append((ny, nx))
+    return ~outside
+
+
 def _green_mask(arr: np.ndarray, ignore: tuple[int, int, int, int]) -> np.ndarray:
     red = arr[:, :, 0].astype(np.int16)
     green = arr[:, :, 1].astype(np.int16)
@@ -146,6 +175,26 @@ def _components(mask: np.ndarray, min_cells: int) -> list[list[tuple[int, int]]]
     return found
 
 
+def _without_holes(geom):
+    """Drop rings that sit inside a hunt compartment."""
+    from shapely.geometry import MultiPolygon, Polygon
+
+    geom = make_valid(geom)
+    if geom.geom_type == "Polygon":
+        return Polygon(geom.exterior)
+    if geom.geom_type == "MultiPolygon":
+        parts = [Polygon(part.exterior) for part in geom.geoms if not part.is_empty]
+        return MultiPolygon(parts) if parts else geom
+    if geom.geom_type == "GeometryCollection":
+        parts = [
+            _without_holes(part)
+            for part in geom.geoms
+            if part.geom_type in {"Polygon", "MultiPolygon"}
+        ]
+        return make_valid(unary_union(parts)) if parts else geom
+    return geom
+
+
 def _cell_box(px: int, py: int, step: int, pix_to_ll) -> object:
     corners = [
         pix_to_ll(px, py),
@@ -164,9 +213,13 @@ def extract_map(spec: dict) -> tuple[object, list[dict]]:
     _download(spec["url"], pdf_path)
     arr = _render(pdf_path)
     pix_to_ll = _fit(spec["controls"])
-    closed = _close(_green_mask(arr, spec["ignore"]), 4)
+    # Close the hatch into a solid ring, then fill everything that ring encloses.
+    sealed = _close(_green_mask(arr, spec["ignore"]), 12)
+    filled = _fill_holes(sealed)
+    x0, y0, x1, y1 = spec["ignore"]
+    filled[y0:y1, x0:x1] = False
     step = 4
-    small = closed[::step, ::step]
+    small = filled[::step, ::step]
     parts = []
     for cells in _components(small, min_cells=40):
         geoms = [_cell_box(x * step, y * step, step, pix_to_ll) for x, y in cells]
@@ -176,7 +229,7 @@ def extract_map(spec: dict) -> tuple[object, list[dict]]:
         parts.append(merged)
     if not parts:
         raise RuntimeError(f"no hunt polygons traced from {spec['id']}")
-    hunt = make_valid(unary_union(parts))
+    hunt = _without_holes(make_valid(unary_union(parts)))
     entries = []
     for name, x, y in spec["entries"]:
         lon, lat = pix_to_ll(x, y)
