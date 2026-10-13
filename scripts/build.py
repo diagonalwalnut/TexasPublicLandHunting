@@ -20,7 +20,13 @@ from geometry import (
     parse_gpx_points,
     parse_kml_polygons,
 )
-from pdfs import apply_general_means, general_season_methods, methods_from_pdf_text, parse_pdf
+from pdfs import (
+    apply_general_means,
+    deer_methods_from_pdf_text,
+    general_season_methods,
+    methods_from_pdf_text,
+    parse_pdf,
+)
 from safe import resource_stem, tpwd_url
 from seasons import SEASON_YEAR, default_calendar, windows_for
 from species import SPECIES, classify_tag, legal_game_tags
@@ -215,7 +221,11 @@ def build() -> None:
         legal_text = pdf_sections.get("LEGAL GAME") or pdf_sections.get("MEANS RESTRICTION") or ""
         pdf_blob = " ".join(pdf_sections.values()) if pdf_sections else legal_text
         pdf_methods = methods_from_pdf_text(pdf_blob) if pdf_blob else []
-        general_means = general_season_methods(pdf_blob) if pdf_blob else None
+        deer_means = deer_methods_from_pdf_text(pdf_blob) if pdf_blob else []
+        if pdf_blob:
+            general_means = deer_means or general_season_methods(pdf_blob)
+        else:
+            general_means = None
         registration = "none"
         blob_text = " ".join(pdf_sections.values()).lower()
         if "electronic on-site" in blob_text or "eosr" in blob_text:
@@ -303,13 +313,26 @@ def build() -> None:
                 methods, used_general_dates = apply_general_means(
                     methods, item["sourceTag"], general_means
                 )
-            if pdf_methods and item["species"] == "white_tailed_deer" and "any_legal" in methods:
-                methods = pdf_methods
+            if item["species"] in {"white_tailed_deer", "mule_deer"} and deer_means:
+                tag_l = item["sourceTag"].lower()
+                archery_tag = "archery" in tag_l and "general" not in tag_l
+                if archery_tag:
+                    methods = ["archery"] if "archery" in deer_means else methods
+                elif "any_legal" in methods or "firearm" in methods:
+                    # Bare "Deer" / youth tags follow the unit Legal Game means.
+                    # When archery has its own tag, general-season rows keep the
+                    # non-bow means and county General dates.
+                    if deer_means == ["archery"]:
+                        methods = ["archery"]
+                    else:
+                        gun = [m for m in deer_means if m != "archery"]
+                        methods = gun or list(deer_means)
+                        used_general_dates = True
             for method in methods:
                 wins: list[dict[str, str]] = []
                 date_source = "county_default"
                 source_county = ""
-                if pdf_sections and item["species"] == "white_tailed_deer" and pdf_methods:
+                if pdf_sections and item["species"] == "white_tailed_deer" and deer_means:
                     date_source = "unit_pdf"
                 date_method = "firearm" if used_general_dates and method != "archery" else method
                 for page in county_pages:

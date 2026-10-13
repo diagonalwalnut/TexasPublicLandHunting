@@ -90,6 +90,18 @@ def main() -> int:
         safe_extract(zpath, dest)
         assert (dest / "ok.txt").read_text() == "yes"
         assert not (root / "evil.txt").exists()
+    # Marlin Lake Park is deer archery only. Twin Buttes allows archery,
+    # shotgun slugs, and muzzleloaders — never centerfire rifle.
+    for uid, allowed in (
+        ("2547", {"archery"}),
+        ("502", {"archery", "shotgun", "muzzleloader"}),
+    ):
+        deer = [o for o in opps if o["unitId"] == uid and o["species"] == "white_tailed_deer"]
+        assert deer, uid
+        methods = {m for o in deer for m in o["methods"]}
+        assert methods <= allowed, (uid, methods)
+        assert "firearm" not in methods and "any_legal" not in methods, (uid, methods)
+
     print(
         f"ok: {len(units)} units, {len(opps)} opportunities, "
         f"{with_county} with county calendars, {with_booklet} with booklet pages"
