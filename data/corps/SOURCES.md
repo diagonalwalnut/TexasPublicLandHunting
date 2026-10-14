@@ -61,10 +61,40 @@ areas:
 
 ## Geometry
 
-Map polygons are Corps project land from the public USGS PAD-US 4.1 fee layer
-(`Mang_Name='USACE'`, Texas), queried from
+The Fort Worth District mobile hunting maps (`usace-swf.maps.arcgis.com` and
+the Whitney Experience Builder app) return 403. Those services are not used.
+
+Whitney and Aquilla polygons are the hunting compartments on the 2025 scans.
+Each compartment is a green outline with a hatch; the land inside that outline
+is included, not only the hatch strokes. Town labels georeference the scan, and
+the result is clipped to the PAD-US project:
+
+- Whitney: <https://www.swf-wc.usace.army.mil/whitney/maps/WH_2025_Map.pdf>
+- Aquilla: <https://www.swf-wc.usace.army.mil/whitney/maps/AQ_2025_Map.pdf>
+
+Both lakes share the Recreation.gov permit
+<https://www.recreation.gov/permits/5303030>, which also links the locked
+interactive map <https://arcg.is/0uS01W2>. Whitney entry points B1–B9 are the
+access labels on that scan. Georgetown’s printable hunting map is
+<https://www.swf-wc.usace.army.mil/georgetown/maps/NFHuntingPolicy_MapandRules.pdf>.
+Other lakes keep a link to the locked web map and the district hunting guide.
+
+The outer project land, used where no hunt scan could be traced, is the USGS
+PAD-US 4.1 fee layer (`Mang_Name='USACE'`, Texas) from
 <https://edits.nationalmap.gov/arcgis/rest/services/PAD-US/PAD_US_Landforms/MapServer/0>.
-`scripts/corps_gis.py` matches each lake to that layer, keeps the polygon only
-when its centroid is near the curated coordinate, and writes
-`data/corps/<id>.geojson`. These shapes are the project boundary, not the hunt
-compartments drawn in the lake PDF. A lake that does not match stays a point.
+`scripts/corps_gis.py` matches each lake and writes `data/corps/<id>.geojson`.
+`scripts/corps_places.py` then removes a named state park when OpenStreetMap
+has a polygon inside the project (Lake Whitney State Park, Atlanta State Park,
+and the Nails Creek and Birch Creek units at Somerville). Parks that cannot be
+matched stay inside the project. Hunters still confirm compartments on the
+official map.
+
+## Access points
+
+`data/corps/access.json` lists Corps-published parks, ramps, and access roads.
+Street addresses are geocoded once with the Census one-line geocoder, then
+Nominatim, and kept only when they fall on the project. Wright Patman points
+are the published degree-minute coordinates in
+<https://www.swf-wc.usace.army.mil/wrightpatman/pdf/WP_Hunting_GPS_Coordinates.pdf>.
+Results are committed in `data/corps/access.geojson` so the site does not
+geocode at runtime.

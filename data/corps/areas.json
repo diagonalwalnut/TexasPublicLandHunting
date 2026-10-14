@@ -16,6 +16,10 @@
     "means": "Archery only for deer and feral hog (crossbows allowed). Shotgun limited to non-toxic #2 shot or smaller for dove, squirrel, rabbit, waterfowl, and turkey. No rifles, pistols, muzzleloaders, slugs, sabots, or buckshot.",
     "links": [
       {
+        "label": "Hunting permit (Recreation.gov)",
+        "url": "https://www.recreation.gov/permits/5303030"
+      },
+      {
         "label": "Aquilla Lake hunting (USACE)",
         "url": "https://www.swf-wc.usace.army.mil/aquilla/"
       },
@@ -26,9 +30,17 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Interactive hunting map (USACE)",
+        "url": "https://arcg.is/0uS01W2"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
-    "mapPdfUrl": "",
+    "mapPdfUrl": "https://www.swf-wc.usace.army.mil/whitney/maps/AQ_2025_Map.pdf",
     "geometry": "usace-aquilla.geojson",
     "tier": 1,
     "species": [
@@ -102,6 +114,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=60fc9b8aba5640d8a943fccaa01f47d5"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -177,6 +197,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=559413736d3449b2b4de2e545828daaf"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -259,6 +287,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=d8adb31954884f3ab88d743a8a593068"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -345,9 +381,17 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=b9d30fa3821e4b9fab42e0ed554e9cbe"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
-    "mapPdfUrl": "",
+    "mapPdfUrl": "https://www.swf-wc.usace.army.mil/georgetown/maps/NFHuntingPolicy_MapandRules.pdf",
     "geometry": "usace-georgetown.geojson",
     "tier": 1,
     "species": [
@@ -414,6 +458,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=6e92400275314a8faa931da055dfc9e6"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -494,6 +546,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=f9acd9901a6d4c16a76053bfc15b8d2c"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -573,6 +633,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=010ac384662544b9bdb81f02d15b5a47"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -644,6 +712,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=b3dc9801121f418ba9aed2404308e72c"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -740,6 +816,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=c7140c90ba8a46a9844954df85d72569"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -810,6 +894,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=35b65fce9f3341d7bf7d01bad1ae59f1"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -878,6 +970,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=7ec5491aaaa34d6d9b287fec2e4e8b93"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -962,6 +1062,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=659e56a613f74e89bdee98af12b9914d"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -1008,6 +1116,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=c9c0e84a4b354374aad1bb0f97275b38"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -1065,6 +1181,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=1199c0b4a0f24ddfa19e22d7deb1fb68"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -1148,6 +1272,14 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=4160eb459622469f91e44f13f81cc86c"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",
@@ -1219,6 +1351,10 @@
     "means": "Archery only for deer and feral hog (crossbows allowed). Shotgun limited to non-toxic #2 shot or smaller for dove, squirrel, rabbit, waterfowl, and turkey. No rifles, pistols, muzzleloaders, slugs, sabots, or buckshot.",
     "links": [
       {
+        "label": "Hunting permit (Recreation.gov)",
+        "url": "https://www.recreation.gov/permits/5303030"
+      },
+      {
         "label": "Whitney Lake hunting (USACE)",
         "url": "https://www.swf-wc.usace.army.mil/whitney/"
       },
@@ -1229,9 +1365,17 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Interactive hunting map (USACE)",
+        "url": "https://arcg.is/0uS01W2"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
-    "mapPdfUrl": "",
+    "mapPdfUrl": "https://www.swf-wc.usace.army.mil/whitney/maps/WH_2025_Map.pdf",
     "geometry": "usace-whitney.geojson",
     "tier": 1,
     "species": [
@@ -1306,6 +1450,18 @@
       {
         "label": "TPWD Outdoor Annual seasons",
         "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/"
+      },
+      {
+        "label": "Hunting map (USACE)",
+        "url": "https://usace-swf.maps.arcgis.com/apps/webappviewer/index.html?id=281a9edbdb434ab8a577ae3e85602ed2"
+      },
+      {
+        "label": "Hunting access GPS (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/wrightpatman/pdf/WP_Hunting_GPS_Coordinates.pdf"
+      },
+      {
+        "label": "District hunting guide (PDF)",
+        "url": "https://www.swf-wc.usace.army.mil/lake/Fort%20Worth%20District%20Hunting%20Guide%202026-2027_FINAL_11%20AUG%202026.pdf"
       }
     ],
     "mapPdfUrl": "",

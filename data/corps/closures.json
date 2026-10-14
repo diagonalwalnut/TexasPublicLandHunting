@@ -1,0 +1,30 @@
+[
+  {
+    "unitId": "usace-whitney",
+    "name": "Lake Whitney State Park",
+    "kind": "state_park",
+    "osmType": "W",
+    "osmId": 28664133
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "Atlanta State Park",
+    "kind": "state_park",
+    "osmType": "W",
+    "osmId": 569038100
+  },
+  {
+    "unitId": "usace-somerville",
+    "name": "Lake Somerville State Park - Nails Creek Unit",
+    "kind": "state_park",
+    "osmType": "W",
+    "osmId": 1112173802
+  },
+  {
+    "unitId": "usace-somerville",
+    "name": "Lake Somerville State Park - Birch Creek Unit",
+    "kind": "state_park",
+    "osmType": "W",
+    "osmId": 56049269
+  }
+]

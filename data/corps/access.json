@@ -1,0 +1,326 @@
+[
+  {
+    "unitId": "usace-whitney",
+    "name": "Cedar Creek",
+    "kind": "park",
+    "address": "100 Cedar Creek Park Rd, Whitney, TX 76692"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Cedron Creek",
+    "kind": "park",
+    "address": "557 FM 1713, Morgan, TX 76671"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Kimball Bend",
+    "kind": "park",
+    "lon": -97.4956,
+    "lat": 32.12303
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Lofers Bend East",
+    "kind": "park",
+    "address": "224 Lofers Bend Park Rd, Whitney, TX 76692"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Lofers Bend West",
+    "kind": "park",
+    "address": "100 Lofers Bend Park Rd, Whitney, TX 76692"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Lofers Day Use",
+    "kind": "park",
+    "address": "145 Lofers Bend Park Rd, Whitney, TX 76692"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "McCown Valley",
+    "kind": "park",
+    "address": "283 McCown Valley Rd, Whitney, TX 76692"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Plowman Creek",
+    "kind": "park",
+    "lon": -97.49713,
+    "lat": 32.06829
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Walling Bend",
+    "kind": "park",
+    "address": "1082 FM 2841, Clifton, TX 76634"
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Ham Creek Access",
+    "kind": "boat_ramp",
+    "lon": -97.48753,
+    "lat": 32.17222
+  },
+  {
+    "unitId": "usace-whitney",
+    "name": "Steele Creek Park",
+    "kind": "boat_ramp",
+    "lon": -97.44914,
+    "lat": 32.00585
+  },
+  {
+    "unitId": "usace-aquilla",
+    "name": "Dairy Hill Ramp",
+    "kind": "boat_ramp",
+    "query": "Dairy Hill boat ramp, Aquilla Lake, Texas"
+  },
+  {
+    "unitId": "usace-aquilla",
+    "name": "Hackberry Creek Access",
+    "kind": "boat_ramp",
+    "query": "Hackberry Creek Access, Aquilla Lake, Texas"
+  },
+  {
+    "unitId": "usace-aquilla",
+    "name": "Old School Boat Ramp",
+    "kind": "boat_ramp",
+    "query": "Old School boat ramp, Aquilla Lake, Texas"
+  },
+  {
+    "unitId": "usace-bardwell",
+    "name": "High View Park",
+    "kind": "boat_ramp",
+    "address": "262 High View Rd, Ennis, TX"
+  },
+  {
+    "unitId": "usace-bardwell",
+    "name": "Mott Park",
+    "kind": "boat_ramp",
+    "address": "957 FM 985, Ennis, TX"
+  },
+  {
+    "unitId": "usace-bardwell",
+    "name": "Waxahachie Creek Park",
+    "kind": "boat_ramp",
+    "address": "930 Bozek Rd, Waxahachie, TX"
+  },
+  {
+    "unitId": "usace-belton",
+    "name": "Westcliff Park",
+    "kind": "park",
+    "address": "4200 Westcliff Road, Belton, TX 76513"
+  },
+  {
+    "unitId": "usace-belton",
+    "name": "Live Oak Ridge Park",
+    "kind": "park",
+    "address": "2000 FM 2271, Belton, TX 76513"
+  },
+  {
+    "unitId": "usace-belton",
+    "name": "Cedar Ridge Park",
+    "kind": "park",
+    "address": "3790 Cedar Ridge Park Road, Temple, TX 76502"
+  },
+  {
+    "unitId": "usace-belton",
+    "name": "White Flint Park",
+    "kind": "park",
+    "address": "10718 White Flint Park Road, Moody, TX 76557"
+  },
+  {
+    "unitId": "usace-georgetown",
+    "name": "Cedar Breaks Park",
+    "kind": "boat_ramp",
+    "lon": -97.73976,
+    "lat": 30.67124
+  },
+  {
+    "unitId": "usace-georgetown",
+    "name": "Jim Hogg Park",
+    "kind": "boat_ramp",
+    "lon": -97.74424,
+    "lat": 30.68451
+  },
+  {
+    "unitId": "usace-georgetown",
+    "name": "Russell Park",
+    "kind": "boat_ramp",
+    "lon": -97.75666,
+    "lat": 30.67636
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Copperas East",
+    "kind": "boat_ramp",
+    "lon": -98.49801,
+    "lat": 31.96721
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Copperas West",
+    "kind": "boat_ramp",
+    "lon": -98.506,
+    "lat": 31.974
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Copperas Day Use",
+    "kind": "boat_ramp",
+    "lon": -98.489,
+    "lat": 31.969
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Sowell Creek Campground",
+    "kind": "boat_ramp",
+    "lon": -98.46,
+    "lat": 31.992
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Sowell Creek Day Use",
+    "kind": "boat_ramp",
+    "lon": -98.469,
+    "lat": 31.973
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Promontory North",
+    "kind": "boat_ramp",
+    "lon": -98.483,
+    "lat": 31.988
+  },
+  {
+    "unitId": "usace-proctor",
+    "name": "Promontory South",
+    "kind": "boat_ramp",
+    "lon": -98.496,
+    "lat": 31.978
+  },
+  {
+    "unitId": "usace-stillhouse-hollow",
+    "name": "Union Grove Park",
+    "kind": "park",
+    "address": "8680 Union Grove Park Road, Salado, TX 76571"
+  },
+  {
+    "unitId": "usace-stillhouse-hollow",
+    "name": "Dana Peak Park",
+    "kind": "park",
+    "address": "3800 Comanche Gap Road, Harker Heights, TX"
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-25 Mudd Lake, Bassett Creek",
+    "kind": "entry",
+    "lon": -94.5677,
+    "lat": 33.303733
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-26 Picnic Tables, Bassett Creek",
+    "kind": "entry",
+    "lon": -94.521133,
+    "lat": 33.300083
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-99 Glenn's Mill",
+    "kind": "entry",
+    "lon": -94.520967,
+    "lat": 33.300233
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-30 South Corley",
+    "kind": "entry",
+    "lon": -94.390767,
+    "lat": 33.303567
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-34",
+    "kind": "entry",
+    "lon": -94.353017,
+    "lat": 33.28765
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-32",
+    "kind": "entry",
+    "lon": -94.355333,
+    "lat": 33.281217
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-36 Berry Farm",
+    "kind": "entry",
+    "lon": -94.27935,
+    "lat": 33.271333
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-51 Boy Scout",
+    "kind": "entry",
+    "lon": -94.241433,
+    "lat": 33.3036
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-45 Redwater",
+    "kind": "entry",
+    "lon": -94.251033,
+    "lat": 33.340817
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-52 Clear Springs ATV",
+    "kind": "entry",
+    "lon": -94.24955,
+    "lat": 33.334567
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-11 Flatwoods",
+    "kind": "entry",
+    "lon": -94.325717,
+    "lat": 33.226467
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-14 Overcup",
+    "kind": "entry",
+    "lon": -94.36475,
+    "lat": 33.23655
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-19 Black Point",
+    "kind": "entry",
+    "lon": -94.407867,
+    "lat": 33.24385
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-20 Thomas Lake",
+    "kind": "entry",
+    "lon": -94.469867,
+    "lat": 33.26285
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-42 Big Creek ATV",
+    "kind": "entry",
+    "lon": -94.240933,
+    "lat": 33.309367
+  },
+  {
+    "unitId": "usace-wright-patman",
+    "name": "WP-85 Rice Creek",
+    "kind": "entry",
+    "lon": -94.413233,
+    "lat": 33.346867
+  }
+]

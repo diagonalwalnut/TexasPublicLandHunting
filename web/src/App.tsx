@@ -22,6 +22,12 @@ import {
   unitOpportunities,
 } from "./filters";
 
+const ACCESS_KIND_LABEL: Record<string, string> = {
+  entry: "Entry",
+  park: "Parking",
+  boat_ramp: "Boat ramp",
+};
+
 function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
   if (season.access === "youth" || season.access === "youth_adult") return false;
   if (/dusky|veteran|falcon/i.test(season.title)) return false;
@@ -335,6 +341,18 @@ export default function App() {
                         <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#a0522d" }} />
                         Corps of Engineers
                       </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#c4a35a" }} />
+                        Entry
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#1c3b2c" }} />
+                        Parking
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#1d4e89" }} />
+                        Boat ramp
+                      </span>
                     </div>
                   </div>
                   <button
@@ -470,6 +488,19 @@ export default function App() {
                     Outdoor Annual county
                   </ExternalLink>
                 </div>
+                {(selected.accessPoints ?? []).length > 0 && (
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold">Entry and parking</h3>
+                    <ul className="mt-1 space-y-0.5 text-sm text-muted">
+                      {(selected.accessPoints ?? []).map((point) => (
+                        <li key={`${point.kind}-${point.name}`}>
+                          {point.name}
+                          <span className="text-xs"> · {ACCESS_KIND_LABEL[point.kind] ?? point.kind}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <CorpsLegalGame
                   unit={selected}
                   pages={selectedCountyPages}

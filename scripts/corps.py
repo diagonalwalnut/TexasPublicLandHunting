@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Any
 
 from shapely.geometry import shape
+from shapely.ops import unary_union
+from shapely.validation import make_valid
 
 from county_seasons import lookup_county, windows_from_county
 from geometry import centroid_point, geom_to_geojson
@@ -38,6 +40,8 @@ ALLOWED_LINK_SUFFIXES = (
     ".usace.army.mil",
     "tpwd.texas.gov",
     "recreation.gov",
+    "arcgis.com",
+    "arcg.is",
     "tamu.edu",
     "angelo.edu",
 )
@@ -88,6 +92,69 @@ def _windows(
     return windows_for(species, date_method, region, CORPS_ACCESS), "county_default", ""
 
 
+HUNT_BOUNDARY_NOTE = (
+    "Map boundary is the hatched hunting area from the Corps 2025 hunting map. "
+    "Parks and other closed land are left out. Entry points are the labeled "
+    "access points on that map, and parking is taken from the Corps park and "
+    "ramp list. Confirm every compartment on the official map before you hunt."
+)
+CLOSED_BOUNDARY_NOTE = (
+    "Map boundary is Corps project land from USGS PAD-US, with matched closed "
+    "areas removed. It is not the hunt compartments in the lake PDF. Confirm "
+    "closed areas and access on the official map."
+)
+PAD_BOUNDARY_NOTE = (
+    "Map boundary is the Corps project land from USGS PAD-US, "
+    "not the hunt compartments in the lake PDF."
+)
+
+
+def _geometry_path(area: dict[str, Any]) -> Path | None:
+    spec = str(area.get("geometry") or "point").strip().lower()
+    if spec in {"", "point", "tier0"}:
+        return None
+    rel = area["id"] + ".geojson" if spec == "digitized" else spec
+    path = CORPS_DIR / rel
+    return path if path.exists() else None
+
+
+def _feature_props(area: dict[str, Any]) -> dict[str, Any]:
+    path = _geometry_path(area)
+    if path is None:
+        return {}
+    fc = json.loads(path.read_text())
+    feats = fc.get("features") if isinstance(fc, dict) else None
+    if not feats:
+        return {}
+    props = feats[0].get("properties") or {}
+    return props if isinstance(props, dict) else {}
+
+
+def _load_access_points() -> dict[str, list[dict[str, Any]]]:
+    path = CORPS_DIR / "access.geojson"
+    if not path.exists():
+        return {}
+    fc = json.loads(path.read_text())
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for feat in fc.get("features") or []:
+        props = feat.get("properties") or {}
+        coords = (feat.get("geometry") or {}).get("coordinates") or []
+        unit_id = str(props.get("unitId") or "")
+        if not unit_id or len(coords) < 2:
+            continue
+        grouped.setdefault(unit_id, []).append(
+            {
+                "name": str(props.get("name") or ""),
+                "kind": str(props.get("kind") or "entry"),
+                "lon": round(float(coords[0]), 5),
+                "lat": round(float(coords[1]), 5),
+            }
+        )
+    for points in grouped.values():
+        points.sort(key=lambda row: (row["kind"], row["name"]))
+    return grouped
+
+
 def _load_geometry(area: dict[str, Any]):
     """Return a Shapely geometry for an area, or None for a point fallback."""
     spec = str(area.get("geometry") or "point").strip().lower()
@@ -108,17 +175,34 @@ def _load_geometry(area: dict[str, Any]):
         if not geom or geom.get("type") not in {"Polygon", "MultiPolygon"}:
             continue
         try:
-            geoms.append(shape(geom))
+            parsed = make_valid(shape(geom))
         except Exception:
             continue
+        if parsed.geom_type == "GeometryCollection":
+            parsed = unary_union(
+                [part for part in parsed.geoms if part.geom_type in {"Polygon", "MultiPolygon"}]
+            )
+        if parsed.is_empty or parsed.geom_type not in {"Polygon", "MultiPolygon"}:
+            continue
+        geoms.append(parsed)
     if not geoms:
         return None
-    from shapely.ops import unary_union
 
-    merged = unary_union(geoms)
+    try:
+        merged = unary_union(geoms)
+    except Exception:
+        merged = unary_union([g.buffer(0) for g in geoms])
+    merged = make_valid(merged)
+    if merged.geom_type == "GeometryCollection":
+        merged = unary_union(
+            [part for part in merged.geoms if part.geom_type in {"Polygon", "MultiPolygon"}]
+        )
     if merged.is_empty or merged.geom_type not in {"Polygon", "MultiPolygon"}:
         return None
-    return merged.simplify(0.0008, preserve_topology=True)
+    simplified = merged.simplify(0.0008, preserve_topology=True)
+    if simplified.is_empty or simplified.geom_type not in {"Polygon", "MultiPolygon"}:
+        simplified = merged
+    return simplified
 
 
 def load_areas() -> list[dict[str, Any]]:
@@ -131,6 +215,7 @@ def build_corps(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (units, opportunities, features) for all curated Corps areas."""
     areas = load_areas()
+    access_points = _load_access_points()
     units: list[dict[str, Any]] = []
     opportunities: list[dict[str, Any]] = []
     features: list[dict[str, Any]] = []
@@ -202,11 +287,16 @@ def build_corps(
             "lon": round(lon, 5) if lon is not None else None,
             "lat": round(lat, 5) if lat is not None else None,
         }
-        if geom is not None:
-            unit["boundaryNote"] = (
-                "Map boundary is the Corps project land from USGS PAD-US, "
-                "not the hunt compartments in the lake PDF."
-            )
+        props = _feature_props(area)
+        if geom is not None and props.get("boundarySource") == "corps-hunt-map":
+            unit["boundaryNote"] = HUNT_BOUNDARY_NOTE
+        elif geom is not None and props.get("closedNames"):
+            unit["boundaryNote"] = CLOSED_BOUNDARY_NOTE
+        elif geom is not None:
+            unit["boundaryNote"] = PAD_BOUNDARY_NOTE
+        points = access_points.get(area_id) or []
+        if points:
+            unit["accessPoints"] = points
         units.append(unit)
 
         unit_methods: set[str] = set()

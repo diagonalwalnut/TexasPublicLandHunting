@@ -96,13 +96,39 @@ def main() -> int:
     assert aquilla_dove, "Aquilla should keep a dove season"
     assert all(o["methods"] == ["shotgun"] for o in aquilla_dove), aquilla_dove
 
+    from shapely.geometry import Point, shape
+
+    polygon_lakes = 0
     for area in areas:
         path = CORPS_DIR / f"{area['id']}.geojson"
         feat = next(f for f in features if f["id"] == area["id"])
         if path.exists():
             assert feat["geometry"]["type"] in {"Polygon", "MultiPolygon"}, area["id"]
+            polygon_lakes += 1
             unit = by_unit[area["id"]]
-            assert "PAD-US" in unit.get("boundaryNote", ""), area["id"]
+            note = unit.get("boundaryNote", "")
+            if area["id"] in {"usace-whitney", "usace-aquilla"}:
+                assert "2025 hunting map" in note, note
+            else:
+                assert "PAD-US" in note, area["id"]
+    assert polygon_lakes == len(areas), polygon_lakes
+
+    whitney_feat = next(f for f in features if f["id"] == "usace-whitney")
+    whitney_poly = shape(whitney_feat["geometry"])
+    state_park = Point(-97.3616079, 31.9254754)
+    assert not whitney_poly.covers(state_park), "Whitney still covers the state park"
+
+    whitney_unit = by_unit["usace-whitney"]
+    whitney_names = {p["name"] for p in whitney_unit.get("accessPoints") or []}
+    for required in ("Access B1", "Access B9", "Cedar Creek", "Lofers Bend East", "Walling Bend"):
+        assert required in whitney_names, whitney_names
+    assert whitney["mapPdfUrl"].endswith("WH_2025_Map.pdf"), whitney.get("mapPdfUrl")
+    aquilla = next(a for a in areas if a["id"] == "usace-aquilla")
+    assert aquilla["mapPdfUrl"].endswith("AQ_2025_Map.pdf"), aquilla.get("mapPdfUrl")
+
+    patman_names = {p["name"] for p in by_unit["usace-wright-patman"].get("accessPoints") or []}
+    assert "WP-25 Mudd Lake, Bassett Creek" in patman_names, patman_names
+    assert len(patman_names) >= 16, patman_names
 
     print(f"ok: {len(areas)} Corps areas, {len(opps)} opportunities, {len(features)} features")
     return 0

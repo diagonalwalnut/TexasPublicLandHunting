@@ -10,6 +10,13 @@ export type AccessId =
 
 export type UnitLink = { label: string; url: string };
 
+export type AccessPoint = {
+  name: string;
+  kind: "entry" | "park" | "boat_ramp" | string;
+  lon: number;
+  lat: number;
+};
+
 export type Unit = {
   id: string;
   unitIds: string[];
@@ -45,6 +52,7 @@ export type Unit = {
   links?: UnitLink[];
   mapPdfUrl?: string;
   boundaryNote?: string;
+  accessPoints?: AccessPoint[];
 };
 
 export type Opportunity = {

@@ -22,6 +22,11 @@ type UnitProps = {
   lat?: number | null;
   region?: string;
   source?: string;
+  unitId?: string;
+  labelLon?: number;
+  labelLat?: number;
+  kind?: string;
+  name?: string;
 };
 type RegionProps = { name?: string; lon?: number; lat?: number };
 type FeatureLike = {
@@ -163,6 +168,24 @@ export default function HuntMap({
     if (map.getLayer("regions-fill")) map.setFilter("regions-fill", regionFilterExpr);
     if (map.getLayer("regions-line")) map.setFilter("regions-line", regionFilterExpr);
     if (map.getLayer("region-labels")) map.setFilter("region-labels", regionFilterExpr);
+
+    const ids = [...matchingRef.current];
+    const placeFilter: maplibregl.FilterSpecification | null =
+      ids.length === 0
+        ? ["==", ["get", "unitId"], "__none__"]
+        : ids.length === featureIdsRef.current.length
+          ? null
+          : ["in", ["get", "unitId"], ["literal", ids]];
+    for (const layer of [
+      "closures-fill",
+      "closures-line",
+      "closure-labels",
+      "access-entry",
+      "access-park",
+      "access-ramp",
+    ]) {
+      if (map.getLayer(layer)) map.setFilter(layer, placeFilter);
+    }
   };
 
   const fitToSelection = (map: maplibregl.Map) => {
@@ -221,7 +244,10 @@ export default function HuntMap({
     fittedKeyRef.current = null;
 
     map.on("load", async () => {
-      const [units, regions] = await Promise.all([
+      const empty = { type: "FeatureCollection", features: [] };
+      const loadOptional = (url: string) =>
+        fetch(url).then((r) => (r.ok ? r.json() : empty)).catch(() => empty);
+      const [units, regions, closures, access] = await Promise.all([
         fetch("data/units.geojson").then((r) => {
           if (!r.ok) throw new Error("units geojson");
           return r.json();
@@ -230,6 +256,8 @@ export default function HuntMap({
           if (!r.ok) throw new Error("regions geojson");
           return r.json();
         }),
+        loadOptional("data/corps-closures.geojson"),
+        loadOptional("data/corps-access.geojson"),
       ]);
       unitsRef.current = units.features as FeatureLike[];
       regionsRef.current = regions.features as FeatureLike[];
@@ -340,7 +368,105 @@ export default function HuntMap({
         },
       });
 
+      const closureLabels = {
+        type: "FeatureCollection" as const,
+        features: (closures.features ?? [])
+          .filter((f: FeatureLike) => f.properties?.labelLon != null && f.properties?.labelLat != null)
+          .map((f: FeatureLike) => ({
+            type: "Feature" as const,
+            properties: { unitId: f.properties?.unitId, name: "No hunting" },
+            geometry: {
+              type: "Point" as const,
+              coordinates: [f.properties!.labelLon, f.properties!.labelLat],
+            },
+          })),
+      };
+      map.addSource("closures", { type: "geojson", data: closures });
+      map.addSource("closure-labels", { type: "geojson", data: closureLabels });
+      map.addSource("access", { type: "geojson", data: access });
+      map.addLayer({
+        id: "closures-fill",
+        type: "fill",
+        source: "closures",
+        paint: { "fill-color": "#8b1e1e", "fill-opacity": 0.18 },
+      });
+      map.addLayer({
+        id: "closures-line",
+        type: "line",
+        source: "closures",
+        paint: {
+          "line-color": "#8b1e1e",
+          "line-width": 2,
+          "line-dasharray": [2, 1.4],
+        },
+      });
+      map.addLayer({
+        id: "closure-labels",
+        type: "symbol",
+        source: "closure-labels",
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Open Sans Bold"],
+          "text-size": 12,
+          "text-allow-overlap": true,
+        },
+        paint: {
+          "text-color": "#6e1212",
+          "text-halo-color": "#f4efe4",
+          "text-halo-width": 1.4,
+        },
+      });
+      const accessPaint = (
+        color: string,
+        radius: number,
+      ): maplibregl.CircleLayerSpecification["paint"] => ({
+        "circle-radius": radius,
+        "circle-color": color,
+        "circle-stroke-color": "#f4efe4",
+        "circle-stroke-width": 1.6,
+      });
+      map.addLayer({
+        id: "access-entry",
+        type: "circle",
+        source: "access",
+        filter: ["==", ["get", "kind"], "entry"],
+        paint: accessPaint("#c4a35a", 5),
+      });
+      map.addLayer({
+        id: "access-park",
+        type: "circle",
+        source: "access",
+        filter: ["==", ["get", "kind"], "park"],
+        paint: accessPaint("#1c3b2c", 6),
+      });
+      map.addLayer({
+        id: "access-ramp",
+        type: "circle",
+        source: "access",
+        filter: ["==", ["get", "kind"], "boat_ramp"],
+        paint: accessPaint("#1d4e89", 5),
+      });
+
+      const showAccess = (e: maplibregl.MapLayerMouseEvent) => {
+        const feature = e.features?.[0];
+        const name = feature?.properties?.name;
+        if (!name) return;
+        const kind = String(feature?.properties?.kind ?? "");
+        const kindLabel = kind === "boat_ramp" ? "Boat ramp" : kind === "park" ? "Parking" : "Entry";
+        new maplibregl.Popup({ closeButton: false, offset: 10 })
+          .setLngLat(e.lngLat)
+          .setText(`${name} · ${kindLabel}`)
+          .addTo(map);
+      };
+      for (const layer of ["access-entry", "access-park", "access-ramp"]) {
+        map.on("click", layer, showAccess);
+      }
+
       const pickUnit = (e: maplibregl.MapLayerMouseEvent) => {
+        const accessHit = map.queryRenderedFeatures(e.point, {
+          layers: ["access-entry", "access-park", "access-ramp"],
+        });
+        if (accessHit.length) return;
         const f = e.features?.[0];
         const id = (f?.id ?? f?.properties?.id) as string | undefined;
         if (id) callbacks.current.onSelectUnit(String(id));
@@ -362,7 +488,15 @@ export default function HuntMap({
         if (name) callbacks.current.onSelectRegion(String(name));
       });
 
-      for (const layer of ["units-fill", "units-point", "regions-fill", "region-labels"]) {
+      for (const layer of [
+        "units-fill",
+        "units-point",
+        "regions-fill",
+        "region-labels",
+        "access-entry",
+        "access-park",
+        "access-ramp",
+      ]) {
         map.on("mouseenter", layer, () => {
           map.getCanvas().style.cursor = "pointer";
         });
