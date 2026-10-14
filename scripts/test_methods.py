@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from pdfs import (  # noqa: E402
     apply_general_means,
+    deer_methods_from_pdf_text,
     exclusive_methods,
     general_season_methods,
     methods_from_pdf_text,
@@ -90,6 +91,27 @@ def main() -> int:
         assert "muzzleloaders only" in text.lower(), text[:400]
         assert general_season_methods(text) == ["archery", "shotgun", "muzzleloader"]
         assert "firearm" not in methods_from_pdf_text(text)
+
+    # Air rifles are not centerfire rifles.
+    assert "firearm" not in methods_named(
+        "pre-charged pneumatic air rifles/arrow guns are the only legal means"
+    )
+    assert methods_named(
+        "Shotguns with slugs, muzzleloaders, archery equipment, and pre-charged "
+        "pneumatic air rifles/arrow guns are the only legal means allowed"
+    ) == ["archery", "shotgun", "muzzleloader"]
+
+    marlin = Path("/tmp/pdfs/2547.pdf")
+    twin = Path("/tmp/pdfs/502.pdf")
+    if marlin.exists():
+        text = parse_pdf(marlin).get("LEGAL GAME") or ""
+        assert deer_methods_from_pdf_text(text) == ["archery"], text[:300]
+        assert "firearm" not in deer_methods_from_pdf_text(text)
+    if twin.exists():
+        text = parse_pdf(twin).get("LEGAL GAME") or ""
+        means = deer_methods_from_pdf_text(text)
+        assert means == ["archery", "shotgun", "muzzleloader"], means
+        assert "firearm" not in means
 
     print("ok: firearm stays distinct from muzzleloader and shotgun")
     return 0

@@ -97,18 +97,29 @@ def parse_pdf(path: Path) -> dict[str, str]:
     return sections
 
 
+def _strip_air_rifles(text: str) -> str:
+    """Air rifles / PCP air guns are not centerfire rifles."""
+    return re.sub(r"pre-?charged\s+pneumatic\s+|air[\s-]*rifles?(?:/arrow guns?)?", " ", text, flags=re.I)
+
+
 def methods_named(text: str) -> list[str]:
     """Means named in a clause. Rifle/firearm is distinct from shotgun and muzzleloader."""
     t = text.lower()
     found: list[str] = []
-    if re.search(r"archery|\bbows?\b", t):
+    if re.search(r"archery|\bbows?\b|arrow guns?", t):
         found.append("archery")
     if re.search(r"shotguns?", t):
         found.append("shotgun")
     if re.search(r"muzzle-?loaders?", t):
         found.append("muzzleloader")
-    no_rifle = bool(re.search(r"no (?:rifles?|centerfire)|rifles? (?:are )?not|centerfire (?:is |are )?not", t))
-    if not no_rifle and re.search(r"all legal firearms|centerfire|\brifles?\b", t):
+    rifle_text = _strip_air_rifles(t)
+    no_rifle = bool(
+        re.search(
+            r"no (?:rifles?|centerfire)|rifles? (?:are )?not|centerfire (?:is |are )?not",
+            rifle_text,
+        )
+    )
+    if not no_rifle and re.search(r"all legal firearms|centerfire|\brifles?\b", rifle_text):
         found.append("firearm")
     return list(dict.fromkeys(found))
 
@@ -178,6 +189,36 @@ def apply_general_means(methods: list[str], tag: str, general_means: list[str] |
     return list(methods), False
 
 
+def deer_clause_from_pdf(text: str) -> str:
+    """Return the Legal Game sentence that describes deer means."""
+    blob = re.sub(r"\s+", " ", text)
+    match = re.search(
+        r"(?:white-?tailed\s+)?deer\s*:?\s*"
+        r"([\s\S]{0,600}?)(?="
+        r"feral\s+hog|exotic|squirrel|rabbit|hare|dove|teal|waterfowl|"
+        r"turkey|javelina|quail|coyote|furbear|trapping|fishing|gallinule|"
+        r"NOTE:|Notice:|$)",
+        blob,
+        re.I,
+    )
+    return match.group(0).strip() if match else ""
+
+
+def deer_methods_from_pdf_text(text: str) -> list[str]:
+    """Means allowed for deer on the unit, preferring the deer sentence."""
+    clause = deer_clause_from_pdf(text)
+    if clause and re.search(r"archery only|bow only", clause, re.I):
+        return ["archery"]
+    source = clause or text
+    exclusive = exclusive_methods(source)
+    if exclusive:
+        return exclusive
+    general = general_season_methods(source)
+    if general:
+        return general
+    return methods_from_pdf_text(source)
+
+
 def methods_from_pdf_text(text: str) -> list[str]:
     t = text.lower()
     exclusive = exclusive_methods(text)
@@ -193,6 +234,9 @@ def methods_from_pdf_text(text: str) -> list[str]:
         methods.append("muzzleloader")
     if re.search(r"shotguns? only|no rifles?", t):
         methods.append("shotgun")
-    if re.search(r"all legal firearms|centerfire|\brifles?\b", t) and not re.search(r"no rifles?", t):
+    rifle_text = _strip_air_rifles(t)
+    if re.search(r"all legal firearms|centerfire|\brifles?\b", rifle_text) and not re.search(
+        r"no rifles?", rifle_text
+    ):
         methods.append("firearm")
     return methods
