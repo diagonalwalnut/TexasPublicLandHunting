@@ -50,7 +50,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Debug: verify assumed identity
+      - name: Verify assumed identity
         run: |
           set -euo pipefail
           aws sts get-caller-identity
