@@ -50,6 +50,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Debug: verify assumed identity
+        run: |
+          set -euo pipefail
+          aws sts get-caller-identity
+
       - name: Sync to S3 and invalidate CloudFront
         env:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
