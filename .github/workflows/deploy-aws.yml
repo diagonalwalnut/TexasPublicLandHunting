@@ -45,6 +45,7 @@ jobs:
           npm run build
 
       - name: Configure AWS credentials (OIDC)
+        debug: verify assumed identity run: | set -euo pipefail aws sts get-caller-identity
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
