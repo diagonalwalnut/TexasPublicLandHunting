@@ -1,7 +1,11 @@
 // REST-style base. The PHP router accepts both "/api/<action>" and the legacy
 // "/api/index.php?action=<action>" form, so this works against the local PHP
 // dev server and the Lambda Function URL behind CloudFront.
+import type { UnitCorrection } from "../corrections";
+
 const API_BASE = "/api/";
+
+export type { UnitCorrection };
 
 export type Account = {
   id: string;
@@ -191,6 +195,31 @@ export async function deleteAdminUser(userId: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ user_id: userId }),
   });
+}
+
+export async function fetchCorrections(): Promise<UnitCorrection[]> {
+  try {
+    const data = await request<{ corrections?: UnitCorrection[] }>("/corrections");
+    return Array.isArray(data.corrections) ? data.corrections : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveCorrection(input: UnitCorrection): Promise<UnitCorrection[]> {
+  const data = await request<{ corrections?: UnitCorrection[] }>("/corrections", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return Array.isArray(data.corrections) ? data.corrections : [];
+}
+
+export async function clearCorrection(unitId: string): Promise<UnitCorrection[]> {
+  const data = await request<{ corrections?: UnitCorrection[] }>("/corrections", {
+    method: "POST",
+    body: JSON.stringify({ unitId, clear: true }),
+  });
+  return Array.isArray(data.corrections) ? data.corrections : [];
 }
 
 export async function probeApi(): Promise<boolean> {

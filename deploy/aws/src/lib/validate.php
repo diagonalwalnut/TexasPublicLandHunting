@@ -123,3 +123,70 @@ function tplh_is_valid_unit_id(string $unitId): bool
 {
     return preg_match(TPLH_UNIT_ID_PATTERN, $unitId) === 1;
 }
+
+const TPLH_CORRECTION_METHODS = ['archery', 'firearm', 'muzzleloader', 'shotgun'];
+
+/**
+ * @return array{error?:string,note?:string,forbidMethods?:list<string>,speciesMethods?:array<string,list<string>>}
+ */
+function tplh_parse_correction(array $body): array
+{
+    $note = trim(tplh_str($body, 'note', 500));
+    $forbid = [];
+    if (array_key_exists('forbidMethods', $body)) {
+        if (!is_array($body['forbidMethods'])) {
+            return ['error' => 'forbidMethods must be a list.'];
+        }
+        foreach ($body['forbidMethods'] as $method) {
+            if (!is_string($method) || !in_array($method, TPLH_CORRECTION_METHODS, true)) {
+                return ['error' => 'Unknown method.'];
+            }
+            $forbid[$method] = true;
+        }
+    }
+    $speciesMethods = [];
+    if (array_key_exists('speciesMethods', $body)) {
+        if (!is_array($body['speciesMethods'])) {
+            return ['error' => 'speciesMethods must be an object.'];
+        }
+        if (count($body['speciesMethods']) > 40) {
+            return ['error' => 'Too many species.'];
+        }
+        foreach ($body['speciesMethods'] as $species => $methods) {
+            if (!is_string($species) || preg_match('/^[a-z][a-z0-9_]{0,40}$/', $species) !== 1) {
+                return ['error' => 'Unknown species.'];
+            }
+            if (!is_array($methods)) {
+                return ['error' => 'Species methods must be a list.'];
+            }
+            $clean = [];
+            foreach ($methods as $method) {
+                if (!is_string($method) || !in_array($method, TPLH_CORRECTION_METHODS, true)) {
+                    return ['error' => 'Unknown method.'];
+                }
+                $clean[$method] = true;
+            }
+            $ordered = [];
+            foreach (TPLH_CORRECTION_METHODS as $method) {
+                if (isset($clean[$method])) {
+                    $ordered[] = $method;
+                }
+            }
+            $speciesMethods[$species] = $ordered;
+        }
+    }
+    if ($forbid === [] && $speciesMethods === [] && $note === '') {
+        return ['error' => 'Nothing to correct.'];
+    }
+    $forbidOrdered = [];
+    foreach (TPLH_CORRECTION_METHODS as $method) {
+        if (isset($forbid[$method])) {
+            $forbidOrdered[] = $method;
+        }
+    }
+    return [
+        'note' => $note,
+        'forbidMethods' => $forbidOrdered,
+        'speciesMethods' => $speciesMethods,
+    ];
+}

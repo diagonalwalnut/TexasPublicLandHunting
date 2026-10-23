@@ -102,6 +102,46 @@ def _strip_air_rifles(text: str) -> str:
     return re.sub(r"pre-?charged\s+pneumatic\s+|air[\s-]*rifles?(?:/arrow guns?)?", " ", text, flags=re.I)
 
 
+def rifles_prohibited(text: str) -> bool:
+    """True when the text bans centerfire or rimfire rifles rather than allowing them."""
+    rifle_text = _strip_air_rifles(text.lower())
+    return bool(
+        re.search(
+            r"no (?:rifles?|centerfire)|rifles? (?:are )?not|centerfire (?:is |are )?not|"
+            r"(?:centerfire|rimfire|rifles?).{0,120}prohibit(?:ed|ion)?|"
+            r"prohibit(?:ed|ion)?.{0,120}(?:centerfire|rimfire|rifles?)",
+            rifle_text,
+        )
+    )
+
+
+def muzzleloaders_prohibited(text: str) -> bool:
+    t = text.lower()
+    return bool(
+        re.search(
+            r"muzzle-?load\w*.{0,80}prohibit(?:ed|ion)?|prohibit(?:ed|ion)?.{0,80}muzzle-?load",
+            t,
+        )
+    )
+
+
+def prohibited_methods(text: str) -> list[str]:
+    """Means a unit PDF bans. Firearm bans also drop any_legal at apply time."""
+    found: list[str] = []
+    if rifles_prohibited(text):
+        found.append("firearm")
+    if muzzleloaders_prohibited(text):
+        found.append("muzzleloader")
+    return found
+
+
+def apply_means_restriction(methods: list[str], banned: list[str]) -> list[str]:
+    ban = set(banned)
+    if "firearm" in ban:
+        ban.add("any_legal")
+    return [method for method in methods if method not in ban]
+
+
 def methods_named(text: str) -> list[str]:
     """Means named in a clause. Rifle/firearm is distinct from shotgun and muzzleloader."""
     t = text.lower()
@@ -110,16 +150,10 @@ def methods_named(text: str) -> list[str]:
         found.append("archery")
     if re.search(r"shotguns?", t):
         found.append("shotgun")
-    if re.search(r"muzzle-?loaders?", t):
+    if re.search(r"muzzle-?loaders?", t) and not muzzleloaders_prohibited(t):
         found.append("muzzleloader")
     rifle_text = _strip_air_rifles(t)
-    no_rifle = bool(
-        re.search(
-            r"no (?:rifles?|centerfire)|rifles? (?:are )?not|centerfire (?:is |are )?not",
-            rifle_text,
-        )
-    )
-    if not no_rifle and re.search(r"all legal firearms|centerfire|\brifles?\b", rifle_text):
+    if not rifles_prohibited(rifle_text) and re.search(r"all legal firearms|centerfire|\brifles?\b", rifle_text):
         found.append("firearm")
     return list(dict.fromkeys(found))
 
@@ -235,8 +269,8 @@ def methods_from_pdf_text(text: str) -> list[str]:
     if re.search(r"shotguns? only|no rifles?", t):
         methods.append("shotgun")
     rifle_text = _strip_air_rifles(t)
-    if re.search(r"all legal firearms|centerfire|\brifles?\b", rifle_text) and not re.search(
-        r"no rifles?", rifle_text
-    ):
+    if not rifles_prohibited(rifle_text) and re.search(
+        r"all legal firearms|centerfire|\brifles?\b", rifle_text
+    ) and not re.search(r"no rifles?", rifle_text):
         methods.append("firearm")
     return methods

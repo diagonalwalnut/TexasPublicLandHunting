@@ -20,12 +20,15 @@ from geometry import (
     parse_gpx_points,
     parse_kml_polygons,
 )
+from overrides import apply_unit_overrides, load_unit_overrides, sync_feature_corrections
 from pdfs import (
     apply_general_means,
+    apply_means_restriction,
     deer_methods_from_pdf_text,
     general_season_methods,
     methods_from_pdf_text,
     parse_pdf,
+    prohibited_methods,
 )
 from safe import resource_stem, tpwd_url
 from seasons import SEASON_YEAR, default_calendar, windows_for
@@ -226,6 +229,11 @@ def build() -> None:
             general_means = deer_means or general_season_methods(pdf_blob)
         else:
             general_means = None
+        banned = prohibited_methods(pdf_blob) if pdf_blob else []
+        if banned:
+            deer_means = apply_means_restriction(deer_means, banned)
+            if general_means:
+                general_means = apply_means_restriction(general_means, banned) or None
         registration = "none"
         blob_text = " ".join(pdf_sections.values()).lower()
         if "electronic on-site" in blob_text or "eosr" in blob_text:
@@ -328,6 +336,10 @@ def build() -> None:
                         gun = [m for m in deer_means if m != "archery"]
                         methods = gun or list(deer_means)
                         used_general_dates = True
+            if banned:
+                methods = apply_means_restriction(methods, banned)
+            if not methods:
+                continue
             for method in methods:
                 wins: list[dict[str, str]] = []
                 date_source = "county_default"
@@ -388,6 +400,8 @@ def build() -> None:
     units.extend(corps_units)
     opportunities.extend(corps_opps)
     features.extend(corps_features)
+    apply_unit_overrides(units, opportunities, load_unit_overrides())
+    sync_feature_corrections(features, units)
 
     region_features = []
     colors = {
