@@ -109,6 +109,15 @@ function tplh_db(): PDO
         )'
     );
     $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS unit_corrections (
+            unit_id TEXT PRIMARY KEY,
+            species_methods TEXT NOT NULL DEFAULT \'{}\',
+            forbid_methods TEXT NOT NULL DEFAULT \'[]\',
+            note TEXT NOT NULL DEFAULT \'\',
+            updated_at INTEGER NOT NULL
+        )'
+    );
+    $pdo->exec(
         'CREATE TABLE IF NOT EXISTS rate_limits (
             key TEXT PRIMARY KEY,
             window_start INTEGER NOT NULL,
@@ -497,6 +506,56 @@ function tplh_remove_favorite(string $userId, string $unitId): void
 {
     $stmt = tplh_db()->prepare('DELETE FROM favorites WHERE user_id = :u AND unit_id = :i');
     $stmt->execute([':u' => $userId, ':i' => $unitId]);
+}
+
+function tplh_decode_correction_list(string $raw): array
+{
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
+
+function tplh_list_corrections(): array
+{
+    $stmt = tplh_db()->query('SELECT unit_id, species_methods, forbid_methods, note FROM unit_corrections ORDER BY unit_id');
+    $rows = [];
+    foreach ($stmt as $row) {
+        if (!tplh_is_valid_unit_id($row['unit_id'])) {
+            continue;
+        }
+        $rows[] = [
+            'unitId' => $row['unit_id'],
+            'speciesMethods' => tplh_decode_correction_list($row['species_methods']),
+            'forbidMethods' => tplh_decode_correction_list($row['forbid_methods']),
+            'note' => (string) $row['note'],
+        ];
+    }
+    return $rows;
+}
+
+function tplh_save_correction(string $unitId, array $speciesMethods, array $forbidMethods, string $note): void
+{
+    $stmt = tplh_db()->prepare(
+        'INSERT INTO unit_corrections (unit_id, species_methods, forbid_methods, note, updated_at)
+         VALUES (:u, :s, :f, :n, :t)
+         ON CONFLICT(unit_id) DO UPDATE SET
+            species_methods = excluded.species_methods,
+            forbid_methods = excluded.forbid_methods,
+            note = excluded.note,
+            updated_at = excluded.updated_at'
+    );
+    $stmt->execute([
+        ':u' => $unitId,
+        ':s' => json_encode($speciesMethods, JSON_UNESCAPED_SLASHES),
+        ':f' => json_encode($forbidMethods, JSON_UNESCAPED_SLASHES),
+        ':n' => $note,
+        ':t' => time(),
+    ]);
+}
+
+function tplh_delete_correction(string $unitId): void
+{
+    $stmt = tplh_db()->prepare('DELETE FROM unit_corrections WHERE unit_id = :u');
+    $stmt->execute([':u' => $unitId]);
 }
 
 function tplh_is_https(): bool

@@ -138,8 +138,12 @@ try {
         tplh_ok(['ok' => true]);
     }
 
+    if ($path === '/corrections' && $method === 'GET') {
+        tplh_ok(['corrections' => tplh_list_corrections()]);
+    }
+
     if (!$current || !$session) {
-        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/admin/users/update', '/admin/users/delete'], true)) {
+        if (in_array($path, ['/username', '/favorites', '/favorites/delete', '/admin/users/update', '/admin/users/delete', '/corrections'], true)) {
             tplh_fail(401, 'Sign in to continue.');
         }
         tplh_fail(404, 'Not found.');
@@ -174,6 +178,28 @@ try {
         }
         tplh_add_favorite($current['id'], $unitId);
         tplh_ok(['favorites' => tplh_favorite_ids($current['id'])]);
+    }
+
+    if ($path === '/corrections' && $method === 'POST') {
+        tplh_require_json_post();
+        if (!tplh_is_admin($current)) {
+            tplh_fail(403, 'Admin access is required.');
+        }
+        $body = tplh_json_input();
+        $unitId = tplh_str($body, 'unitId', 64);
+        if (!tplh_is_valid_unit_id($unitId)) {
+            tplh_fail(400, 'That unit cannot be corrected.');
+        }
+        if (!empty($body['clear'])) {
+            tplh_delete_correction($unitId);
+            tplh_ok(['corrections' => tplh_list_corrections()]);
+        }
+        $parsed = tplh_parse_correction($body);
+        if (isset($parsed['error'])) {
+            tplh_fail(400, $parsed['error']);
+        }
+        tplh_save_correction($unitId, $parsed['speciesMethods'], $parsed['forbidMethods'], $parsed['note']);
+        tplh_ok(['corrections' => tplh_list_corrections()]);
     }
 
     if ($path === '/favorites/delete' && $method === 'POST') {
