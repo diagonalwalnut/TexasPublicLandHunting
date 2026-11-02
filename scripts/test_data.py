@@ -102,6 +102,22 @@ def main() -> int:
         assert methods <= allowed, (uid, methods)
         assert "firearm" not in methods and "any_legal" not in methods, (uid, methods)
 
+    def matches_whitetail_rifle(opp: dict) -> bool:
+        if opp["species"] != "white_tailed_deer":
+            return False
+        return "firearm" in opp["methods"] or "any_legal" in opp["methods"]
+
+    assert not any(matches_whitetail_rifle(o) and o["unitId"] == "2547" for o in opps)
+    assert not any(matches_whitetail_rifle(o) and o["unitId"] == "733" for o in opps)
+    for species in ("white_tailed_deer", "feral_hog", "coyote", "furbearers"):
+        rows = [o for o in opps if o["unitId"] == "2547" and o["species"] == species]
+        assert rows, species
+        assert all("firearm" not in o["methods"] and "any_legal" not in o["methods"] for o in rows), rows
+    bottom_deer = [o for o in opps if o["unitId"] == "733" and o["species"] == "white_tailed_deer"]
+    assert bottom_deer and all(o["methods"] == ["archery"] for o in bottom_deer), bottom_deer
+    assert "rifle" in by_id["2547"].get("correctionNote", "").lower()
+    assert by_id["733"].get("methodCorrection", {}).get("speciesMethods", {}).get("white_tailed_deer") == ["archery"]
+
     print(
         f"ok: {len(units)} units, {len(opps)} opportunities, "
         f"{with_county} with county calendars, {with_booklet} with booklet pages"

@@ -11,12 +11,16 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from pdfs import (  # noqa: E402
     apply_general_means,
+    apply_means_restriction,
     deer_methods_from_pdf_text,
     exclusive_methods,
     general_season_methods,
     methods_from_pdf_text,
     methods_named,
+    muzzleloaders_prohibited,
     parse_pdf,
+    prohibited_methods,
+    rifles_prohibited,
 )
 from species import methods_from_tag  # noqa: E402
 
@@ -100,6 +104,26 @@ def main() -> int:
         "Shotguns with slugs, muzzleloaders, archery equipment, and pre-charged "
         "pneumatic air rifles/arrow guns are the only legal means allowed"
     ) == ["archery", "shotgun", "muzzleloader"]
+
+    ban = (
+        "Means Restriction: Centerfire/rimfire rifles, pistols, and "
+        "muzzle-loading firearms are PROHIBITED."
+    )
+    assert rifles_prohibited(ban)
+    assert muzzleloaders_prohibited(ban)
+    assert prohibited_methods(ban) == ["firearm", "muzzleloader"]
+    assert "firearm" not in methods_named(ban)
+    assert "firearm" not in methods_from_pdf_text(ban)
+    assert apply_means_restriction(
+        ["archery", "firearm", "any_legal", "muzzleloader"], prohibited_methods(ban)
+    ) == ["archery"]
+    marlin_box = (
+        "White-tailed Deer: Archery Only; each day of the Archery and General seasons. "
+        "Feral Hog: Archery Only. "
+        + ban
+    )
+    assert deer_methods_from_pdf_text(marlin_box) == ["archery"]
+    assert "firearm" not in methods_from_pdf_text(marlin_box)
 
     marlin = Path("/tmp/pdfs/2547.pdf")
     twin = Path("/tmp/pdfs/502.pdf")

@@ -172,6 +172,75 @@ def main() -> int:
         assert status == 200, me
         assert me["user"]["username"] == "trailwalker"
         assert "901S" in me["favorites"]
+
+        anon = Api("http://127.0.0.1:18088")
+        status, listed = anon.call("/api/index.php?action=corrections")
+        assert status == 200, listed
+        assert listed["corrections"] == []
+
+        status, denied = anon.call(
+            "/api/index.php?action=corrections",
+            method="POST",
+            body={"unitId": "2547", "forbidMethods": ["firearm"]},
+        )
+        assert status == 401, denied
+
+        status, forbidden = api2.call(
+            "/api/index.php?action=corrections",
+            method="POST",
+            body={
+                "unitId": "2547",
+                "speciesMethods": {"white_tailed_deer": ["archery"]},
+                "note": "should not save",
+            },
+            csrf=True,
+        )
+        assert status == 403, forbidden
+
+        status, saved = api.call(
+            "/api/index.php?action=corrections",
+            method="POST",
+            body={
+                "unitId": "2547",
+                "forbidMethods": ["firearm"],
+                "speciesMethods": {"white_tailed_deer": ["archery"], "bogus": ["rifle"]},
+                "note": "Archery only",
+            },
+            csrf=True,
+        )
+        assert status == 400, saved
+
+        status, saved = api.call(
+            "/api/index.php?action=corrections",
+            method="POST",
+            body={
+                "unitId": "2547",
+                "forbidMethods": ["firearm"],
+                "speciesMethods": {"white_tailed_deer": ["archery"]},
+                "note": "Archery only",
+            },
+            csrf=True,
+        )
+        assert status == 200, saved
+        assert saved["corrections"] == [
+            {
+                "unitId": "2547",
+                "speciesMethods": {"white_tailed_deer": ["archery"]},
+                "forbidMethods": ["firearm"],
+                "note": "Archery only",
+            }
+        ]
+
+        status, listed = anon.call("/api/index.php?action=corrections")
+        assert status == 200 and listed["corrections"][0]["unitId"] == "2547", listed
+
+        status, cleared = api.call(
+            "/api/index.php?action=corrections",
+            method="POST",
+            body={"unitId": "2547", "clear": True},
+            csrf=True,
+        )
+        assert status == 200 and cleared["corrections"] == [], cleared
         print("auth tests ok (argon2id)")
         return 0
     finally:

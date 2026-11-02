@@ -13,6 +13,7 @@ declare(strict_types=1);
  *   EMAIL#<lower>    / EMAIL            -> user_id                (uniqueness reservation)
  *   SESSION#<hash>   / SESSION          -> user_id,csrf_hash,created_at,expires_at,ttl
  *   USER#<id>        / FAV#<unit_id>    -> unit_id,created_at
+ *   CORRECTION       / UNIT#<unit_id>   -> unit_id,species_methods,forbid_methods,note,updated_at
  *   RL#<key>         / RL               -> window_start,count,locked_until,ttl
  *
  * Local testing: set AUTH_DDB_ENDPOINT (e.g. http://127.0.0.1:8000) to point at
@@ -734,6 +735,65 @@ function tplh_add_favorite(string $userId, string $unitId): void
 function tplh_remove_favorite(string $userId, string $unitId): void
 {
     tplh_delete_item('USER#' . $userId, 'FAV#' . $unitId);
+}
+
+function tplh_decode_correction_list(string $raw): array
+{
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
+
+function tplh_list_corrections(): array
+{
+    $rows = [];
+    $params = [
+        'TableName' => tplh_table(),
+        'KeyConditionExpression' => 'PK = :pk AND begins_with(SK, :sk)',
+        'ExpressionAttributeValues' => tplh_marshaler()->marshalItem([
+            ':pk' => 'CORRECTION',
+            ':sk' => 'UNIT#',
+        ]),
+        'ConsistentRead' => true,
+    ];
+    do {
+        $res = tplh_ddb()->query($params);
+        foreach ($res['Items'] ?? [] as $item) {
+            $row = tplh_marshaler()->unmarshalItem($item);
+            $unitId = (string) ($row['unit_id'] ?? '');
+            if ($unitId === '' || !tplh_is_valid_unit_id($unitId)) {
+                continue;
+            }
+            $species = $row['species_methods'] ?? '{}';
+            $forbid = $row['forbid_methods'] ?? '[]';
+            $rows[] = [
+                'unitId' => $unitId,
+                'speciesMethods' => tplh_decode_correction_list(is_string($species) ? $species : '{}'),
+                'forbidMethods' => tplh_decode_correction_list(is_string($forbid) ? $forbid : '[]'),
+                'note' => (string) ($row['note'] ?? ''),
+            ];
+        }
+        $params['ExclusiveStartKey'] = $res['LastEvaluatedKey'] ?? null;
+    } while (!empty($params['ExclusiveStartKey']));
+    usort($rows, static fn($a, $b) => strcmp($a['unitId'], $b['unitId']));
+    return $rows;
+}
+
+function tplh_save_correction(string $unitId, array $speciesMethods, array $forbidMethods, string $note): void
+{
+    tplh_put_item([
+        'PK' => 'CORRECTION',
+        'SK' => 'UNIT#' . $unitId,
+        'unit_id' => $unitId,
+        'species_methods' => json_encode($speciesMethods, JSON_UNESCAPED_SLASHES),
+        'forbid_methods' => json_encode($forbidMethods, JSON_UNESCAPED_SLASHES),
+        'note' => $note,
+        'updated_at' => time(),
+    ]);
+}
+
+function tplh_delete_correction(string $unitId): void
+{
+    tplh_delete_item('CORRECTION', 'UNIT#' . $unitId);
 }
 
 // ---- cookies + request token ------------------------------------------------

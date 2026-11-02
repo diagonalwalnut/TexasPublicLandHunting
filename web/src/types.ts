@@ -10,6 +10,12 @@ export type AccessId =
 
 export type UnitLink = { label: string; url: string };
 
+export type MethodCorrection = {
+  speciesMethods?: Partial<Record<string, MethodId[]>>;
+  forbidMethods?: MethodId[];
+  note?: string;
+};
+
 export type Unit = {
   id: string;
   unitIds: string[];
@@ -45,6 +51,8 @@ export type Unit = {
   links?: UnitLink[];
   mapPdfUrl?: string;
   boundaryNote?: string;
+  correctionNote?: string;
+  methodCorrection?: MethodCorrection;
 };
 
 export type Opportunity = {

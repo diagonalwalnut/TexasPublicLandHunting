@@ -10,6 +10,9 @@ import AuthModal from "./auth/AuthModal";
 import FavoriteButton from "./auth/FavoriteButton";
 import FavoritesView from "./FavoritesView";
 import UsersView from "./UsersView";
+import CorrectionEditor from "./CorrectionEditor";
+import { applyCorrections } from "./corrections";
+import { fetchCorrections, type UnitCorrection } from "./auth/api";
 import type { CountyAnimal, CountyHunting, CountySeason, Filters, Meta, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
@@ -137,6 +140,7 @@ export default function App() {
   const canUseOregon = isAdmin || (user?.betas ?? []).includes("oregon");
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [corrections, setCorrections] = useState<UnitCorrection[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [counties, setCounties] = useState<Record<string, CountyHunting>>({});
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -179,17 +183,34 @@ export default function App() {
       .catch(() => setError("Could not load hunt data."));
   }, []);
 
-  const matchIds = useMemo(
-    () => matchingUnitIds(units, opportunities, filters),
-    [units, opportunities, filters],
+  useEffect(() => {
+    let cancelled = false;
+    fetchCorrections().then((rows) => {
+      if (!cancelled) setCorrections(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const corrected = useMemo(
+    () => applyCorrections(units, opportunities, corrections),
+    [units, opportunities, corrections],
   );
-  const regionCounts = useMemo(() => regionMatchCounts(units, matchIds), [units, matchIds]);
-  const selected = units.find((u) => u.id === selectedId) ?? null;
+  const viewUnits = corrected.units;
+  const viewOpps = corrected.opportunities;
+
+  const matchIds = useMemo(
+    () => matchingUnitIds(viewUnits, viewOpps, filters),
+    [viewUnits, viewOpps, filters],
+  );
+  const regionCounts = useMemo(() => regionMatchCounts(viewUnits, matchIds), [viewUnits, matchIds]);
+  const selected = viewUnits.find((u) => u.id === selectedId) ?? null;
   const selectedCountyPages = useMemo(() => {
     if (!selected?.countySlugs) return [];
     return selected.countySlugs.map((slug) => counties[slug]).filter(Boolean);
   }, [selected, counties]);
-  const selectedOpps = selected ? unitOpportunities(selected.id, opportunities, filters) : [];
+  const selectedOpps = selected ? unitOpportunities(selected.id, viewOpps, filters) : [];
   const isCorps = selected?.source === "usace";
   const speciesLabels = useMemo(
     () => Object.fromEntries((meta?.species ?? []).map((s) => [s.id, s.label])),
@@ -248,7 +269,7 @@ export default function App() {
             </button>
           </div>
           <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
-            {matchIds.size} of {units.length} areas
+            {matchIds.size} of {viewUnits.length} areas
           </span>
           <ExternalLink
             className="rounded-full border border-sand/30 px-3 py-1 hover:bg-white/10"
@@ -322,7 +343,7 @@ export default function App() {
                     <div className="text-xs text-muted">
                       {matchIds.size === 0
                         ? "No public hunt units match these filters"
-                        : matchIds.size === units.length
+                        : matchIds.size === viewUnits.length
                           ? "Click a colored region or a hunt unit"
                           : `Showing ${matchIds.size} matching unit${matchIds.size === 1 ? "" : "s"}`}
                     </div>
@@ -364,7 +385,7 @@ export default function App() {
                 </div>
               </div>
               <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
-                <FavoritesView units={units} onSelectUnit={openUnitOnMap} />
+                <FavoritesView units={viewUnits} onSelectUnit={openUnitOnMap} />
               </div>
               {view === "users" && user && (
                 <div className="absolute inset-0 z-10">
@@ -373,8 +394,8 @@ export default function App() {
               )}
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
-                  units={units}
-                  opportunities={opportunities}
+                  units={viewUnits}
+                  opportunities={viewOpps}
                   filters={filters}
                   speciesLabels={speciesLabels}
                   onSelectUnit={openUnitOnMap}
@@ -414,6 +435,19 @@ export default function App() {
 
             {selected.complexes.length > 0 && (
               <p className="mb-2 text-sm">Includes: {selected.complexes.join(", ")}</p>
+            )}
+
+            {selected.correctionNote && (
+              <p className="mb-3 rounded bg-gold/15 px-2 py-1.5 text-sm text-pine">{selected.correctionNote}</p>
+            )}
+            {isAdmin && (
+              <CorrectionEditor
+                key={selected.id}
+                unit={selected}
+                opportunities={viewOpps.filter((opp) => opp.unitId === selected.id)}
+                speciesLabels={speciesLabels}
+                onChange={setCorrections}
+              />
             )}
 
             {isCorps ? (
@@ -473,7 +507,7 @@ export default function App() {
                 <CorpsLegalGame
                   unit={selected}
                   pages={selectedCountyPages}
-                  opportunities={opportunities.filter((opp) => opp.unitId === selected.id)}
+                  opportunities={viewOpps.filter((opp) => opp.unitId === selected.id)}
                   speciesLabels={speciesLabels}
                   speciesOrder={(meta?.species ?? []).map((item) => item.id)}
                 />

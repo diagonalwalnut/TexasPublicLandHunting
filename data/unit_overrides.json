@@ -1,0 +1,22 @@
+[
+  {
+    "unitId": "2547",
+    "note": "Marlin Lake Park prohibits centerfire and rimfire rifles, pistols, and muzzleloaders. Deer and feral hog are archery only. Squirrel, rabbit, and predators are archery or shotgun.",
+    "forbidMethods": ["firearm", "muzzleloader"],
+    "speciesMethods": {
+      "white_tailed_deer": ["archery"],
+      "feral_hog": ["archery"],
+      "squirrel": ["archery", "shotgun"],
+      "rabbit": ["archery", "shotgun"],
+      "coyote": ["archery", "shotgun"],
+      "furbearers": ["archery", "shotgun"]
+    }
+  },
+  {
+    "unitId": "733",
+    "note": "Big Lake Bottom has no season-long deer rifle hunt. The e-postcard general deer tag is a drawn hunt, not the Anderson County firearm season.",
+    "speciesMethods": {
+      "white_tailed_deer": ["archery"]
+    }
+  }
+]
