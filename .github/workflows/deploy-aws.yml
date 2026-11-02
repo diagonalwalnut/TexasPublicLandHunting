@@ -54,10 +54,10 @@ jobs:
         env:
           ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
         run: |
-          if [[ "$ROLE_ARN" == "arn:aws:iam::022444447241:role/tplh-gha-oidc-diagnostic" ]]; then
-            echo "diagnostic_role_selected=yes"
+          if [[ "$ROLE_ARN" == "arn:aws:iam::022444447241:role/tplh-gha-deploy-tier4" ]]; then
+            echo "production_role_selected=yes"
           else
-            echo "diagnostic_role_selected=no"
+            echo "production_role_selected=no"
           fi
 
       - name: Show OIDC claims (not the token)
@@ -141,10 +141,10 @@ jobs:
         env:
           ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
         run: |
-          if [[ "$ROLE_ARN" == "arn:aws:iam::022444447241:role/tplh-gha-oidc-diagnostic" ]]; then
-            echo "diagnostic_role_selected=yes"
+          if [[ "$ROLE_ARN" == "arn:aws:iam::022444447241:role/tplh-gha-deploy-tier4" ]]; then
+            echo "production_role_selected=yes"
           else
-            echo "diagnostic_role_selected=no"
+            echo "production_role_selected=no"
           fi
 
       - name: Show OIDC claims (not the token)
