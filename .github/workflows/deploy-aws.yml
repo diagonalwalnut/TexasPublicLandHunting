@@ -10,11 +10,11 @@ name: Deploy to AWS
 #
 # Required repo secrets (deploy/aws/setup-github-oidc.sh prints them):
 #   AWS_DEPLOY_ROLE_ARN, AWS_REGION, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID,
-#   BREF_FPM_LAYER_ARN, ALLOWED_ORIGINS, ADMIN_EMAILS (optional)
+#   BREF_FPM_LAYER_ARN, ALLOWED_ORIGINS, ADMIN_EMAILS (optional)on:
 
 on:
   workflow_dispatch:
-   push:
+  push:
      branches: [main]
 
 concurrency:
