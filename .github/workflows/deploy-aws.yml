@@ -55,6 +55,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
+          role-skip-session-tagging: true
 
       - name: Verify assumed identity
         run: |
