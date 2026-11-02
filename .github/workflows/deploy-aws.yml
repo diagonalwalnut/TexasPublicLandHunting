@@ -43,7 +43,13 @@ jobs:
         run: |
           npm ci
           npm run build
-
+          
+      - name: Show OIDC context (no token)
+        run: |
+          echo "repository=${GITHUB_REPOSITORY}"
+          echo "ref=${GITHUB_REF}"
+          echo "event=${GITHUB_EVENT_NAME}"
+        
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -83,6 +89,12 @@ jobs:
         with:
           use-installer: true
 
+      - name: Show OIDC context (no token)
+        run: |
+          echo "repository=${GITHUB_REPOSITORY}"
+          echo "ref=${GITHUB_REF}"
+          echo "event=${GITHUB_EVENT_NAME}"
+        
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
