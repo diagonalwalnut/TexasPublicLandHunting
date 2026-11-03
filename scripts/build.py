@@ -11,6 +11,7 @@ from shapely.geometry import Point, mapping
 
 from booklet import BOOKLET_URL, load_booklet_pages, lookup_unit
 from corps import build_corps
+from county_geometry import write_county_layers
 from county_seasons import load_counties, lookup_county, split_counties, windows_from_county
 from geometry import (
     centroid_point,
@@ -539,6 +540,15 @@ def build() -> None:
         "",
     ]
     (DATA / "SOURCES.md").write_text("\n".join(sources_md))
+    county_pages = {
+        page["slug"]: page
+        for page in county_index.values()
+        if isinstance(page, dict) and page.get("slug")
+    }
+    if len(county_pages) >= 250:
+        write_county_layers(county_pages)
+    else:
+        print(f"skip county boundaries; {len(county_pages)} Outdoor Annual pages cached")
     print(
         f"wrote {len(units)} units, {len(opportunities)} opportunities, "
         f"{meta['polygonCount']} polygons, {len(region_features)} regions"

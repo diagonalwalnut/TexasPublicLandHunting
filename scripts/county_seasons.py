@@ -258,6 +258,76 @@ def _season_blocks(season_dd) -> list[dict[str, Any]]:
     return blocks
 
 
+def _season_note(props: dict[str, str]) -> str:
+    """Regulatory notes for one season. The repeated MLDP paragraph is left out."""
+    parts: list[str] = []
+    for key in ("Special Late Season", "Antlerless Deer"):
+        val = props.get(key, "").strip()
+        if val and val not in parts:
+            parts.append(val)
+    if parts:
+        return " ".join(parts)
+    return (props.get("Bag Limit") or props.get("Daily Bag Limit") or "").strip()
+
+
+def _seasons_in(node, species: str) -> list[dict[str, Any]]:
+    seasons: list[dict[str, Any]] = []
+    for season_dd in node.select("dd.season"):
+        props = _bag_props(season_dd)
+        for block in _season_blocks(season_dd):
+            title = block["title"]
+            methods = methods_from_title(title, species)
+            if methods is None:
+                continue
+            windows = parse_date_ranges(block["raw"])
+            if not windows:
+                continue
+            seasons.append(
+                {
+                    "title": title,
+                    "methods": methods,
+                    "access": access_from_title(title),
+                    "windows": windows,
+                    "rawDates": BeautifulSoup(block["raw"], "lxml").get_text(" ", strip=True),
+                    "notes": _season_note(props),
+                }
+            )
+    return seasons
+
+
+def _zone_and_portion(zone: str, portion: str) -> tuple[str, str]:
+    """IH 35 bag limits in the North Zone are sometimes published as the zone name."""
+    if re.fullmatch(r"(East|West) of IH\s*35", zone.strip(), re.I):
+        return "North Zone", portion or zone.strip()
+    return zone, portion
+
+
+def _animal_record(
+    species: str,
+    label: str,
+    zone: str,
+    portion: str,
+    zone_bags: dict[str, str],
+    seasons: list[dict[str, Any]],
+) -> dict[str, Any]:
+    bag = zone_bags.get("Bag Limit", "") or zone_bags.get("Daily Bag Limit", "")
+    if not bag:
+        for season in seasons:
+            note = season.get("notes") or ""
+            if note and "special late" not in note.lower() and "antlerless" not in note.lower():
+                bag = note
+                break
+    return {
+        "species": species,
+        "label": label,
+        "zone": zone,
+        "portion": portion,
+        "bagLimit": bag,
+        "antlerRestrictions": zone_bags.get("Antler Restrictions", ""),
+        "seasons": seasons,
+    }
+
+
 def parse_county_html(html: str, slug: str = "") -> dict[str, Any]:
     soup = BeautifulSoup(html, "lxml")
     h1 = soup.h1.get_text(" ", strip=True) if soup.h1 else slug
@@ -270,42 +340,29 @@ def parse_county_html(html: str, slug: str = "") -> dict[str, Any]:
         species = species_from_animal(animal_id, label)
         if not species:
             continue
+        groups = animal.select("dl.zonegroup")
+        if groups:
+            for group in groups:
+                zone_el = group.select_one(".zonename")
+                portion_el = group.select_one("h3.zonesubname")
+                zone = zone_el.get_text(" ", strip=True) if zone_el else ""
+                portion = portion_el.get_text(" ", strip=True) if portion_el else ""
+                zone, portion = _zone_and_portion(zone, portion)
+                zone_bags: dict[str, str] = {}
+                for zone_dd in group.select("dd.zone"):
+                    zone_bags.update(_bag_props(zone_dd))
+                seasons = _seasons_in(group, species)
+                if not seasons and not zone and not portion:
+                    continue
+                animals.append(_animal_record(species, label, zone, portion, zone_bags, seasons))
+            continue
         zone_el = animal.select_one(".zonename")
         zone = zone_el.get_text(" ", strip=True) if zone_el else ""
+        zone, portion = _zone_and_portion(zone, "")
         zone_bags = {}
         for zone_dd in animal.select("dd.zone"):
             zone_bags.update(_bag_props(zone_dd))
-        seasons: list[dict[str, Any]] = []
-        for season_dd in animal.select("dd.season"):
-            props = _bag_props(season_dd)
-            for block in _season_blocks(season_dd):
-                title = block["title"]
-                methods = methods_from_title(title, species)
-                if methods is None:
-                    continue
-                windows = parse_date_ranges(block["raw"])
-                if not windows:
-                    continue
-                seasons.append(
-                    {
-                        "title": title,
-                        "methods": methods,
-                        "access": access_from_title(title),
-                        "windows": windows,
-                        "rawDates": BeautifulSoup(block["raw"], "lxml").get_text(" ", strip=True),
-                        "notes": props.get("Bag Limit") or props.get("Daily Bag Limit") or "",
-                    }
-                )
-        animals.append(
-            {
-                "species": species,
-                "label": label,
-                "zone": zone,
-                "bagLimit": zone_bags.get("Bag Limit", ""),
-                "antlerRestrictions": zone_bags.get("Antler Restrictions", ""),
-                "seasons": seasons,
-            }
-        )
+        animals.append(_animal_record(species, label, zone, portion, zone_bags, _seasons_in(animal, species)))
     return {
         "county": name,
         "slug": slug,
@@ -320,7 +377,11 @@ def windows_from_county(
     method: str,
     access: str,
 ) -> list[dict[str, str]]:
-    """Pick Outdoor Annual date windows for a unit's legal game/method/access."""
+    """Pick Outdoor Annual date windows for a unit's legal game/method/access.
+
+    Windows from every zone portion are unioned. A unit is not assigned to one
+    side of a split county, so both North and South dates stay available.
+    """
     hits: list[dict[str, str]] = []
     youth = access in {"youth", "youth_adult"}
     for animal in county.get("animals", []):

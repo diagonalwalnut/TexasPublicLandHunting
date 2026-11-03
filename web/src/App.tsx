@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CountyPanel from "./CountyPanel";
 import HuntMap from "./HuntMap";
 import OregonExplorer from "./oregon/OregonExplorer";
 import { useAuth } from "./auth/AuthContext";
@@ -54,20 +55,25 @@ function CorpsLegalGame({
     const allowed = new Set(opps.flatMap((opp) => opp.methods));
     const animals: { page: CountyHunting; animal: CountyAnimal }[] = [];
     for (const page of pages) {
-      const animal = page.animals.find((item) => item.species === species);
-      if (animal) animals.push({ page, animal });
+      for (const animal of page.animals) {
+        if (animal.species === species) animals.push({ page, animal });
+      }
     }
     const label = animals[0]?.animal.label || speciesLabels[species] || opps[0]?.speciesLabel || species;
-    const zone = animals.find((row) => row.animal.zone)?.animal.zone ?? "";
-    const bagLimit = animals.find((row) => row.animal.bagLimit)?.animal.bagLimit ?? "";
+    const zone = [...new Set(animals.map((row) => row.animal.zone).filter(Boolean))].join(" · ");
+    const bagLimit = [...new Set(animals.map((row) => row.animal.bagLimit).filter(Boolean))].join(" · ");
     const lines: { key: string; text: string }[] = [];
-    const severalCounties = animals.length > 1;
     for (const { page, animal } of animals) {
       animal.seasons.forEach((season, index) => {
         if (allowed.size > 0 && !seasonFitsLake(season, allowed)) return;
-        const prefix = severalCounties ? `${page.county}: ` : "";
+        const side = animal.portion || (animals.length > 1 ? animal.zone : "");
+        const where = [pages.length > 1 ? page.county : "", side].filter(Boolean);
+        const prefix = where.length ? `${where.join(" — ")}: ` : "";
         const dates = season.windows.map((window) => formatRange(window.start, window.end)).join("; ");
-        lines.push({ key: `${page.county}-${season.title}-${index}`, text: `${prefix}${season.title}: ${dates}` });
+        lines.push({
+          key: `${page.county}-${animal.zone}-${animal.portion || ""}-${season.title}-${index}`,
+          text: `${prefix}${season.title}: ${dates}`,
+        });
       });
     }
     if (lines.length === 0) {
@@ -145,6 +151,8 @@ export default function App() {
   const [counties, setCounties] = useState<Record<string, CountyHunting>>({});
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
+  const [showCounties, setShowCounties] = useState(true);
   const [satellite, setSatellite] = useState(false);
   const [view, setView] = useState<"map" | "report" | "saved" | "users">("map");
   const [oregonOpen, setOregonOpen] = useState(false);
@@ -210,6 +218,7 @@ export default function App() {
     if (!selected?.countySlugs) return [];
     return selected.countySlugs.map((slug) => counties[slug]).filter(Boolean);
   }, [selected, counties]);
+  const selectedCountyPage = selectedCounty ? counties[selectedCounty] : undefined;
   const selectedOpps = selected ? unitOpportunities(selected.id, viewOpps, filters) : [];
   const isCorps = selected?.source === "usace";
   const speciesLabels = useMemo(
@@ -229,6 +238,7 @@ export default function App() {
   }, [selectedOpps]);
 
   const openUnitOnMap = (id: string) => {
+    setSelectedCounty(null);
     setSelectedId(id);
     setView("map");
   };
@@ -314,6 +324,7 @@ export default function App() {
             onChange={(next) => {
               setFilters(next);
               setSelectedId(null);
+              setSelectedCounty(null);
             }}
           />
           <p className="mt-4 text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
@@ -329,11 +340,21 @@ export default function App() {
                   matchingIds={matchIds}
                   selectedId={selectedId}
                   regionFilter={filters.region}
+                  selectedCounty={selectedCounty}
+                  showCounties={showCounties}
                   satellite={satellite}
                   active={view === "map"}
-                  onSelectUnit={setSelectedId}
+                  onSelectUnit={(id) => {
+                    setSelectedCounty(null);
+                    setSelectedId(id);
+                  }}
+                  onSelectCounty={(slug) => {
+                    setSelectedCounty((current) => (current === slug ? null : slug));
+                    setSelectedId(null);
+                  }}
                   onSelectRegion={(region) => {
                     setSelectedId(null);
+                    setSelectedCounty(null);
                     setFilters((f) => ({ ...f, region: f.region === region ? "" : region }));
                   }}
                 />
@@ -343,11 +364,13 @@ export default function App() {
                     <div className="text-xs text-muted">
                       {matchIds.size === 0
                         ? "No public hunt units match these filters"
-                        : matchIds.size === viewUnits.length
-                          ? "Click a colored region or a hunt unit"
-                          : `Showing ${matchIds.size} matching unit${matchIds.size === 1 ? "" : "s"}`}
+                        : showCounties
+                          ? "Click a county or a hunt unit"
+                          : matchIds.size === viewUnits.length
+                            ? "Click a colored region or a hunt unit"
+                            : `Showing ${matchIds.size} matching unit${matchIds.size === 1 ? "" : "s"}`}
                     </div>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-muted">
+                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted">
                       <span className="inline-flex items-center gap-1">
                         <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#2f6b4f" }} />
                         TPWD / APH
@@ -356,15 +379,44 @@ export default function App() {
                         <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#a0522d" }} />
                         Corps of Engineers
                       </span>
+                      {showCounties && (
+                        <>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="inline-block h-0.5 w-3" style={{ backgroundColor: "#1c3b2c" }} />
+                            County
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <span
+                              className="inline-block h-0 w-3 border-t-2 border-dashed"
+                              style={{ borderColor: "#8a5a12" }}
+                            />
+                            North/South split
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="pointer-events-auto rounded-md bg-white/90 px-2 py-1 text-xs shadow"
-                    onClick={() => setSatellite((s) => !s)}
-                  >
-                    {satellite ? "Map" : "Satellite"}
-                  </button>
+                  <div className="pointer-events-auto mr-12 flex gap-2">
+                    <button
+                      type="button"
+                      className={`rounded-md px-2 py-1 text-xs shadow ${showCounties ? "bg-moss text-white" : "bg-white/90"}`}
+                      onClick={() =>
+                        setShowCounties((on) => {
+                          if (on) setSelectedCounty(null);
+                          return !on;
+                        })
+                      }
+                    >
+                      Counties
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md bg-white/90 px-2 py-1 text-xs shadow"
+                      onClick={() => setSatellite((s) => !s)}
+                    >
+                      {satellite ? "Map" : "Satellite"}
+                    </button>
+                  </div>
                 </div>
                 <div className="pointer-events-none absolute inset-x-0 bottom-8 z-10 flex flex-wrap justify-center gap-1 px-3">
                   {regionCounts.map((row) => (
@@ -376,6 +428,7 @@ export default function App() {
                       }`}
                       onClick={() => {
                         setSelectedId(null);
+                        setSelectedCounty(null);
                         setFilters((f) => ({ ...f, region: f.region === row.region ? "" : row.region }));
                       }}
                     >
@@ -402,6 +455,7 @@ export default function App() {
                   onSelectRegion={(region) => {
                     setFilters((f) => ({ ...f, region }));
                     setSelectedId(null);
+                    setSelectedCounty(null);
                     setView("map");
                   }}
                 />
@@ -571,11 +625,15 @@ export default function App() {
                       {page.county} County
                     </ExternalLink>
                     <ul className="mt-1 space-y-2">
-                      {page.animals.map((animal) => (
-                        <li key={`${page.county}-${animal.label}`} className="rounded bg-sand px-2 py-1.5 text-sm">
+                      {page.animals.map((animal, index) => (
+                        <li
+                          key={`${page.county}-${animal.species}-${animal.zone}-${animal.portion || ""}-${index}`}
+                          className="rounded bg-sand px-2 py-1.5 text-sm"
+                        >
                           <div className="font-medium">
                             {animal.label}
                             {animal.zone ? <span className="font-normal text-muted"> · {animal.zone}</span> : null}
+                            {animal.portion ? <span className="font-normal text-muted"> · {animal.portion}</span> : null}
                           </div>
                           {animal.bagLimit ? <p className="text-xs text-muted">{animal.bagLimit}</p> : null}
                           <ul className="mt-1 space-y-0.5 text-xs">
@@ -628,6 +686,9 @@ export default function App() {
               ))
             )}
           </aside>
+        )}
+        {view === "map" && !selected && selectedCountyPage && (
+          <CountyPanel page={selectedCountyPage} onClose={() => setSelectedCounty(null)} />
         )}
       </div>
       <AuthModal />
