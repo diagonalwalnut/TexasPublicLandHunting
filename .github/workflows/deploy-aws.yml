@@ -10,7 +10,8 @@ name: Deploy to AWS
 #
 # Required repo secrets (deploy/aws/setup-github-oidc.sh prints them):
 #   AWS_DEPLOY_ROLE_ARN, AWS_REGION, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID,
-#   BREF_FPM_LAYER_ARN, ALLOWED_ORIGINS, ADMIN_EMAILS (optional)on:
+#   ADMIN_EMAILS (optional). The Bref layer and allowed hosts come from
+#   deploy/aws/samconfig.toml so a stale secret cannot pin Bref 2-era config.
 
 on:
   workflow_dispatch:
@@ -188,20 +189,69 @@ jobs:
         working-directory: deploy/aws
         run: sam build
 
+      - name: Smoke the built front controller
+        working-directory: deploy/aws
+        run: |
+          set -euo pipefail
+          root=".aws-sam/build/ApiFunction"
+          php -r 'require ".aws-sam/build/ApiFunction/vendor/autoload.php"; exit(class_exists("Bref\\FpmRuntime\\Main") ? 0 : 1);'
+          AWS_EC2_METADATA_DISABLED=true AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION=us-east-1 \
+            php -S 127.0.0.1:8091 -t "$root/src" "$root/src/index.php" >/tmp/tplh-php.log 2>&1 &
+          echo $! >/tmp/tplh-php.pid
+          trap 'kill "$(cat /tmp/tplh-php.pid)" >/dev/null 2>&1 || true' EXIT
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+            if curl -sf --max-time 2 http://127.0.0.1:8091/api/health | grep -q '"ok":true'; then
+              exit 0
+            fi
+            sleep 0.2
+          done
+          echo "built front controller did not answer /api/health" >&2
+          cat /tmp/tplh-php.log >&2 || true
+          exit 1
+
       - name: SAM deploy
         working-directory: deploy/aws
         env:
-          BREF_FPM_LAYER_ARN: ${{ secrets.BREF_FPM_LAYER_ARN }}
-          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
         run: |
           set -euo pipefail
+          # samconfig.toml is the source of truth. CLI overrides replace that
+          # list entirely, so read the layer and hosts from the file and pass
+          # them explicitly. A previous ALLOWED_ORIGINS secret was only the
+          # apex, which rejects sign-in from www.
+          layer="$(sed -n 's/.*"BrefFpmLayerArn=\([^"]*\)".*/\1/p' samconfig.toml)"
+          origins="$(sed -n 's/.*"AllowedOrigins=\([^"]*\)".*/\1/p' samconfig.toml)"
+          [[ -n "$layer" && -n "$origins" ]]
           overrides=(
-            "BrefFpmLayerArn=${BREF_FPM_LAYER_ARN}"
-            "AllowedOrigins=${ALLOWED_ORIGINS}"
+            "BrefFpmLayerArn=${layer}"
+            "AllowedOrigins=${origins}"
           )
           if [[ -n "${ADMIN_EMAILS}" ]]; then
             overrides+=("AdminEmails=${ADMIN_EMAILS}")
           fi
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
             --parameter-overrides "${overrides[@]}"
+
+      - name: Require /api/health
+        env:
+          DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${DISTRIBUTION_ID}" ]]; then
+            aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths '/api/*' >/dev/null
+          fi
+          ok=0
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            code="$(curl -sS -o /tmp/tplh-health.json -w '%{http_code}' --max-time 25 https://huntpubliclandintexas.com/api/health || true)"
+            echo "health status=${code} body=$(head -c 200 /tmp/tplh-health.json || true)"
+            if [[ "$code" == "200" ]] && grep -q '"ok":true' /tmp/tplh-health.json; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          if [[ "$ok" != 1 ]]; then
+            echo "accounts health did not return {\"ok\":true}. Recent Lambda logs:"
+            aws logs tail /aws/lambda/tplh-tier4-api-api --since 15m --format short || true
+            exit 1
+          fi
