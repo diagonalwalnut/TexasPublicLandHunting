@@ -5,7 +5,8 @@
 #
 # After running, set the printed GitHub repo secrets:
 #   AWS_DEPLOY_ROLE_ARN, AWS_REGION, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID,
-#   BREF_FPM_LAYER_ARN, ALLOWED_ORIGINS, ADMIN_EMAILS (optional)
+#   ADMIN_EMAILS (optional). The Bref layer and allowed hosts are read from
+#   deploy/aws/samconfig.toml by the deploy workflow.
 #
 # Usage: deploy/aws/setup-github-oidc.sh
 set -euo pipefail
@@ -158,9 +159,10 @@ $(ok "Set these GitHub repository secrets")
     AWS_REGION                 = ${AWS_REGION}
     S3_BUCKET                  = ${S3_BUCKET}
     CLOUDFRONT_DISTRIBUTION_ID = ${DIST_ID}
-    BREF_FPM_LAYER_ARN         = (current Bref FPM layer, https://runtimes.bref.sh)
-    ALLOWED_ORIGINS            = ${ALLOWED_ORIGINS:-your.domain www.your.domain}
     ADMIN_EMAILS               = ${ADMIN_EMAILS:-}
+
+The Bref layer ARN and allowed hosts are not secrets. Edit them in
+deploy/aws/samconfig.toml (BrefFpmLayerArn and AllowedOrigins).
 
 Then run .github/workflows/deploy-aws.yml from the Actions tab (it is
 manual-dispatch).

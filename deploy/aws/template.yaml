@@ -101,6 +101,9 @@ Resources:
         Variables:
           # The published layer is Bref 3's unified runtime (arm-php-83). HTTP
           # scripts need the FPM mode; the default function mode returns 502.
+          # The deployment package must contain bref/bref ^3 (see composer.json).
+          # Bref 2 does not implement this layer's FPM entrypoint, so every
+          # /api/* call becomes a Function URL 502 and sign-in looks offline.
           BREF_RUNTIME: fpm
           AUTH_TABLE: !Ref TableName
           AUTH_APP_KEY_SSM: !Ref AppKeySsmParam

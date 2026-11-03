@@ -6,8 +6,11 @@ version = 0.1
 #
 # BrefFpmLayerArn is the Bref 3 unified arm64 PHP 8.3 layer
 # (https://runtimes.bref.sh, account 873528684822). The template sets
-# BREF_RUNTIME=fpm so that layer serves HTTP. AllowedOrigins must list your
-# public hostnames. AdminEmails is optional.
+# BREF_RUNTIME=fpm so that layer serves HTTP. composer.json must require
+# bref/bref ^3: the layer loads Bref\FpmRuntime\Main from the deployment
+# package, and Bref 2 never returns an HTTP response (Function URL 502
+# "Internal Server Error", which the site shows as "Accounts not available").
+# AllowedOrigins must list your public hostnames. AdminEmails is optional.
 
 [default.global.parameters]
 stack_name = "tplh-tier4-api"
@@ -27,7 +30,7 @@ parameter_overrides = [
   "AppKeySsmParam=/tplh/tier4/app_key",
   "AllowedOrigins=huntpubliclandintexas.com www.huntpubliclandintexas.com",
   "LambdaArch=arm64",
-  "BrefFpmLayerArn=arn:aws:lambda:us-east-1:873528684822:layer:arm-php-83:23",
+  "BrefFpmLayerArn=arn:aws:lambda:us-east-1:873528684822:layer:arm-php-83:24",
 ]
 
 [default.sync.parameters]
