@@ -26,11 +26,12 @@ function toggleValue<T extends string>(list: T[], value: T): T[] {
 type Props = {
   filters: Filters;
   meta: Meta | null;
+  countyNames?: string[];
   onChange: (filters: Filters) => void;
   onPreset?: (filters: Filters) => void;
 };
 
-export default function FilterPanel({ filters, meta, onChange, onPreset }: Props) {
+export default function FilterPanel({ filters, meta, countyNames, onChange, onPreset }: Props) {
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Quick reports</p>
@@ -172,7 +173,7 @@ export default function FilterPanel({ filters, meta, onChange, onPreset }: Props
           onChange={(e) => onChange({ ...filters, county: e.target.value })}
         >
           <option value="">All counties</option>
-          {(meta?.counties ?? []).map((c) => (
+          {(countyNames ?? meta?.counties ?? []).map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>

@@ -117,7 +117,13 @@ function AnimalCard({ animal, showPortion }: { animal: CountyAnimal; showPortion
   );
 }
 
-export default function CountyPanel({ page, onClose }: { page: CountyHunting; onClose: () => void }) {
+export function CountyRegulations({
+  page,
+  hasPublicLand = true,
+}: {
+  page: CountyHunting;
+  hasPublicLand?: boolean;
+}) {
   const sides = sidesFor(page.animals, page.slug);
   const north = page.animals.filter((animal) => sides.get(animal) === "north");
   const south = page.animals.filter((animal) => sides.get(animal) === "south");
@@ -150,16 +156,7 @@ export default function CountyPanel({ page, onClose }: { page: CountyHunting; on
   }
 
   return (
-    <aside className="scrollbar-thin order-3 max-h-[40vh] w-full shrink-0 overflow-y-auto border-t border-black/10 bg-white p-4 md:max-h-none md:w-96 md:border-l md:border-t-0">
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted">County regulations</p>
-          <h2 className="font-serif text-xl font-semibold">{page.county} County</h2>
-        </div>
-        <button type="button" className="text-muted" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-      </div>
+    <>
       {split ? (
         <p className="mb-2 text-sm font-medium text-pine">
           Split by {roadText}. North Zone and South Zone.
@@ -175,6 +172,12 @@ export default function CountyPanel({ page, onClose }: { page: CountyHunting; on
       <ExternalLink className="mb-3 block text-sm font-semibold text-moss underline" href={page.url}>
         Outdoor Annual — {page.county} County
       </ExternalLink>
+      {!hasPublicLand ? (
+        <p className="mb-3 text-sm text-pine">
+          No public hunting area is mapped in this county. The zone, dates, bag limits, and restrictions below
+          are the county Outdoor Annual rules.
+        </p>
+      ) : null}
       <p className="mb-3 text-xs text-muted">
         Dates, bag limits, and zone lines are from the TPWD Outdoor Annual. Confirm them before you hunt.
       </p>
@@ -197,6 +200,31 @@ export default function CountyPanel({ page, onClose }: { page: CountyHunting; on
           </ul>
         </section>
       ))}
+    </>
+  );
+}
+
+export default function CountyPanel({
+  page,
+  hasPublicLand = true,
+  onClose,
+}: {
+  page: CountyHunting;
+  hasPublicLand?: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <aside className="scrollbar-thin order-3 max-h-[40vh] w-full shrink-0 overflow-y-auto border-t border-black/10 bg-white p-4 md:max-h-none md:w-96 md:border-l md:border-t-0">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted">County regulations</p>
+          <h2 className="font-serif text-xl font-semibold">{page.county} County</h2>
+        </div>
+        <button type="button" className="text-muted" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+      </div>
+      <CountyRegulations page={page} hasPublicLand={hasPublicLand} />
     </aside>
   );
 }

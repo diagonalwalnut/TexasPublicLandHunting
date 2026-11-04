@@ -212,6 +212,35 @@ export default function App() {
     () => matchingUnitIds(viewUnits, viewOpps, filters),
     [viewUnits, viewOpps, filters],
   );
+  const countyPages = useMemo(
+    () => Object.values(counties).sort((a, b) => a.county.localeCompare(b.county)),
+    [counties],
+  );
+  const countyByName = useMemo(
+    () => new Map(countyPages.map((page) => [page.county.toLowerCase(), page])),
+    [countyPages],
+  );
+  const publicLandSlugs = useMemo(() => {
+    const slugs = new Set<string>();
+    for (const unit of viewUnits) {
+      for (const slug of unit.countySlugs ?? []) slugs.add(slug);
+    }
+    return slugs;
+  }, [viewUnits]);
+  const slugForFilters = (next: Filters) => {
+    if (next.county) return countyByName.get(next.county.toLowerCase())?.slug ?? null;
+    const name = next.query.trim().toLowerCase().replace(/\s+county$/, "");
+    const page = name ? countyByName.get(name) : undefined;
+    if (page?.slug && !publicLandSlugs.has(page.slug)) return page.slug;
+    return null;
+  };
+  const applyFilters = (next: Filters) => {
+    setFilters(next);
+    setSelectedId(null);
+    const slug = slugForFilters(next);
+    setSelectedCounty(slug);
+    if (slug && !publicLandSlugs.has(slug)) setShowCounties(true);
+  };
   const regionCounts = useMemo(() => regionMatchCounts(viewUnits, matchIds), [viewUnits, matchIds]);
   const selected = viewUnits.find((u) => u.id === selectedId) ?? null;
   const selectedCountyPages = useMemo(() => {
@@ -321,11 +350,8 @@ export default function App() {
           <FilterPanel
             filters={filters}
             meta={meta}
-            onChange={(next) => {
-              setFilters(next);
-              setSelectedId(null);
-              setSelectedCounty(null);
-            }}
+            countyNames={countyPages.map((page) => page.county)}
+            onChange={applyFilters}
           />
           <p className="mt-4 text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
         </aside>
@@ -349,13 +375,16 @@ export default function App() {
                     setSelectedId(id);
                   }}
                   onSelectCounty={(slug) => {
-                    setSelectedCounty((current) => (current === slug ? null : slug));
+                    const page = counties[slug];
+                    const closing = selectedCounty === slug;
                     setSelectedId(null);
+                    setSelectedCounty(closing ? null : slug);
+                    if (filters.county && (closing || filters.county !== page?.county)) {
+                      setFilters((current) => ({ ...current, county: "" }));
+                    }
                   }}
                   onSelectRegion={(region) => {
-                    setSelectedId(null);
-                    setSelectedCounty(null);
-                    setFilters((f) => ({ ...f, region: f.region === region ? "" : region }));
+                    applyFilters({ ...filters, region: filters.region === region ? "" : region });
                   }}
                 />
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-3">
@@ -363,7 +392,9 @@ export default function App() {
                     <div className="font-semibold">{headline}</div>
                     <div className="text-xs text-muted">
                       {matchIds.size === 0
-                        ? "No public hunt units match these filters"
+                        ? selectedCountyPage && !publicLandSlugs.has(selectedCountyPage.slug ?? "")
+                          ? `No public hunt unit in ${selectedCountyPage.county} County. Zone, dates, and restrictions are in the panel.`
+                          : "No public hunt units match these filters"
                         : showCounties
                           ? "Click a county or a hunt unit"
                           : matchIds.size === viewUnits.length
@@ -427,9 +458,7 @@ export default function App() {
                         filters.region === row.region ? "bg-moss text-white" : "bg-white/90"
                       }`}
                       onClick={() => {
-                        setSelectedId(null);
-                        setSelectedCounty(null);
-                        setFilters((f) => ({ ...f, region: f.region === row.region ? "" : row.region }));
+                        applyFilters({ ...filters, region: filters.region === row.region ? "" : row.region });
                       }}
                     >
                       {row.region} · {row.count}
@@ -452,10 +481,12 @@ export default function App() {
                   filters={filters}
                   speciesLabels={speciesLabels}
                   onSelectUnit={openUnitOnMap}
+                  countyPage={selectedCountyPage}
+                  countyHasPublicLand={
+                    selectedCountyPage?.slug ? publicLandSlugs.has(selectedCountyPage.slug) : true
+                  }
                   onSelectRegion={(region) => {
-                    setFilters((f) => ({ ...f, region }));
-                    setSelectedId(null);
-                    setSelectedCounty(null);
+                    applyFilters({ ...filters, region });
                     setView("map");
                   }}
                 />
@@ -688,7 +719,21 @@ export default function App() {
           </aside>
         )}
         {view === "map" && !selected && selectedCountyPage && (
-          <CountyPanel page={selectedCountyPage} onClose={() => setSelectedCounty(null)} />
+          <CountyPanel
+            page={selectedCountyPage}
+            hasPublicLand={selectedCountyPage.slug ? publicLandSlugs.has(selectedCountyPage.slug) : true}
+            onClose={() => {
+              setSelectedCounty(null);
+              setFilters((current) => {
+                const queryName = current.query.trim().toLowerCase().replace(/\s+county$/, "");
+                return {
+                  ...current,
+                  county: current.county === selectedCountyPage.county ? "" : current.county,
+                  query: queryName === selectedCountyPage.county.toLowerCase() ? "" : current.query,
+                };
+              });
+            }}
+          />
         )}
       </div>
       <AuthModal />
