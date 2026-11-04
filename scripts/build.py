@@ -15,7 +15,9 @@ from county_geometry import write_county_layers
 from county_seasons import load_counties, lookup_county, split_counties, windows_from_county
 from geometry import (
     centroid_point,
+    clean_polygonal,
     dissolve,
+    geojson_polygon,
     geom_to_geojson,
     parse_arcgis_polygons,
     parse_gpx_points,
@@ -138,15 +140,19 @@ def build() -> None:
         CACHE / "kmz_dove" / "doc.kml",
         ("LEASE_NUM", "Unit_Num"),
     )
-    # Authoritative TPWD boundary layer (ArcGIS), used only to gap-fill units that
-    # are missing a polygon from the Details KMZ. Never replaces a good KMZ polygon.
+    # Live Public Hunt Locator polygons (the map linked from TPWD's ArcGIS
+    # Experience). These replace the KMZ snapshot when a unit is on that map.
     arcgis_polys: dict[str, dict] = {}
-    arcgis_path = CACHE / "hunt_polys_arcgis.geojson"
-    if arcgis_path.exists():
-        arcgis_polys = parse_arcgis_polygons(
-            json.loads(arcgis_path.read_text()),
-            ("Unit_Num", "PH_UnitNum"),
-        )
+    for path, fields in (
+        (CACHE / "hunt_polys_arcgis.geojson", ("Unit_Num", "PH_UnitNum")),
+        (CACHE / "dove_polys_arcgis.geojson", ("Unit_Num", "LEASE_NUM", "PH_UnitNum")),
+    ):
+        if not path.exists():
+            continue
+        parsed = parse_arcgis_polygons(json.loads(path.read_text()), fields)
+        for unit_id, record in parsed.items():
+            # Hunt-area polygons win when a unit is drawn on both layers.
+            arcgis_polys.setdefault(unit_id, record)
     points = load_points()
     county_index = load_counties(CACHE / "counties")
     booklet = load_booklet_pages(CACHE / "pwd_bk_w7000_0112a.pdf")
@@ -176,25 +182,28 @@ def build() -> None:
 
         geoms = []
         acres = None
+        gis_geoms = []
+        gis_acres = 0.0
+        has_gis_acres = False
         for uid in ids:
-            blob = hunt_polys.get(uid) or dove_polys.get(uid)
-            if blob:
-                geoms.append(blob["geometry"])
-                if acres is None:
-                    acres = blob.get("acres")
-        geom = dissolve(geoms, simplify=0.0008) if geoms else None
-
-        # GIS gap-fill: if no KMZ polygon, try the authoritative TPWD boundary layer.
-        if geom is None and arcgis_polys:
-            gis_geoms = []
+            blob = arcgis_polys.get(uid)
+            if not blob:
+                continue
+            gis_geoms.append(blob["geometry"])
+            if blob.get("acres"):
+                gis_acres += float(blob["acres"])
+                has_gis_acres = True
+        if gis_geoms:
+            geom = clean_polygonal(dissolve(gis_geoms, simplify=0.0008))
+            acres = gis_acres if has_gis_acres else None
+        else:
             for uid in ids:
-                blob = arcgis_polys.get(uid)
+                blob = hunt_polys.get(uid) or dove_polys.get(uid)
                 if blob:
-                    gis_geoms.append(blob["geometry"])
+                    geoms.append(blob["geometry"])
                     if acres is None:
                         acres = blob.get("acres")
-            if gis_geoms:
-                geom = dissolve(gis_geoms, simplify=0.0008)
+            geom = clean_polygonal(dissolve(geoms, simplify=0.0008)) if geoms else None
 
         lonlat = None
         if geom is not None:
@@ -384,7 +393,7 @@ def build() -> None:
     for unit in units:
         geom = unit_geoms.get(unit["id"])
         if geom is not None:
-            geometry = geom_to_geojson(geom)
+            geometry = geojson_polygon(geom)
         elif unit["lon"] is not None:
             geometry = {"type": "Point", "coordinates": [round(unit["lon"], 5), round(unit["lat"], 5)]}
         else:
@@ -536,6 +545,8 @@ def build() -> None:
         f"- Units with county Outdoor Annual calendars: {meta.get('countiesWithCalendars', 0)}",
         f"- Units with Map Booklet page numbers: {meta.get('unitsWithBookletPage', 0)}",
         "",
+        "Hunt-area polygons come from the TPWD Public Hunt Locator when it draws that unit.",
+        "The KMZ is the fallback for units the locator does not draw.",
         "Unit map PDFs are not republished here; each unit links to the official TPWD PDF.",
         "",
     ]

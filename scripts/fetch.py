@@ -32,11 +32,16 @@ ARCGIS_POINTS = (
     "{layer}/query?where=1%3D1&outFields=*&f=geojson&outSR=4326&returnGeometry=true"
 )
 
-# Authoritative TPWD polygon boundaries (Public Hunt Area Polygon Features, layer 9).
-# Used to gap-fill units that are missing a polygon from the Details KMZ.
+# Live polygons from TPWD_PublicHuntLocatorMap, the map behind the public
+# hunting Experience and web viewer. Layer 9 is hunt areas; layer 5 is dove leases.
 ARCGIS_HUNT_POLYS = (
     "https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer/"
-    "9/query?where=1%3D1&outFields=PH_UnitNum,Unit_Num,LocName,Class,Acres,CalcAcreage&"
+    "9/query?where=1%3D1&outFields=PH_UnitNum,Unit_Num,LocName,Name,Class,Acres,CalcAcreage&"
+    "f=geojson&outSR=4326&returnGeometry=true"
+)
+ARCGIS_DOVE_POLYS = (
+    "https://tpwd.texas.gov/server/rest/services/Wildlife/TPWD_PublicHuntLocatorMap/MapServer/"
+    "5/query?where=1%3D1&outFields=LEASE_NUM,Unit_Num,LEASE_NAME,Name,Class,ACRES,MAPBOOK_PG&"
     "f=geojson&outSR=4326&returnGeometry=true"
 )
 
@@ -89,11 +94,17 @@ def fetch_core() -> None:
 
 
 def fetch_gis() -> None:
-    """Download authoritative TPWD polygon boundaries for GIS gap-fill."""
+    """Download live TPWD hunt and dove-lease polygons."""
     CACHE.mkdir(parents=True, exist_ok=True)
-    dest = CACHE / "hunt_polys_arcgis.geojson"
-    print("fetch hunt_polys_arcgis.geojson")
-    download_file(ARCGIS_HUNT_POLYS, dest)
+    for name, url in (
+        ("hunt_polys_arcgis.geojson", ARCGIS_HUNT_POLYS),
+        ("dove_polys_arcgis.geojson", ARCGIS_DOVE_POLYS),
+    ):
+        dest = CACHE / name
+        print(f"fetch {name}")
+        if dest.exists():
+            dest.unlink()
+        download_file(url, dest)
 
 
 def fetch_pdfs(limit: int | None = None) -> None:
