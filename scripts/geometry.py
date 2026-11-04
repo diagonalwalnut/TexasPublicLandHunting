@@ -187,6 +187,39 @@ def _finalize_group(parts: list[dict[str, Any]]) -> dict[str, Any] | None:
     }
 
 
+def _arcgis_unit_ids(props: dict[str, Any], id_fields: tuple[str, ...]) -> list[str]:
+    """Unit ids a locator polygon should update.
+
+    Tract numbers such as 747E also belong to the parent unit 747. A combined
+    drawing such as 723_724 stays on its own id so it is not merged into 723.
+    Big Hill and Salt Bayou share unit 783 and are split by the tract name.
+    """
+    cleaned: dict[str, str] = {}
+    for field in id_fields:
+        raw = re.sub(r"[^0-9A-Za-z]", "", str(props.get(field) or ""))
+        if raw:
+            cleaned[field] = raw
+    unit_num = ""
+    for field in id_fields:
+        if field in cleaned:
+            unit_num = cleaned[field]
+            break
+    parent = cleaned.get("PH_UnitNum", "")
+    loc = str(props.get("LocName") or props.get("Name") or props.get("LEASE_NAME") or "")
+    if unit_num == "783" or parent == "783":
+        low = loc.lower()
+        if "big hill" in low:
+            return ["783N"]
+        if "salt bayou" in low:
+            return ["783S"]
+    if not unit_num:
+        return [parent] if parent else []
+    ids = [unit_num]
+    if parent and parent != unit_num and unit_num.startswith(parent) and unit_num[len(parent) :].isalpha():
+        ids.append(parent)
+    return ids
+
+
 def parse_arcgis_polygons(fc: dict[str, Any], id_fields: tuple[str, ...]) -> dict[str, dict[str, Any]]:
     """Parse an Esri/ArcGIS GeoJSON polygon FeatureCollection into unitId -> record.
 
@@ -203,13 +236,8 @@ def parse_arcgis_polygons(fc: dict[str, Any], id_fields: tuple[str, ...]) -> dic
         geom_json = feat.get("geometry") or {}
         if geom_json.get("type") not in {"Polygon", "MultiPolygon"}:
             continue
-        unit_id = ""
-        for field in id_fields:
-            raw = re.sub(r"[^0-9A-Za-z]", "", str(props.get(field) or ""))
-            if raw:
-                unit_id = raw
-                break
-        if not unit_id:
+        unit_ids = _arcgis_unit_ids(props, id_fields)
+        if not unit_ids:
             continue
         try:
             geom: BaseGeometry = shape(geom_json)
@@ -229,21 +257,38 @@ def parse_arcgis_polygons(fc: dict[str, Any], id_fields: tuple[str, ...]) -> dic
                 except ValueError:
                     acres = None
                 break
-        grouped[unit_id].append(
-            {
-                "name": props.get("LocName") or props.get("Name") or "",
-                "class": class_name,
-                "acres": acres,
-                "geometry": geom,
-                "pdf": props.get("MAPBOOK_PG") or "",
-            }
-        )
+        record = {
+            "name": props.get("LocName") or props.get("LEASE_NAME") or props.get("Name") or "",
+            "class": class_name,
+            "acres": acres,
+            "geometry": geom,
+            "pdf": props.get("MAPBOOK_PG") or "",
+            "source_id": unit_ids[0],
+        }
+        for unit_id in unit_ids:
+            grouped[unit_id].append(record)
 
     out: dict[str, dict[str, Any]] = {}
     for unit_id, parts in grouped.items():
         finalized = _finalize_group(parts)
-        if finalized:
-            out[unit_id] = finalized
+        if not finalized:
+            continue
+        preferred = [p for p in parts if p["class"] in PREFER_CLASSES]
+        acre_parts = preferred or parts
+        own = [p for p in acre_parts if p.get("source_id") == unit_id]
+        # A parent boundary already includes its lettered tracts. Sum those
+        # tracts only when the parent has no acreage of its own (Alazan Bayou).
+        chosen = own or acre_parts
+        values: list[float] = []
+        for part in chosen:
+            if not part["acres"]:
+                continue
+            if any(abs(part["acres"] - value) < 1 for value in values):
+                continue
+            values.append(part["acres"])
+        if values:
+            finalized["acres"] = sum(values)
+        out[unit_id] = finalized
     return out
 
 
@@ -272,6 +317,38 @@ def geom_to_geojson(geom, ndigits: int = 5) -> dict[str, Any]:
     gj = mapping(geom)
     gj["coordinates"] = round_coords(gj["coordinates"], ndigits)
     return gj
+
+
+def geojson_polygon(geom, ndigits: int = 5) -> dict[str, Any]:
+    """Round a polygon, then repair rings that rounding collapsed."""
+    gj = geom_to_geojson(geom, ndigits)
+    shaped = shape(gj)
+    if shaped.is_valid and not shaped.is_empty:
+        return gj
+    fixed = clean_polygonal(shaped.buffer(0))
+    if fixed is None:
+        return gj
+    return geom_to_geojson(fixed, ndigits)
+
+
+def clean_polygonal(geom):
+    """Drop a simplify result that is empty or no longer a polygon."""
+    if geom is None or geom.is_empty:
+        return None
+    if not geom.is_valid:
+        geom = make_valid(geom)
+    if geom.geom_type == "GeometryCollection":
+        parts = [
+            part
+            for part in geom.geoms
+            if part.geom_type in {"Polygon", "MultiPolygon"} and not part.is_empty
+        ]
+        geom = unary_union(parts) if parts else None
+    if geom is None or geom.is_empty or geom.geom_type not in {"Polygon", "MultiPolygon"}:
+        return None
+    if not geom.is_valid:
+        geom = make_valid(geom)
+    return geom
 
 
 def dissolve(geoms: list, simplify: float = 0.008):

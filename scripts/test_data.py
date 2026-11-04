@@ -115,6 +115,35 @@ def main() -> int:
         assert all("firearm" not in o["methods"] and "any_legal" not in o["methods"] for o in rows), rows
     bottom_deer = [o for o in opps if o["unitId"] == "733" and o["species"] == "white_tailed_deer"]
     assert bottom_deer and all(o["methods"] == ["archery"] for o in bottom_deer), bottom_deer
+    from geometry import _arcgis_unit_ids
+    from shapely.geometry import shape
+
+    fields = ("Unit_Num", "PH_UnitNum")
+    assert _arcgis_unit_ids({"Unit_Num": "747E", "PH_UnitNum": "747"}, fields) == ["747E", "747"]
+    assert _arcgis_unit_ids({"Unit_Num": "723_724", "PH_UnitNum": "723"}, fields) == ["723724"]
+    assert _arcgis_unit_ids(
+        {"Unit_Num": "783", "PH_UnitNum": "783", "LocName": "J. D. Murphree WMA - Big Hill Unit"},
+        fields,
+    ) == ["783N"]
+    assert _arcgis_unit_ids(
+        {"Unit_Num": "783", "LocName": "J. D. Murphree WMA - Salt Bayou Unit"},
+        fields,
+    ) == ["783S"]
+
+    feats = {feat["properties"]["id"]: feat for feat in geo["features"]}
+    guadalupe = shape(feats["723"]["geometry"])
+    hynes = shape(feats["724"]["geometry"])
+    assert guadalupe.geom_type in {"Polygon", "MultiPolygon"} and guadalupe.is_valid
+    assert hynes.geom_type in {"Polygon", "MultiPolygon"} and hynes.is_valid
+    assert not guadalupe.buffer(0).contains(hynes.centroid)
+    big_hill = shape(feats["783N"]["geometry"])
+    salt_bayou = shape(feats["783S"]["geometry"])
+    assert big_hill.geom_type in {"Polygon", "MultiPolygon"} and big_hill.is_valid
+    assert salt_bayou.geom_type in {"Polygon", "MultiPolygon"} and salt_bayou.is_valid
+    assert big_hill.centroid.distance(salt_bayou.centroid) > 0.05
+    assert by_id["783N"]["acres"] and by_id["783S"]["acres"]
+    assert shape(feats["747"]["geometry"]).area > shape(feats["747E"]["geometry"]).area
+    assert feats["504"]["geometry"]["type"] == "Point"
     assert "rifle" in by_id["2547"].get("correctionNote", "").lower()
     assert by_id["733"].get("methodCorrection", {}).get("speciesMethods", {}).get("white_tailed_deer") == ["archery"]
 

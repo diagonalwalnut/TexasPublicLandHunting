@@ -14,8 +14,10 @@ This dataset is an unofficial compilation. TPWD publications remain authoritativ
 
 - Units: 193
 - Hunt opportunities (species × method × date window): 2225
-- Units with polygons: 160
+- Units with polygons: 180
 - Units with county Outdoor Annual calendars: 193
 - Units with Map Booklet page numbers: 174
+
+Hunt-area polygons were refreshed on November 4, 2026 from the Public Hunt Locator layers used by the TPWD public hunting map: https://experience.arcgis.com/experience/05f2d7ed1aec4991ad4c8c00159c6eb4. Units the locator does not draw keep their previous boundary or point.
 
 Unit map PDFs are not republished here; each unit links to the official TPWD PDF.
