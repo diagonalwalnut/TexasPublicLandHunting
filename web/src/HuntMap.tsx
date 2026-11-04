@@ -5,10 +5,13 @@ type Props = {
   matchingIds: Set<string>;
   selectedId: string | null;
   regionFilter: string;
+  selectedCounty: string | null;
+  satellite: boolean;
+  showCounties: boolean;
+  active: boolean;
   onSelectUnit: (id: string) => void;
   onSelectRegion: (region: string) => void;
-  satellite: boolean;
-  active: boolean;
+  onSelectCounty: (slug: string) => void;
 };
 
 const TEXAS_BOUNDS: maplibregl.LngLatBoundsLike = [
@@ -24,13 +27,16 @@ type UnitProps = {
   source?: string;
 };
 type RegionProps = { name?: string; lon?: number; lat?: number };
+type CountyProps = { slug?: string };
 type FeatureLike = {
   id?: string | number;
-  properties?: UnitProps & RegionProps;
+  properties?: UnitProps & RegionProps & CountyProps;
   geometry?: { type: string; coordinates: unknown };
 };
 
 const CARTO_KEY = "cb1_2l9o_1_42d8008425541ac6684b5dbc";
+const COUNTY_LAYERS = ["counties-fill", "counties-line", "county-splits"] as const;
+const UNIT_HIT_LAYERS = ["units-fill", "units-line", "units-point"];
 
 function rasterStyle(satellite: boolean): maplibregl.StyleSpecification {
   const tiles = satellite
@@ -76,30 +82,45 @@ function withMatch(
   return match ? (["all", geom, match] as maplibregl.FilterSpecification) : geom;
 }
 
+async function fetchGeoJson(path: string): Promise<GeoJSON.FeatureCollection> {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(path);
+  return response.json();
+}
+
 export default function HuntMap({
   matchingIds,
   selectedId,
   regionFilter,
+  selectedCounty,
+  satellite,
+  showCounties,
+  active,
   onSelectUnit,
   onSelectRegion,
-  satellite,
-  active,
+  onSelectCounty,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const featureIdsRef = useRef<string[]>([]);
   const unitsRef = useRef<FeatureLike[]>([]);
   const regionsRef = useRef<FeatureLike[]>([]);
+  const countyFeaturesRef = useRef<FeatureLike[]>([]);
+  const countySlugsRef = useRef<string[]>([]);
   const readyRef = useRef(false);
   const matchingRef = useRef(matchingIds);
   const selectedRef = useRef(selectedId);
   const regionRef = useRef(regionFilter);
+  const selectedCountyRef = useRef(selectedCounty);
+  const showCountiesRef = useRef(showCounties);
   const fittedKeyRef = useRef<string | null>(null);
-  const callbacks = useRef({ onSelectUnit, onSelectRegion });
+  const callbacks = useRef({ onSelectUnit, onSelectRegion, onSelectCounty });
   matchingRef.current = matchingIds;
   selectedRef.current = selectedId;
   regionRef.current = regionFilter;
-  callbacks.current = { onSelectUnit, onSelectRegion };
+  selectedCountyRef.current = selectedCounty;
+  showCountiesRef.current = showCounties;
+  callbacks.current = { onSelectUnit, onSelectRegion, onSelectCounty };
 
   const matchFilter = (): maplibregl.FilterSpecification | null => {
     const ids = [...matchingRef.current];
@@ -144,6 +165,19 @@ export default function HuntMap({
       );
     }
 
+    if (map.getSource("counties")) {
+      const visible = showCountiesRef.current ? "visible" : "none";
+      for (const layer of COUNTY_LAYERS) {
+        if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", visible);
+      }
+      for (const slug of countySlugsRef.current) {
+        map.setFeatureState(
+          { source: "counties", id: slug },
+          { selected: slug === selectedCountyRef.current },
+        );
+      }
+    }
+
     const region = regionRef.current;
     let regionFilterExpr: maplibregl.FilterSpecification | null = null;
     if (region) {
@@ -167,11 +201,10 @@ export default function HuntMap({
 
   const fitToSelection = (map: maplibregl.Map) => {
     const selected = selectedRef.current;
+    const county = selectedCountyRef.current;
     const region = regionRef.current;
     const matchKey = [...matchingRef.current].sort().join(",");
-    const key = selected
-      ? `unit:${selected}`
-      : `filter:${region}:${matchKey}`;
+    const key = selected ? `unit:${selected}` : county ? `county:${county}` : `filter:${region}:${matchKey}`;
     if (key === fittedKeyRef.current) return;
     fittedKeyRef.current = key;
     if (selected) {
@@ -180,6 +213,14 @@ export default function HuntMap({
       const lat = feature?.properties?.lat;
       if (lon != null && lat != null) {
         map.flyTo({ center: [lon, lat], zoom: 10.2, duration: 700 });
+        return;
+      }
+    }
+    if (county) {
+      const feature = countyFeaturesRef.current.find((f) => f.properties?.slug === county);
+      const bounds = feature?.geometry ? geometryBbox(feature.geometry.coordinates) : null;
+      if (bounds) {
+        map.fitBounds(bounds, { padding: 70, duration: 700, maxZoom: 9 });
         return;
       }
     }
@@ -221,20 +262,22 @@ export default function HuntMap({
     fittedKeyRef.current = null;
 
     map.on("load", async () => {
-      const [units, regions] = await Promise.all([
-        fetch("data/units.geojson").then((r) => {
-          if (!r.ok) throw new Error("units geojson");
-          return r.json();
-        }),
-        fetch("data/regions.geojson").then((r) => {
-          if (!r.ok) throw new Error("regions geojson");
-          return r.json();
-        }),
+      const [units, regions, counties, splits] = await Promise.all([
+        fetchGeoJson("data/units.geojson"),
+        fetchGeoJson("data/regions.geojson"),
+        fetchGeoJson("data/counties.geojson"),
+        fetchGeoJson("data/county-splits.geojson"),
       ]);
       unitsRef.current = units.features as FeatureLike[];
       regionsRef.current = regions.features as FeatureLike[];
+      countyFeaturesRef.current = counties.features as FeatureLike[];
+      countySlugsRef.current = countyFeaturesRef.current
+        .map((feature) => feature.properties?.slug)
+        .filter((slug): slug is string => Boolean(slug));
       featureIdsRef.current = unitsRef.current.map((f) => String(f.id ?? f.properties?.id ?? ""));
       map.addSource("regions", { type: "geojson", data: regions });
+      map.addSource("counties", { type: "geojson", data: counties, promoteId: "slug" });
+      map.addSource("county-splits", { type: "geojson", data: splits });
       map.addSource("units", { type: "geojson", data: units, promoteId: "id" });
       const regionPoints = {
         type: "FeatureCollection",
@@ -265,6 +308,34 @@ export default function HuntMap({
           "line-color": ["coalesce", ["get", "color"], "#2f6b4f"],
           "line-width": 1.5,
           "line-opacity": 0.7,
+        },
+      });
+      map.addLayer({
+        id: "counties-fill",
+        type: "fill",
+        source: "counties",
+        paint: {
+          "fill-color": "#c4a35a",
+          "fill-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 0.38, 0],
+        },
+      });
+      map.addLayer({
+        id: "counties-line",
+        type: "line",
+        source: "counties",
+        paint: {
+          "line-color": "#1c3b2c",
+          "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 2.6, 1],
+        },
+      });
+      map.addLayer({
+        id: "county-splits",
+        type: "line",
+        source: "county-splits",
+        paint: {
+          "line-color": "#8a5a12",
+          "line-width": 2.4,
+          "line-dasharray": [1.4, 1.1],
         },
       });
       map.addLayer({
@@ -340,6 +411,9 @@ export default function HuntMap({
         },
       });
 
+      const unitUnder = (point: maplibregl.PointLike) =>
+        map.queryRenderedFeatures(point, { layers: UNIT_HIT_LAYERS }).length > 0;
+
       const pickUnit = (e: maplibregl.MapLayerMouseEvent) => {
         const f = e.features?.[0];
         const id = (f?.id ?? f?.properties?.id) as string | undefined;
@@ -348,21 +422,32 @@ export default function HuntMap({
       map.on("click", "units-fill", pickUnit);
       map.on("click", "units-line", pickUnit);
       map.on("click", "units-point", pickUnit);
+
+      map.on("click", "counties-fill", (e) => {
+        if (!showCountiesRef.current || unitUnder(e.point)) return;
+        const feature = e.features?.[0];
+        const slug = feature?.properties?.slug ?? feature?.id;
+        if (slug) callbacks.current.onSelectCounty(String(slug));
+      });
+
+      const countyUnder = (point: maplibregl.PointLike) =>
+        showCountiesRef.current &&
+        Boolean(map.getLayer("counties-fill")) &&
+        map.queryRenderedFeatures(point, { layers: ["counties-fill"] }).length > 0;
+
       const pickRegion = (e: maplibregl.MapLayerMouseEvent) => {
-        const unitHit = map.queryRenderedFeatures(e.point, {
-          layers: ["units-fill", "units-point"],
-        });
-        if (unitHit.length) return;
+        if (unitUnder(e.point) || countyUnder(e.point)) return;
         const name = e.features?.[0]?.properties?.name;
         if (name) callbacks.current.onSelectRegion(String(name));
       };
       map.on("click", "regions-fill", pickRegion);
       map.on("click", "region-labels", (e) => {
+        if (countyUnder(e.point) || unitUnder(e.point)) return;
         const name = e.features?.[0]?.properties?.name;
         if (name) callbacks.current.onSelectRegion(String(name));
       });
 
-      for (const layer of ["units-fill", "units-point", "regions-fill", "region-labels"]) {
+      for (const layer of ["units-fill", "units-point", "counties-fill", "regions-fill", "region-labels"]) {
         map.on("mouseenter", layer, () => {
           map.getCanvas().style.cursor = "pointer";
         });
@@ -375,7 +460,12 @@ export default function HuntMap({
       applyState(map);
       map.fitBounds(TEXAS_BOUNDS, { padding: 40, duration: 0 });
       fittedKeyRef.current = "texas";
-      if (selectedRef.current || regionRef.current || matchingRef.current.size < featureIdsRef.current.length) {
+      if (
+        selectedRef.current ||
+        selectedCountyRef.current ||
+        regionRef.current ||
+        matchingRef.current.size < featureIdsRef.current.length
+      ) {
         fitToSelection(map);
       }
     });
@@ -391,13 +481,13 @@ export default function HuntMap({
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     applyState(map);
-  }, [matchingIds, selectedId, regionFilter]);
+  }, [matchingIds, selectedId, regionFilter, selectedCounty, showCounties]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     fitToSelection(map);
-  }, [matchingIds, selectedId, regionFilter]);
+  }, [matchingIds, selectedId, regionFilter, selectedCounty]);
 
   useEffect(() => {
     const map = mapRef.current;

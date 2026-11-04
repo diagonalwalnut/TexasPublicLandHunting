@@ -126,38 +126,54 @@ def fetch_pdfs(limit: int | None = None) -> None:
             print(f"  skip {name}: {exc}")
 
 
+COUNTY_INDEX = "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/seasons/county-listing/"
+
+
+def official_county_slugs() -> list[tuple[str, str]]:
+    """(name, slug) for every county on the Outdoor Annual listing."""
+    from bs4 import BeautifulSoup
+
+    html = get(COUNTY_INDEX).decode("utf-8", "replace")
+    soup = BeautifulSoup(html, "lxml")
+    found: list[tuple[str, str]] = []
+    for opt in soup.select("#find-county-select option"):
+        val = opt.get("value") or ""
+        if "/counties/" not in val:
+            continue
+        slug = val.rstrip("/").split("/")[-1]
+        name = opt.get_text(" ", strip=True)
+        if slug and name:
+            found.append((name, slug))
+    return found
+
+
 def fetch_counties() -> None:
     from county_seasons import county_slugs, split_counties
 
-    catalog = json.loads((CACHE / "aph_202627.json").read_text())
-    names: list[str] = []
-    for row in catalog:
-        names.extend(split_counties(str(row.get("county") or "")))
-    unique = sorted(set(names), key=str.lower)
+    pairs = official_county_slugs()
+    if not pairs:
+        catalog = json.loads((CACHE / "aph_202627.json").read_text())
+        names: list[str] = []
+        for row in catalog:
+            names.extend(split_counties(str(row.get("county") or "")))
+        pairs = [(name, county_slugs(name)[0]) for name in sorted(set(names), key=str.lower)]
     dest_dir = CACHE / "counties"
     dest_dir.mkdir(parents=True, exist_ok=True)
-    print(f"fetch {len(unique)} county Outdoor Annual pages")
-    for i, name in enumerate(unique, 1):
-        slugs = county_slugs(name)
-        done = False
-        for slug in slugs:
-            dest = dest_dir / f"{slug}.html"
-            if dest.exists() and dest.stat().st_size > 5000:
-                done = True
-                break
-            url = f"https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/{slug}"
-            try:
-                print(f"[{i}/{len(unique)}] {name} ({slug})")
-                download_file(url, dest)
-                if dest.stat().st_size > 5000 and b"This page does not seem to exist" not in dest.read_bytes():
-                    done = True
-                    break
+    print(f"fetch {len(pairs)} county Outdoor Annual pages")
+    for i, (name, slug) in enumerate(pairs, 1):
+        dest = dest_dir / f"{slug}.html"
+        if dest.exists() and dest.stat().st_size > 5000 and b"This page does not seem to exist" not in dest.read_bytes():
+            continue
+        url = f"https://tpwd.texas.gov/regulations/outdoor-annual/regs/counties/{slug}"
+        try:
+            print(f"[{i}/{len(pairs)}] {name} ({slug})")
+            download_file(url, dest)
+            if dest.stat().st_size <= 5000 or b"This page does not seem to exist" in dest.read_bytes():
                 dest.unlink(missing_ok=True)
-            except Exception as exc:
-                print(f"  skip {slug}: {exc}")
-                dest.unlink(missing_ok=True)
-        if not done:
-            print(f"  missing county page for {name}")
+                print(f"  missing county page for {name}")
+        except Exception as exc:
+            print(f"  skip {slug}: {exc}")
+            dest.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

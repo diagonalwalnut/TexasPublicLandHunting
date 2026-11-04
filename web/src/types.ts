@@ -82,6 +82,7 @@ export type CountyAnimal = {
   species: string;
   label: string;
   zone: string;
+  portion?: string;
   bagLimit: string;
   antlerRestrictions: string;
   seasons: CountySeason[];
