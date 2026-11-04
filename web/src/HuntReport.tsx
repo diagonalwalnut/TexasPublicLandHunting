@@ -1,7 +1,8 @@
+import { CountyRegulations } from "./CountyPanel";
 import ExternalLink from "./ExternalLink";
 import FavoriteButton from "./auth/FavoriteButton";
 import { safeExternalUrl } from "./urls";
-import type { Filters, Opportunity, Unit } from "./types";
+import type { CountyHunting, Filters, Opportunity, Unit } from "./types";
 import {
   ACCESS_LABEL,
   METHOD_LABEL,
@@ -19,6 +20,8 @@ type Props = {
   opportunities: Opportunity[];
   filters: Filters;
   speciesLabels: Record<string, string>;
+  countyPage?: CountyHunting;
+  countyHasPublicLand?: boolean;
   onSelectUnit: (id: string) => void;
   onSelectRegion: (region: string) => void;
 };
@@ -28,6 +31,8 @@ export default function HuntReport({
   opportunities,
   filters,
   speciesLabels,
+  countyPage,
+  countyHasPublicLand = true,
   onSelectUnit,
   onSelectRegion,
 }: Props) {
@@ -50,6 +55,14 @@ export default function HuntReport({
         </p>
       </header>
 
+      {countyPage ? (
+        <section className="mb-6 rounded-lg bg-white p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-muted">County regulations</p>
+          <h3 className="mb-2 font-serif text-xl font-semibold">{countyPage.county} County</h3>
+          <CountyRegulations page={countyPage} hasPublicLand={countyHasPublicLand} />
+        </section>
+      ) : null}
+
       {!focused ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {regionSummary.map((row) => (
@@ -68,7 +81,9 @@ export default function HuntReport({
         </div>
       ) : report.length === 0 ? (
         <p className="rounded-md bg-white p-4 text-sm text-muted">
-          No public hunt units match these filters. Try another animal, method, or date range.
+          {countyPage && !countyHasPublicLand
+            ? `${countyPage.county} County has no public hunting area. The zone, dates, and restrictions are listed above.`
+            : "No public hunt units match these filters. Try another animal, method, or date range."}
         </p>
       ) : (
         <div className="space-y-6">
