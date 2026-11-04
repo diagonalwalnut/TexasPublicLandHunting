@@ -274,14 +274,21 @@ export default function App() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sand text-ink">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-pine px-4 py-3 text-sand">
-        <div>
-          <h1 className="font-serif text-xl font-semibold tracking-tight md:text-2xl">
-            Texas Public Land Hunting
-          </h1>
-          <p className="text-sm text-sand/80">
-            {meta ? `${meta.seasonYear} APH, walk-in & Corps of Engineers areas` : "Loading…"} · map and hunt report · unofficial planning aid
-          </p>
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-pine py-2 pl-2 pr-4 text-sand">
+        <div className="flex min-w-0 items-center gap-3">
+          <img
+            src="/logo.png"
+            alt="Hunt Public Land in Texas"
+            className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20"
+          />
+          <div className="min-w-0">
+            <h1 className="font-serif text-xl font-semibold tracking-tight md:text-2xl">
+              Texas Public Land Hunting
+            </h1>
+            <p className="text-sm text-sand/80">
+              {meta ? `${meta.seasonYear} APH, walk-in & Corps of Engineers areas` : "Loading…"} · map and hunt report · unofficial planning aid
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <div className="flex rounded-full bg-black/20 p-0.5">
