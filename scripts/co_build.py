@@ -142,6 +142,12 @@ def build_licenses() -> dict:
             "OTC elk licenses do not use preference points.",
             "Leftover limited licenses, when offered, are a separate sale after the draws.",
         ],
+        residency_rules=[
+            "Nonresidents get a share of primary-draw deer, elk, sheep, and goat licenses: up to about 20% when the hunt needed six or more resident points to draw, and up to about 25% when it needed fewer than six points for deer/elk.",
+            "Nonresident allocation percentages do not apply to the secondary draw or leftover limited licenses.",
+            "Nonresidents can buy most OTC licenses, but for 2026 OTC archery elk west of I-25 (and GMU 140) moved into limited draw codes; NR OTC archery elk remains only for listed units east of I-25.",
+            "Many units remain OTC for residents while nonresidents must draw — confirm the current Big Game brochure by hunt code.",
+        ],
     )
 
 

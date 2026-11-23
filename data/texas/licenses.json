@@ -47,8 +47,14 @@
     { "item": "Annual Public Hunting Permit (adult)", "resident": "$48", "nonresident": "$48" },
     { "item": "Annual Public Hunting Permit (youth)", "resident": "$18", "nonresident": "$18" }
   ],
+  "residencyRules": [
+    "Nonresidents may hunt the same legal birds and animals as residents with a Non-resident General Hunting License (including white-tailed and mule deer, pronghorn, and bighorn sheep), plus required endorsements/tags.",
+    "Senior resident and resident combination hunting/fishing licenses are residents only (shown as — for nonresidents in the fee table).",
+    "Annual Public Hunting (APH) permits are sold to residents and nonresidents at the same prices; drawn e-postcard and special hunts follow each unit’s TPWD listing rather than a statewide nonresident ban."
+  ],
   "sources": [
     { "name": "TPWD license sales", "url": "https://tpwd.texas.gov/business/licenses/" },
+    { "name": "Hunting licenses", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/licenses/hunting-licenses-and-permits/hunting-licenses" },
     { "name": "Annual Public Hunting", "url": "https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/" },
     { "name": "Outdoor Annual", "url": "https://tpwd.texas.gov/regulations/outdoor-annual/hunting/" }
   ]

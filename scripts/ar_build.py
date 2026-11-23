@@ -42,6 +42,23 @@ ZONE_URL = (
 BUY_URL = "https://www.agfc.com/licenses/"
 DEER_URL = "https://www.agfc.com/hunting/deer/deer-seasons-and-limits-by-zone/"
 GUIDE_URL = "https://www.agfc.com/hunting/"
+ELK_URL = "https://www.agfc.com/hunting/more-game/elk/"
+FEES_URL = "https://www.agfc.com/resources/licensing/hunting-license-descriptions-and-fees/"
+
+# Public-land elk draw areas (Core Elk Management Zone). Residents only.
+ELK_PUBLIC_UNIT_IDS = {
+    "wma:gene-rush-wma",
+    "wma:bearcat-hollow-wma",
+    "wma:buffalo-national-river-wma",
+}
+
+# 2026 public-land elk windows published by AGFC (youth + regular).
+ELK_PUBLIC_WINDOWS = [
+    ("2026-10-03", "2026-10-04", "Youth public-land elk (drawn permit)"),
+    ("2026-10-05", "2026-10-09", "Regular public-land elk (drawn permit)"),
+    ("2026-10-24", "2026-10-25", "Youth public-land elk (drawn permit)"),
+    ("2026-10-26", "2026-10-30", "Regular public-land elk (drawn permit)"),
+]
 
 
 # Modern-gun end dates by zone group for 2026-27 (plus statewide Dec 26-28).
@@ -97,6 +114,9 @@ def _unit_id(props: dict, idx: int) -> str:
 def _unit_props(props: dict, uid: str) -> dict:
     name = title_case_name(str(props.get("fname") or props.get("wma") or props.get("flabel") or uid))
     counties = [c.strip() for c in str(props.get("county") or "").split(",") if c.strip()]
+    species = ["white_tailed_deer", "turkey", "dove", "squirrel", "waterfowl"]
+    if uid in ELK_PUBLIC_UNIT_IDS:
+        species = [*species, "elk"]
     return {
         "id": uid,
         "unitIds": [uid],
@@ -108,7 +128,7 @@ def _unit_props(props: dict, uid: str) -> dict:
         "region": str(props.get("wma_zone") or ""),
         "acres": acres_from_props(props, "acres", "ACRES"),
         "owner": props.get("owner") or "",
-        "species": ["white_tailed_deer", "turkey", "dove", "squirrel", "waterfowl"],
+        "species": species,
         "methods": ["archery", "muzzleloader", "firearm", "shotgun"],
         "access": ["wma_permit", "lottery"],
     }
@@ -120,7 +140,8 @@ def build_licenses() -> dict:
         season_year="2026-27",
         intro=(
             "A hunting license is required to hunt in Arkansas. Many WMAs require additional "
-            "deer/turkey permits drawn through AGFC. Confirm current fees before you buy."
+            "deer/turkey permits drawn through AGFC. Public-land elk is a separate resident-only "
+            "draw. Confirm current fees before you buy."
         ),
         where_to_buy=[
             {
@@ -139,9 +160,17 @@ def build_licenses() -> dict:
                 "body": "WMA deer/turkey permit applications typically open June 1–July 1. Leftovers may be offered later.",
             },
             {
+                "id": "elk",
+                "title": "Public-land elk draw",
+                "body": (
+                    "Apply under Special Hunt Applications for Buffalo River / Gene Rush / "
+                    f"Bearcat Hollow public elk (residents only). Details: {ELK_URL}"
+                ),
+            },
+            {
                 "id": "otc",
                 "title": "Over the counter",
-                "body": "Private-land deer seasons do not need a WMA permit; public land often does.",
+                "body": "Private-land deer seasons do not need a WMA permit; public land often does. Private-land elk permits sell OTC in the Core Elk Zone.",
             },
             {
                 "id": "corps",
@@ -150,6 +179,16 @@ def build_licenses() -> dict:
             },
         ],
         deadlines=[
+            {
+                "name": "Public-land elk applications open",
+                "date": "2026-05-01",
+                "detail": "Online Special Hunt Applications for public-land elk (residents only).",
+            },
+            {
+                "name": "Public-land elk application deadline",
+                "date": "2026-06-01",
+                "detail": "Deadline 11:59 p.m.; draws include Buffalo River Elk Festival on-site permits.",
+            },
             {
                 "name": "WMA permit application",
                 "date": "2026-07-01",
@@ -164,14 +203,26 @@ def build_licenses() -> dict:
         fees=[
             {"item": "Resident wildlife conservation license / hunting", "resident": "See AGFC", "nonresident": "See AGFC"},
             {"item": "Resident sportsman / combination", "resident": "See AGFC", "nonresident": "See AGFC"},
-            {"item": "Nonresident annual hunting", "resident": "—", "nonresident": "See AGFC"},
+            {"item": "Nonresident annual all-game hunting (NBG)", "resident": "—", "nonresident": "$410"},
+            {"item": "Nonresident annual small-game hunting (NRH)", "resident": "—", "nonresident": "$110"},
             {"item": "WMA deer/turkey permit (drawn)", "resident": "See AGFC", "nonresident": "See AGFC"},
             {"item": "Lake / WMA conservation permit (if required)", "resident": "See AGFC", "nonresident": "See AGFC"},
+            {"item": "Resident private-land elk permit (PLE)", "resident": "$5", "nonresident": "—"},
+            {"item": "Nonresident private-land elk permit (NRE)", "resident": "—", "nonresident": "$300"},
+            {"item": "Public-land elk draw application", "resident": "$5", "nonresident": "Not eligible"},
         ],
         sources=[
             {"name": "AGFC licenses", "url": BUY_URL},
+            {"name": "License descriptions and fees", "url": FEES_URL},
+            {"name": "Elk hunting", "url": ELK_URL},
             {"name": "Deer seasons by zone", "url": DEER_URL},
             {"name": "AGFC hunting", "url": GUIDE_URL},
+        ],
+        residency_rules=[
+            "Public-land elk permits (Buffalo National River, Gene Rush WMA, Bearcat Hollow WMA, Richland Valley Sonny Varnell) are Arkansas residents only — applicants need a Resident Sportsman’s Hunting License or Lifetime Sportsman’s Permit.",
+            "Nonresidents may hunt elk only on private land in the Core Elk Management Zone (Boone, Carroll, Madison, Newton, and Searcy counties) with a Nonresident Annual Hunting License plus a $300 Nonresident Elk Permit (NRE).",
+            "Nonresidents hunting bear, turkey, alligator, or elk need the matching nonresident add-on permit in addition to the Nonresident Annual All Game Hunting License.",
+            "Most WMA deer/turkey seasons and draws are open to properly licensed nonresidents; always confirm the specific WMA permit rules.",
         ],
     )
 
@@ -381,6 +432,28 @@ def build_opportunities(units: list[dict], zones: list[dict]) -> list[dict]:
                     "notes": notes,
                 }
             )
+        if unit["id"] in ELK_PUBLIC_UNIT_IDS or "elk" in (unit.get("species") or []):
+            for start, end, notes in ELK_PUBLIC_WINDOWS:
+                oid += 1
+                opps.append(
+                    {
+                        "id": f"ar{oid}",
+                        "unitId": unit["id"],
+                        "species": "elk",
+                        "speciesLabel": "Elk",
+                        "methods": ["firearm", "archery", "muzzleloader"],
+                        "access": "lottery",
+                        "start": start,
+                        "end": end,
+                        "dateSource": "agfc_elk_public",
+                        "county": (unit.get("counties") or [""])[0],
+                        "notes": notes,
+                        "restrictions": [
+                            "Residents only — public-land elk draw",
+                            "Drawn permit required; confirm bag/sex on the permit",
+                        ],
+                    }
+                )
     return opps
 
 
@@ -478,10 +551,12 @@ def main() -> int:
             {"name": "AGFC WMA Boundaries", "url": WMA_URL.split("/query")[0]},
             {"name": "AGFC Deer Zones", "url": ZONE_URL.split("/query")[0]},
             {"name": "Deer seasons by zone", "url": DEER_URL},
+            {"name": "Elk hunting", "url": ELK_URL},
             {"name": "AGFC licenses", "url": BUY_URL},
         ],
         species=[
             {"id": "white_tailed_deer", "label": "White-tailed deer"},
+            {"id": "elk", "label": "Elk"},
             {"id": "turkey", "label": "Wild turkey"},
             {"id": "dove", "label": "Dove"},
             {"id": "squirrel", "label": "Squirrel"},
@@ -526,7 +601,9 @@ def main() -> int:
         "# Arkansas sources\n\n"
         f"- WMAs: {WMA_URL}\n"
         f"- Deer zones: {ZONE_URL}\n"
-        f"- Seasons: {DEER_URL}\n"
+        f"- Deer seasons: {DEER_URL}\n"
+        f"- Elk (public draw residents-only; private-land NR permit): {ELK_URL}\n"
+        f"- License fees: {FEES_URL}\n"
         f"- Buy: {BUY_URL}\n",
         encoding="utf-8",
     )

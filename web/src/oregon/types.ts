@@ -76,6 +76,8 @@ export type LicenseGuide = {
   deadlines: { name: string; date: string | null; detail: string }[];
   huntSeries: { id: string; label: string; points: boolean }[];
   preferencePoints: string[];
+  /** Non-cost resident vs nonresident rules (quotas, resident-only hunts, etc.). */
+  residencyRules?: string[];
   fees: { item: string; resident: string; nonresident: string }[];
   sources: { name: string; url: string }[];
 };

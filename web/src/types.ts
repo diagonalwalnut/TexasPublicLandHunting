@@ -67,6 +67,8 @@ export type Opportunity = {
   dateSource: "county_default" | "unit_pdf" | "county";
   county?: string;
   notes: string;
+  /** Extra eligibility notes (e.g. residents-only draws). */
+  restrictions?: string[];
 };
 
 export type CountySeason = {

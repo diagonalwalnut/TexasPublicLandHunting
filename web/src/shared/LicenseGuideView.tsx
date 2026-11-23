@@ -58,6 +58,17 @@ export default function LicenseGuideView({ guide }: { guide: LicenseGuide }) {
           </div>
         </section>
 
+        {guide.residencyRules && guide.residencyRules.length > 0 && (
+          <section>
+            <h3 className="font-semibold text-pine">Resident vs nonresident (beyond fees)</h3>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+              {guide.residencyRules.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {guide.deadlines.length > 0 && (
           <section>
             <h3 className="font-semibold text-pine">Deadlines</h3>

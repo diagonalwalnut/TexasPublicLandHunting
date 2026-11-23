@@ -145,8 +145,13 @@ def build_licenses() -> dict:
         ],
         preference_points=[
             "New Mexico does not use preference points for big-game draws. Each application is random.",
-            "Quota shares for most deer and elk hunts are approximately 84% resident, 10% nonresident, 6% outfitter.",
-            "Nonresidents are ineligible for antlerless elk and most WMA-only draw hunts.",
+        ],
+        residency_rules=[
+            "State law allocates most draw licenses about 84% to residents, 10% to applicants with a New Mexico–registered outfitter, and 6% to nonresidents without an outfitter.",
+            "Antlerless (cow) elk draw licenses are residents only; nonresidents cannot apply for those codes.",
+            "Hunts held exclusively on State Game Commission WMAs are residents only. Nonresidents may still apply for hunts that run concurrently on both WMA and other public land.",
+            "Nonresidents may buy private-land elk licenses and may apply for either-sex or mature-bull public elk draws (subject to the 6%/10% quotas).",
+            "The Game-Hunting & Fishing combo and antlerless elk license are not issued to nonresidents (see fee table).",
         ],
     )
 

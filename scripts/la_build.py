@@ -132,6 +132,13 @@ def build_licenses() -> dict:
             {"name": "Louisiana Outdoors license sales", "url": BUY_URL},
             {"name": "License and permit fee list", "url": FEES_URL},
             {"name": "Seasons and regulations", "url": SEASONS_URL},
+            {"name": "Lottery hunts", "url": "https://www.wlf.louisiana.gov/page/lottery-hunts"},
+        ],
+        residency_rules=[
+            "Most deer, turkey, dove, waterfowl, and other WMA lottery hunts are open to nonresidents who hold the required nonresident licenses and WMA access permit.",
+            "Bear harvest permits are residents only (nonresident fee listed as n/a).",
+            "Commercial alligator lottery harvests on WMAs/public lakes require Louisiana residency; recreational alligator lottery entry is residents only (nonresidents may accompany a resident winner with the proper alligator sports hunter license).",
+            "Nonresident Native 10-day licenses are available only to people born in Louisiana who no longer reside there.",
         ],
     )
 

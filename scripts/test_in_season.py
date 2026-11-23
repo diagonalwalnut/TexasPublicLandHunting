@@ -56,6 +56,11 @@ def main() -> int:
     licenses = json.loads((ROOT / "data" / "texas" / "licenses.json").read_text())
     assert licenses["fees"] and licenses["whereToBuy"]
     assert any("tpwd.texas.gov" in source["url"] for source in licenses["sources"])
+    assert licenses.get("residencyRules"), "Texas residencyRules missing"
+
+    # Arkansas public-land elk should appear in opportunities for In Season.
+    ar_opps = json.loads((ROOT / "data" / "ar" / "opportunities.json").read_text())
+    assert any(row.get("species") == "elk" for row in ar_opps)
 
     print("in-season checks ok")
     return 0

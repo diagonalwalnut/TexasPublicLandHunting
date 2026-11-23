@@ -849,9 +849,15 @@ def licenses() -> dict:
             "A point-saver application earns a point when you will not hunt that series. You need a hunting license, and you cannot list other choices in that series. An LOP tag may be added as a sixth choice by May 15. Youth point-savers cannot also take a First Time Youth tag in the same series that year.",
             "Party applications average the members' points (0.51 and above rounds up). Everyone draws or nobody does. No party applications for bighorn sheep, Rocky Mountain goat, or premium hunts.",
             "Sheep and goat tags are once in a lifetime for rams and goats. Ewe hunts are exempt. There are no preference points for sheep, goat, or premium hunts.",
-            "Nonresidents may receive at most 5% of controlled deer, elk, and bear tags and 3% of pronghorn tags. Sheep and goat nonresident tags are at least 5% and at most 10%.",
             "Mentored youth earn a separate banked point for each year they register. Redeemed points convert into the regular preference-point system.",
             "If you already bought a general-season deer or elk tag, you cannot apply in the 100 or 200 series for that species.",
+        ],
+        "residencyRules": [
+            "Nonresidents may receive at most 5% of controlled deer, elk, and bear tags and 3% of controlled pronghorn tags.",
+            "Bighorn sheep and Rocky Mountain goat nonresident tags are at least 5% and at most 10% of the tags issued.",
+            "Nonresidents may buy general-season deer, elk, bear, and cougar tags over the counter with a valid hunting license (subject to tag sale deadlines).",
+            "The Resident Sports Pac and resident combination hunting/angling licenses are not offered to nonresidents.",
+            "Nonresident applicants get no draw preference beyond their existing preference points; less than the maximum NR share may be issued.",
         ],
         "fees": [
             {"item": "Resident hunting license", "resident": "$39", "nonresident": "$193"},

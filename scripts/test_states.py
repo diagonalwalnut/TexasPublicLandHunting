@@ -34,6 +34,9 @@ def _assert_licenses(state: str, licenses: dict) -> None:
     fees = licenses.get("fees") or []
     assert fees, state
     assert any(f.get("resident") and f.get("nonresident") for f in fees), state
+    rules = licenses.get("residencyRules") or []
+    assert isinstance(rules, list) and len(rules) >= 1, (state, "expected residencyRules")
+    assert all(isinstance(line, str) and line.strip() for line in rules), state
 
 
 def _assert_dates(rows: list[dict], *, start_key="start", end_key="end") -> None:
@@ -94,6 +97,17 @@ def test_public_land(state: str) -> None:
         zones = _load(state, "zones.json")
         assert len(zones) >= 1, state
         zone_ids = {z["id"] for z in zones}
+        species_ids = {s["id"] for s in meta.get("species") or []}
+        assert "elk" in species_ids, "AR meta must list elk"
+        elk_units = [u for u in units if "elk" in (u.get("species") or [])]
+        assert len(elk_units) >= 3, ("AR public elk units", [u["id"] for u in elk_units])
+        elk_opps = [o for o in opps if o.get("species") == "elk"]
+        assert len(elk_opps) >= 1, "AR expected elk opportunities"
+        assert all(
+            any("resident" in (r or "").lower() for r in (o.get("restrictions") or []))
+            for o in elk_opps
+        ), "AR elk opportunities must note residents-only"
+        assert any("elk" in line.lower() and "resident" in line.lower() for line in licenses.get("residencyRules") or [])
     for opp in opps:
         assert opp["unitId"] in ids or opp["unitId"] in zone_ids, (
             state,
