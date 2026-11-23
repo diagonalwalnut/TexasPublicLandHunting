@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ExternalLink from "../../ExternalLink";
+import HunterResidencyRadios from "../../shared/HunterResidencyRadios";
 import InSeasonPage from "../../shared/InSeasonPage";
 import LicenseGuideView from "../../shared/LicenseGuideView";
 import type { LicenseGuide, RegulationGuide } from "../../shared/licenseTypes";
@@ -420,23 +421,10 @@ function FilterColumn({
         onToggle={(id) => onChange({ ...filters, access: toggle(filters.access, id) })}
       />
       {showHunterResidency ? (
-        <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Hunter</span>
-          <select
-            className="w-full rounded border border-black/10 bg-white px-2 py-1"
-            value={filters.hunterResidency}
-            onChange={(event) =>
-              onChange({
-                ...filters,
-                hunterResidency: event.target.value as GridFilters["hunterResidency"],
-              })
-            }
-          >
-            <option value="">Any</option>
-            <option value="resident">Resident</option>
-            <option value="nonresident">Nonresident</option>
-          </select>
-        </label>
+        <HunterResidencyRadios
+          value={filters.hunterResidency}
+          onChange={(hunterResidency) => onChange({ ...filters, hunterResidency })}
+        />
       ) : null}
       <div className="grid grid-cols-2 gap-2">
         <label className="block">

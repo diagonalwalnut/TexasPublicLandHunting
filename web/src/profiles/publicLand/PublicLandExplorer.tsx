@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ExternalLink from "../../ExternalLink";
+import HunterResidencyRadios from "../../shared/HunterResidencyRadios";
 import InSeasonPage from "../../shared/InSeasonPage";
 import LicenseGuideView from "../../shared/LicenseGuideView";
 import type { LicenseGuide, RegulationGuide } from "../../shared/licenseTypes";
@@ -222,18 +223,11 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
               </select>
             </label>
             {showHunterResidency ? (
-              <label className="mb-3 block text-sm">
-                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Hunter</span>
-                <select
-                  className="w-full rounded border border-black/10 bg-white px-2 py-1"
-                  value={hunterResidency}
-                  onChange={(event) => setHunterResidency(event.target.value as HunterResidency)}
-                >
-                  <option value="">Any</option>
-                  <option value="resident">Resident</option>
-                  <option value="nonresident">Nonresident</option>
-                </select>
-              </label>
+              <HunterResidencyRadios
+                className="mb-3"
+                value={hunterResidency}
+                onChange={setHunterResidency}
+              />
             ) : null}
             <p className="text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
           </aside>

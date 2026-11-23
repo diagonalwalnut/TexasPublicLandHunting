@@ -1,3 +1,4 @@
+import HunterResidencyRadios from "./shared/HunterResidencyRadios";
 import type { AccessId, Filters, Meta, MethodId } from "./types";
 
 export const PRESETS: { label: string; species: string[]; methods: MethodId[] }[] = [
@@ -162,23 +163,12 @@ export default function FilterPanel({
       </fieldset>
 
       {showHunterResidency ? (
-        <label className="mb-3 block text-sm">
-          Hunter
-          <select
-            className="mt-1 w-full rounded-md border border-black/15 bg-white px-2 py-1.5"
-            value={filters.hunterResidency}
-            onChange={(e) =>
-              onChange({
-                ...filters,
-                hunterResidency: e.target.value as Filters["hunterResidency"],
-              })
-            }
-          >
-            <option value="">Any</option>
-            <option value="resident">Resident</option>
-            <option value="nonresident">Nonresident</option>
-          </select>
-        </label>
+        <HunterResidencyRadios
+          className="mb-3"
+          labelClassName="text-sm"
+          value={filters.hunterResidency}
+          onChange={(hunterResidency) => onChange({ ...filters, hunterResidency })}
+        />
       ) : null}
 
       <label className="mb-2 block text-sm">

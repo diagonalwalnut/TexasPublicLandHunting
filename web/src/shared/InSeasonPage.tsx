@@ -8,6 +8,7 @@ import {
   type InSeasonSourceRow,
   type InSeasonSpecies,
 } from "./inSeason";
+import HunterResidencyRadios from "./HunterResidencyRadios";
 import {
   datasetHasResidencyRestrictions,
   rowAllowedForHunter,
@@ -332,25 +333,19 @@ export default function InSeasonPage({
             </select>
           </label>
           {showHunterResidency ? (
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-wide text-muted">Hunter</span>
-              <select
-                className="rounded border border-black/15 bg-white px-2 py-1"
-                value={activeResidency}
-                onChange={(event) => {
-                  const next = event.target.value as HunterResidency;
-                  if (controlled) {
-                    patchShared({ hunterResidency: next });
-                  } else {
-                    setLocalResidency(next);
-                  }
-                }}
-              >
-                <option value="">Any</option>
-                <option value="resident">Resident</option>
-                <option value="nonresident">Nonresident</option>
-              </select>
-            </label>
+            <HunterResidencyRadios
+              className="flex flex-col gap-1"
+              labelClassName="text-xs uppercase tracking-wide text-muted"
+              layout="inline"
+              value={activeResidency}
+              onChange={(next) => {
+                if (controlled) {
+                  patchShared({ hunterResidency: next });
+                } else {
+                  setLocalResidency(next);
+                }
+              }}
+            />
           ) : null}
           <label className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wide text-muted">
