@@ -8,6 +8,11 @@ import {
   type InSeasonSourceRow,
   type InSeasonSpecies,
 } from "./inSeason";
+import {
+  datasetHasResidencyRestrictions,
+  rowAllowedForHunter,
+  type HunterResidency,
+} from "./residency";
 import { todayInTimezone } from "../states/catalog";
 
 function formatRange(start: string, end: string): string {
@@ -35,6 +40,8 @@ export type InSeasonSharedFilters = {
   place?: string;
   start?: string;
   end?: string;
+  /** Empty = Any; filters resident-only / nonresident-only rows when set. */
+  hunterResidency?: HunterResidency;
 };
 
 function speciesMatches(
@@ -104,11 +111,13 @@ export default function InSeasonPage({
   const selectedSpecies = shared?.species ?? [];
   const selectedMethods = shared?.methods ?? [];
   const selectedAccess = shared?.access ?? [];
+  const residencyFilter = (shared?.hunterResidency ?? "") as HunterResidency;
 
   const [localDate, setLocalDate] = useState(defaultDate);
   const [localSpecies, setLocalSpecies] = useState("");
   const [localMethod, setLocalMethod] = useState("");
   const [localPlace, setLocalPlace] = useState("");
+  const [localResidency, setLocalResidency] = useState<HunterResidency>("");
   const controlled = Boolean(onSharedChange);
 
   useEffect(() => {
@@ -119,6 +128,8 @@ export default function InSeasonPage({
   const activeSpecies = controlled ? speciesFilter : localSpecies;
   const activeMethod = controlled ? methodFilter : localMethod;
   const activePlace = controlled ? placeFilter : localPlace;
+  const activeResidency = controlled ? residencyFilter : localResidency;
+  const showHunterResidency = useMemo(() => datasetHasResidencyRestrictions(rows), [rows]);
 
   const counties = useMemo(
     () => (countyMode ? countyOptionsFromRows(rows) : []),
@@ -140,10 +151,11 @@ export default function InSeasonPage({
   }, [countyMode, activePlace, counties]);
 
   const scopedRows = useMemo(() => {
-    if (!countyMode) return rows;
-    if (selectedCounty) return scopeRowsToCounty(rows, selectedCounty.id);
-    return rollupRowsByCounty(rows);
-  }, [countyMode, rows, selectedCounty]);
+    const residencyFiltered = rows.filter((row) => rowAllowedForHunter(row, activeResidency));
+    if (!countyMode) return residencyFiltered;
+    if (selectedCounty) return scopeRowsToCounty(residencyFiltered, selectedCounty.id);
+    return rollupRowsByCounty(residencyFiltered);
+  }, [countyMode, rows, selectedCounty, activeResidency]);
 
   const cards = useMemo(() => buildInSeason(scopedRows, activeDate), [scopedRows, activeDate]);
 
@@ -239,6 +251,7 @@ export default function InSeasonPage({
       place: placeFilter,
       start: shared?.start,
       end: shared?.end,
+      hunterResidency: activeResidency,
       ...patch,
     });
   };
@@ -318,6 +331,27 @@ export default function InSeasonPage({
               ))}
             </select>
           </label>
+          {showHunterResidency ? (
+            <label className="flex flex-col gap-1">
+              <span className="text-xs uppercase tracking-wide text-muted">Hunter</span>
+              <select
+                className="rounded border border-black/15 bg-white px-2 py-1"
+                value={activeResidency}
+                onChange={(event) => {
+                  const next = event.target.value as HunterResidency;
+                  if (controlled) {
+                    patchShared({ hunterResidency: next });
+                  } else {
+                    setLocalResidency(next);
+                  }
+                }}
+              >
+                <option value="">Any</option>
+                <option value="resident">Resident</option>
+                <option value="nonresident">Nonresident</option>
+              </select>
+            </label>
+          ) : null}
           <label className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wide text-muted">
               {countyMode ? "County" : placeFilterLabel}

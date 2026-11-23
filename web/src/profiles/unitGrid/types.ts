@@ -46,6 +46,8 @@ export type GridHunt = {
   unitIds: string[];
   restrictions: string[];
   notes: string;
+  /** Who may hunt this opportunity; omit or "any" = both. */
+  eligibility?: "any" | "resident_only" | "nonresident_only";
 };
 
 export type GridMeta = {
@@ -69,4 +71,6 @@ export type GridFilters = {
   start: string;
   end: string;
   layer: string;
+  /** Empty = Any; filters resident-only / nonresident-only rows when set. */
+  hunterResidency: "" | "resident" | "nonresident";
 };

@@ -4,6 +4,7 @@ import InSeasonPage from "../../shared/InSeasonPage";
 import LicenseGuideView from "../../shared/LicenseGuideView";
 import type { LicenseGuide, RegulationGuide } from "../../shared/licenseTypes";
 import type { InSeasonSourceRow } from "../../shared/inSeason";
+import { datasetHasResidencyRestrictions } from "../../shared/residency";
 import type { StateInfo } from "../../states/catalog";
 import { formatDay, formatRange, huntMatches, huntsForUnit, matchingUnitIds } from "./filters";
 import type { GridFilters, GridHunt, GridMeta, GridUnit } from "./types";
@@ -68,6 +69,7 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
     start: "",
     end: "",
     layer: "gmu",
+    hunterResidency: "",
   });
   const [pane, setPane] = useState<Pane>("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -129,6 +131,7 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
           query: "",
           start: "",
           end: "",
+          hunterResidency: "",
         }));
       })
       .catch(() => setError(`Could not load ${state.name} hunting data.`));
@@ -189,11 +192,16 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
             placeLabel: unit
               ? `${unit.code} ${unit.name}${unit.region ? ` (${unit.region})` : ""}`
               : hunt.scope || "Statewide / zone season",
+            eligibility: hunt.eligibility,
+            restrictions: hunt.restrictions,
+            notes: hunt.notes,
           };
         });
       }),
     [hunts, units],
   );
+
+  const showHunterResidency = useMemo(() => datasetHasResidencyRestrictions(hunts), [hunts]);
 
   const methodLabels = Object.fromEntries((meta?.methods ?? []).map((row) => [row.id, row.label]));
   const bounds = BOUNDS[state.id] ?? BOUNDS.nm;
@@ -227,6 +235,7 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
               layers={layerOptions}
               matchCount={matchIds.size}
               layerCount={layerUnits.length}
+              showHunterResidency={showHunterResidency}
               onChange={(next) => {
                 setFilters(next);
                 setSelectedId(null);
@@ -291,6 +300,7 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
                   start: filters.start,
                   end: filters.end,
                   date: filters.start || undefined,
+                  hunterResidency: filters.hunterResidency,
                 }}
                 onSharedChange={(next) => {
                   const place = (next.place || "").trim();
@@ -309,6 +319,9 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
                     start: next.date || next.start || "",
                     end: next.date || next.end || "",
                     layer: matched?.kind || current.layer,
+                    hunterResidency:
+                      (next.hunterResidency as GridFilters["hunterResidency"] | undefined) ??
+                      current.hunterResidency,
                   }));
                   if (matched) setSelectedId(matched.id);
                   else if (place) setSelectedId(null);
@@ -349,6 +362,7 @@ function FilterColumn({
   matchCount,
   layerCount,
   onChange,
+  showHunterResidency = false,
 }: {
   filters: GridFilters;
   meta: GridMeta | null;
@@ -356,6 +370,7 @@ function FilterColumn({
   matchCount: number;
   layerCount: number;
   onChange: (filters: GridFilters) => void;
+  showHunterResidency?: boolean;
 }) {
   return (
     <div className="space-y-4 text-sm">
@@ -404,6 +419,25 @@ function FilterColumn({
         selected={filters.access}
         onToggle={(id) => onChange({ ...filters, access: toggle(filters.access, id) })}
       />
+      {showHunterResidency ? (
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Hunter</span>
+          <select
+            className="w-full rounded border border-black/10 bg-white px-2 py-1"
+            value={filters.hunterResidency}
+            onChange={(event) =>
+              onChange({
+                ...filters,
+                hunterResidency: event.target.value as GridFilters["hunterResidency"],
+              })
+            }
+          >
+            <option value="">Any</option>
+            <option value="resident">Resident</option>
+            <option value="nonresident">Nonresident</option>
+          </select>
+        </label>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Season from</span>
@@ -436,6 +470,7 @@ function FilterColumn({
             start: "",
             end: "",
             layer: filters.layer,
+            hunterResidency: "",
           })
         }
       >

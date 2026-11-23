@@ -1,4 +1,5 @@
 import type { Filters, MethodId, Opportunity, Unit } from "./types";
+import { rowAllowedForHunter } from "./shared/residency";
 
 const METHOD_EXPAND: Record<MethodId, MethodId[]> = {
   archery: ["archery", "any_legal"],
@@ -23,6 +24,7 @@ export function opportunityMatches(opp: Opportunity, filters: Filters): boolean 
     if (!opp.methods.some((m) => allowed.has(m))) return false;
   }
   if (!overlaps(opp.start, opp.end, filters.start, filters.end)) return false;
+  if (!rowAllowedForHunter(opp, filters.hunterResidency || "")) return false;
   return true;
 }
 
@@ -49,7 +51,8 @@ export function matchingUnitIds(units: Unit[], opportunities: Opportunity[], fil
       filters.methods.length > 0 ||
       filters.access.length > 0 ||
       Boolean(filters.start) ||
-      Boolean(filters.end);
+      Boolean(filters.end) ||
+      Boolean(filters.hunterResidency);
     if (!needsOppFilter) {
       ids.add(unit.id);
       continue;
@@ -78,7 +81,8 @@ export function unitOpportunities(
         slim.methods.length > 0 ||
         slim.access.length > 0 ||
         Boolean(slim.start) ||
-        Boolean(slim.end);
+        Boolean(slim.end) ||
+        Boolean(slim.hunterResidency);
       return needs ? opportunityMatches(opp, slim) : true;
     })
     .sort((a, b) => a.start.localeCompare(b.start) || a.species.localeCompare(b.species));

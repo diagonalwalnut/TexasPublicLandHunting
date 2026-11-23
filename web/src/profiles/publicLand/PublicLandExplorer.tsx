@@ -4,6 +4,11 @@ import InSeasonPage from "../../shared/InSeasonPage";
 import LicenseGuideView from "../../shared/LicenseGuideView";
 import type { LicenseGuide, RegulationGuide } from "../../shared/licenseTypes";
 import type { InSeasonSourceRow } from "../../shared/inSeason";
+import {
+  datasetHasResidencyRestrictions,
+  rowAllowedForHunter,
+  type HunterResidency,
+} from "../../shared/residency";
 import type { StateInfo } from "../../states/catalog";
 import type { Opportunity, Unit } from "../../types";
 import { METHOD_LABEL } from "../../filters";
@@ -62,12 +67,16 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [species, setSpecies] = useState("");
+  const [hunterResidency, setHunterResidency] = useState<HunterResidency>("");
+  const [seasonDate, setSeasonDate] = useState("");
   const [satellite, setSatellite] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPane("map");
     setSelectedId(null);
+    setHunterResidency("");
+    setSeasonDate("");
     setError(null);
     const load = async (path: string) => {
       const res = await fetch(path);
@@ -96,18 +105,35 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
       .catch(() => setError(`Could not load ${state.name} public hunting data.`));
   }, [state]);
 
+  const showHunterResidency = useMemo(
+    () => datasetHasResidencyRestrictions(opportunities),
+    [opportunities],
+  );
+
   const filteredUnits = useMemo(() => {
     const q = query.trim().toLowerCase();
     return units.filter((unit) => {
       if (species && !unit.species.includes(species)) return false;
+      if (hunterResidency) {
+        const unitOpps = opportunities.filter((opp) => {
+          if (opp.unitId !== unit.id) return false;
+          if (species && opp.species !== species) return false;
+          return true;
+        });
+        if (unitOpps.length > 0 && !unitOpps.some((opp) => rowAllowedForHunter(opp, hunterResidency))) {
+          return false;
+        }
+      }
       if (!q) return true;
       return `${unit.name} ${unit.counties.join(" ")} ${unit.region}`.toLowerCase().includes(q);
     });
-  }, [units, query, species]);
+  }, [units, query, species, hunterResidency, opportunities]);
 
   const matchIds = useMemo(() => new Set(filteredUnits.map((unit) => unit.id)), [filteredUnits]);
   const selected = units.find((unit) => unit.id === selectedId) ?? null;
-  const selectedOpps = opportunities.filter((opp) => opp.unitId === selectedId);
+  const selectedOpps = opportunities.filter(
+    (opp) => opp.unitId === selectedId && rowAllowedForHunter(opp, hunterResidency),
+  );
 
   const inSeasonRows: InSeasonSourceRow[] = useMemo(() => {
     const fromOpps = opportunities.map((opp) => {
@@ -121,6 +147,9 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
         end: opp.end,
         placeId: opp.unitId,
         placeLabel: unit?.name || opp.county || opp.unitId,
+        eligibility: opp.eligibility,
+        restrictions: opp.restrictions,
+        notes: opp.notes,
       };
     });
     const fromZones = zones.flatMap((zone) =>
@@ -192,6 +221,20 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
                 ))}
               </select>
             </label>
+            {showHunterResidency ? (
+              <label className="mb-3 block text-sm">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Hunter</span>
+                <select
+                  className="w-full rounded border border-black/10 bg-white px-2 py-1"
+                  value={hunterResidency}
+                  onChange={(event) => setHunterResidency(event.target.value as HunterResidency)}
+                >
+                  <option value="">Any</option>
+                  <option value="resident">Resident</option>
+                  <option value="nonresident">Nonresident</option>
+                </select>
+              </label>
+            ) : null}
             <p className="text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
           </aside>
 
@@ -252,9 +295,18 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
                   species: species ? [species] : [],
                   query,
                   place: selected?.name || "",
+                  hunterResidency,
+                  date: seasonDate || undefined,
+                  start: seasonDate || undefined,
+                  end: seasonDate || undefined,
                 }}
                 onSharedChange={(next) => {
                   setSpecies(next.species?.[0] || "");
+                  if (next.hunterResidency !== undefined) {
+                    setHunterResidency((next.hunterResidency || "") as HunterResidency);
+                  }
+                  const nextDate = next.date || next.start || "";
+                  if (nextDate) setSeasonDate(nextDate);
                   const place = (next.place || "").trim();
                   const matched = place
                     ? units.find((unit) => unit.name === place || unit.id === place)

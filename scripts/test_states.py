@@ -107,6 +107,9 @@ def test_public_land(state: str) -> None:
             any("resident" in (r or "").lower() for r in (o.get("restrictions") or []))
             for o in elk_opps
         ), "AR elk opportunities must note residents-only"
+        assert all(
+            o.get("eligibility") == "resident_only" for o in elk_opps
+        ), "AR elk opportunities must set eligibility resident_only"
         assert any("elk" in line.lower() and "resident" in line.lower() for line in licenses.get("residencyRules") or [])
     for opp in opps:
         assert opp["unitId"] in ids or opp["unitId"] in zone_ids, (
