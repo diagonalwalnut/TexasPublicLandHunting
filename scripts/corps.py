@@ -33,13 +33,21 @@ CORPS_SOURCE = "usace"
 
 VALID_METHODS = {"archery", "firearm", "muzzleloader", "shotgun", "any_legal"}
 
-# Only allow links to a small set of official/known hosts.
+# Only allow links to a small set of official/known hosts (TX + multi-state).
 ALLOWED_LINK_SUFFIXES = (
     ".usace.army.mil",
     "tpwd.texas.gov",
     "recreation.gov",
     "tamu.edu",
     "angelo.edu",
+    "wlf.louisiana.gov",
+    "louisianaoutdoors.com",
+    "agfc.com",
+    "wildlifedepartment.com",
+    "gooutdoorsoklahoma.com",
+    "wildlife.dgf.nm.gov",
+    "cpw.state.co.us",
+    "cpwshop.com",
 )
 
 
@@ -126,11 +134,18 @@ def load_areas() -> list[dict[str, Any]]:
     return json.loads(path.read_text())
 
 
+def load_areas_for_state(state: str = "tx") -> list[dict[str, Any]]:
+    code = (state or "tx").strip().lower()
+    return [a for a in load_areas() if str(a.get("state") or "tx").strip().lower() == code]
+
+
 def build_corps(
     county_index: dict[str, Any],
+    *,
+    state: str = "tx",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    """Return (units, opportunities, features) for all curated Corps areas."""
-    areas = load_areas()
+    """Return (units, opportunities, features) for curated Corps areas in ``state``."""
+    areas = load_areas_for_state(state)
     units: list[dict[str, Any]] = []
     opportunities: list[dict[str, Any]] = []
     features: list[dict[str, Any]] = []

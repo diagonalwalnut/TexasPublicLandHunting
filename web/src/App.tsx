@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import CountyPanel from "./CountyPanel";
 import HuntMap from "./HuntMap";
-import OregonExplorer from "./oregon/OregonExplorer";
 import { useAuth } from "./auth/AuthContext";
 import HuntReport from "./HuntReport";
 import ExternalLink from "./ExternalLink";
@@ -25,6 +24,19 @@ import {
   regionMatchCounts,
   unitOpportunities,
 } from "./filters";
+import {
+  STATES,
+  STATE_BY_ID,
+  readStoredState,
+  writeStoredState,
+  type StateId,
+} from "./states/catalog";
+import UnitGridExplorer from "./profiles/unitGrid/UnitGridExplorer";
+import PublicLandExplorer from "./profiles/publicLand/PublicLandExplorer";
+import InSeasonPage from "./shared/InSeasonPage";
+import LicenseGuideView from "./shared/LicenseGuideView";
+import type { LicenseGuide } from "./shared/licenseTypes";
+import type { InSeasonSourceRow } from "./shared/inSeason";
 
 function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
   if (season.access === "youth" || season.access === "youth_adult") return false;
@@ -143,27 +155,32 @@ const EMPTY_FILTERS: Filters = {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const canUseOregon = isAdmin || (user?.betas ?? []).includes("oregon");
+  const [stateId, setStateId] = useState<StateId>(() => readStoredState());
+  const activeState = STATE_BY_ID[stateId];
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [corrections, setCorrections] = useState<UnitCorrection[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [counties, setCounties] = useState<Record<string, CountyHunting>>({});
+  const [texasLicenses, setTexasLicenses] = useState<LicenseGuide | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
   const [showCounties, setShowCounties] = useState(true);
   const [satellite, setSatellite] = useState(false);
-  const [view, setView] = useState<"map" | "report" | "saved" | "users">("map");
-  const [oregonOpen, setOregonOpen] = useState(false);
+  const [view, setView] = useState<"map" | "report" | "saved" | "users" | "in-season" | "licenses">("map");
 
   useEffect(() => {
-    if (!canUseOregon) setOregonOpen(false);
     if (!isAdmin && view === "users") setView("map");
-  }, [canUseOregon, isAdmin, view]);
+  }, [isAdmin, view]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    writeStoredState(stateId);
+  }, [stateId]);
+
+  useEffect(() => {
+    if (stateId !== "tx") return;
     Promise.all([
       fetch("data/units.json").then((r) => {
         if (!r.ok) throw new Error("units");
@@ -181,15 +198,17 @@ export default function App() {
         if (!r.ok) throw new Error("counties");
         return r.json();
       }),
+      fetch("data/texas/licenses.json").then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([u, o, m, c]) => {
+      .then(([u, o, m, c, lic]) => {
         setUnits(u);
         setOpportunities(o);
         setMeta(m);
         setCounties(c);
+        setTexasLicenses(lic);
       })
       .catch(() => setError("Could not load hunt data."));
-  }, []);
+  }, [stateId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -272,77 +291,113 @@ export default function App() {
     setView("map");
   };
 
+  const texasInSeasonRows: InSeasonSourceRow[] = useMemo(() => {
+    const fromCounties = Object.values(counties).flatMap((page) =>
+      page.animals.flatMap((animal) =>
+        animal.seasons.flatMap((season) =>
+          season.windows.map((window) => ({
+            species: animal.species,
+            speciesLabel: animal.label,
+            methods: season.methods,
+            accessLabel: ACCESS_LABEL[season.access] ?? season.access,
+            start: window.start,
+            end: window.end,
+            placeId: `${page.slug}:${animal.zone}:${animal.portion || "all"}`,
+            placeLabel: [
+              `${page.county} County`,
+              animal.zone,
+              animal.portion,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          })),
+        ),
+      ),
+    );
+    return fromCounties;
+  }, [counties]);
+
+  const selectState = (id: StateId) => {
+    setStateId(id);
+    setView("map");
+    setSelectedId(null);
+    setSelectedCounty(null);
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-sand text-ink">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-pine py-2 pl-2 pr-4 text-sand">
         <div className="flex min-w-0 items-center gap-3">
           <img
             src="/logo.png"
-            alt="Hunt Public Land in Texas"
+            alt="Hunt Public Land"
             className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20"
           />
           <div className="min-w-0">
             <h1 className="font-serif text-xl font-semibold tracking-tight md:text-2xl">
-              Texas Public Land Hunting
+              {activeState.name} Public Land Hunting
             </h1>
             <p className="text-sm text-sand/80">
-              {meta ? `${meta.seasonYear} APH, walk-in & Corps of Engineers areas` : "Loading…"} · map and hunt report · unofficial planning aid
+              {stateId === "tx" && meta
+                ? `${meta.seasonYear} APH, walk-in & Corps of Engineers areas`
+                : `${activeState.agencyLabel} hunting planner`}{" "}
+              · unofficial planning aid
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="flex rounded-full bg-black/20 p-0.5">
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 ${view === "map" ? "bg-gold text-pine" : "text-sand/80"}`}
-              onClick={() => setView("map")}
+          <label className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1">
+            <span className="text-xs uppercase tracking-wide text-sand/70">State</span>
+            <select
+              className="rounded bg-pine text-sand outline-none"
+              value={stateId}
+              onChange={(event) => selectState(event.target.value as StateId)}
             >
-              Map
-            </button>
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 ${view === "report" ? "bg-gold text-pine" : "text-sand/80"}`}
-              onClick={() => setView("report")}
-            >
-              Report
-            </button>
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 ${view === "saved" ? "bg-gold text-pine" : "text-sand/80"}`}
-              onClick={() => setView("saved")}
-            >
-              Saved
-            </button>
-          </div>
-          <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
-            {matchIds.size} of {viewUnits.length} areas
-          </span>
-          <ExternalLink
-            className="rounded-full border border-sand/30 px-3 py-1 hover:bg-white/10"
-            href="https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/"
-          >
-            TPWD APH
-          </ExternalLink>
-          {canUseOregon && (
-            <button
-              type="button"
-              className={`rounded-full px-3 py-1 ${oregonOpen ? "bg-gold text-pine" : "border border-gold/60 text-gold"}`}
-              onClick={() => {
-                setView("map");
-                setOregonOpen(true);
-              }}
-            >
-              Oregon beta
-            </button>
+              {STATES.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {stateId === "tx" && (
+            <>
+              <div className="flex rounded-full bg-black/20 p-0.5">
+                {(
+                  [
+                    ["map", "Map"],
+                    ["report", "Report"],
+                    ["in-season", "In Season"],
+                    ["licenses", "Licenses"],
+                    ["saved", "Saved"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`rounded-full px-3 py-1 ${view === id ? "bg-gold text-pine" : "text-sand/80"}`}
+                    onClick={() => setView(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
+                {matchIds.size} of {viewUnits.length} areas
+              </span>
+              <ExternalLink
+                className="rounded-full border border-sand/30 px-3 py-1 hover:bg-white/10"
+                href={activeState.agencyUrl}
+              >
+                {activeState.agencyLabel}
+              </ExternalLink>
+            </>
           )}
           {isAdmin && (
             <button
               type="button"
               className={`rounded-full px-3 py-1 ${view === "users" ? "bg-gold text-pine" : "border border-sand/30 hover:bg-white/10"}`}
-              onClick={() => {
-                setOregonOpen(false);
-                setView("users");
-              }}
+              onClick={() => setView("users")}
             >
               Users
             </button>
@@ -351,8 +406,22 @@ export default function App() {
         </div>
       </header>
 
-      {canUseOregon && oregonOpen && <OregonExplorer onClose={() => setOregonOpen(false)} />}
-      <div className={`flex min-h-0 flex-1 flex-col md:flex-row ${oregonOpen ? "hidden" : ""}`}>
+      {view === "users" && isAdmin && user ? (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <UsersView key={user.id} currentUserId={user.id} />
+        </div>
+      ) : null}
+      {view !== "users" && stateId !== "tx" && activeState.profile === "unitGrid" && (
+        <UnitGridExplorer state={activeState} />
+      )}
+      {view !== "users" && stateId !== "tx" && activeState.profile === "publicLand" && (
+        <PublicLandExplorer state={activeState} />
+      )}
+      <div
+        className={`flex min-h-0 flex-1 flex-col md:flex-row ${
+          stateId !== "tx" || view === "users" ? "hidden" : ""
+        }`}
+      >
         <aside className="scrollbar-thin order-2 max-h-[42vh] shrink-0 overflow-y-auto border-t border-black/10 bg-sand p-4 md:order-1 md:max-h-none md:w-80 md:border-r md:border-t-0">
           <FilterPanel
             filters={filters}
@@ -476,11 +545,6 @@ export default function App() {
               <div className={`absolute inset-0 ${view === "saved" ? "z-10" : "hidden"}`}>
                 <FavoritesView units={viewUnits} onSelectUnit={openUnitOnMap} />
               </div>
-              {view === "users" && user && (
-                <div className="absolute inset-0 z-10">
-                  <UsersView key={user.id} currentUserId={user.id} />
-                </div>
-              )}
               <div className={`absolute inset-0 ${view === "report" ? "z-10" : "hidden"}`}>
                 <HuntReport
                   units={viewUnits}
@@ -497,6 +561,22 @@ export default function App() {
                     setView("map");
                   }}
                 />
+              </div>
+              <div className={`absolute inset-0 ${view === "in-season" ? "z-10" : "hidden"}`}>
+                <InSeasonPage
+                  rows={texasInSeasonRows}
+                  timezone={activeState.timezone}
+                  stateName="Texas"
+                  methodLabels={METHOD_LABEL}
+                  placeFilterLabel="County / zone"
+                />
+              </div>
+              <div className={`absolute inset-0 ${view === "licenses" ? "z-10" : "hidden"}`}>
+                {texasLicenses ? (
+                  <LicenseGuideView guide={texasLicenses} />
+                ) : (
+                  <p className="p-6 text-sm text-muted">Loading license guide…</p>
+                )}
               </div>
             </>
           )}
