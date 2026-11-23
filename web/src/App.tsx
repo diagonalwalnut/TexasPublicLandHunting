@@ -292,9 +292,12 @@ export default function App() {
   };
 
   const texasInSeasonRows: InSeasonSourceRow[] = useMemo(() => {
-    const fromCounties = Object.values(counties).flatMap((page) =>
-      page.animals.flatMap((animal) =>
-        animal.seasons.flatMap((season) =>
+    const fromCounties = Object.values(counties).flatMap((page) => {
+      const countyId = page.slug || page.county.toLowerCase().replace(/\s+/g, "-");
+      const countyLabel = `${page.county} County`;
+      return page.animals.flatMap((animal) => {
+        const zoneNote = [animal.zone, animal.portion].filter(Boolean).join(" · ");
+        return animal.seasons.flatMap((season) =>
           season.windows.map((window) => ({
             species: animal.species,
             speciesLabel: animal.label,
@@ -302,18 +305,16 @@ export default function App() {
             accessLabel: ACCESS_LABEL[season.access] ?? season.access,
             start: window.start,
             end: window.end,
-            placeId: `${page.slug}:${animal.zone}:${animal.portion || "all"}`,
-            placeLabel: [
-              `${page.county} County`,
-              animal.zone,
-              animal.portion,
-            ]
-              .filter(Boolean)
-              .join(" · "),
+            countyId,
+            countyLabel,
+            zoneNote,
+            // Defaults used when not in county mode / before scoping.
+            placeId: countyId,
+            placeLabel: countyLabel,
           })),
-        ),
-      ),
-    );
+        );
+      });
+    });
     return fromCounties;
   }, [counties]);
 
@@ -437,7 +438,7 @@ export default function App() {
             <p className="p-6 text-red-800">{error}</p>
           ) : (
             <>
-              <div className={`absolute inset-0 ${view === "map" ? "z-10" : "invisible pointer-events-none"}`}>
+              <div className={`absolute inset-0 ${view === "map" ? "z-10" : "invisible pointer-events-none z-0"}`}>
                 <HuntMap
                   matchingIds={matchIds}
                   selectedId={selectedId}
@@ -562,14 +563,15 @@ export default function App() {
                   }}
                 />
               </div>
-              <div className={`absolute inset-0 ${view === "in-season" ? "z-10" : "hidden"}`}>
+              <div className={`absolute inset-0 z-20 ${view === "in-season" ? "" : "hidden"}`}>
                 <InSeasonPage
                   rows={texasInSeasonRows}
                   timezone={activeState.timezone}
                   stateName="Texas"
                   methodLabels={METHOD_LABEL}
                   speciesLabels={speciesLabels}
-                  placeFilterLabel="County / zone"
+                  placeFilterLabel="County"
+                  countyMode
                   shared={{
                     species: filters.species,
                     methods: filters.methods,
@@ -579,7 +581,7 @@ export default function App() {
                       ? countyPages.find((page) => page.county === filters.county)
                         ? `${filters.county} County`
                         : filters.county
-                      : filters.region,
+                      : "",
                     start: filters.start,
                     end: filters.end,
                     date: filters.start || undefined,
@@ -590,10 +592,8 @@ export default function App() {
                       (page) =>
                         place === page.county ||
                         place === `${page.county} County` ||
-                        place.toLowerCase().startsWith(`${page.county.toLowerCase()} county`),
+                        place.toLowerCase() === `${page.county.toLowerCase()} county`,
                     );
-                    const regionMatch =
-                      place && (meta?.regions ?? []).includes(place) ? place : "";
                     applyFilters({
                       ...filters,
                       species: next.species ?? [],
@@ -601,12 +601,13 @@ export default function App() {
                       access: (next.access ?? filters.access) as Filters["access"],
                       query: next.query ?? filters.query,
                       county: countyMatch?.county || "",
-                      region: countyMatch ? "" : regionMatch || (place ? filters.region : ""),
+                      // County In Season filter is county-only; clear region when place changes.
+                      region: place ? "" : filters.region,
                       start: next.date || next.start || "",
                       end: next.date || next.end || "",
                     });
                     if (countyMatch) {
-                      setSelectedCounty(countyMatch.county);
+                      setSelectedCounty(countyMatch.slug || countyMatch.county.toLowerCase());
                       setShowCounties(true);
                     } else if (!place) {
                       setSelectedCounty(null);

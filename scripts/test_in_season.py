@@ -28,6 +28,20 @@ def main() -> int:
     }
     assert len(ends) >= 2, ends
 
+    # County dropdown contract: one Johnson County; zone seasons attach to that county.
+    johnson = counties["johnson"]
+    assert johnson["county"] == "Johnson"
+    county_labels = {f"{page['county']} County" for page in counties.values()}
+    assert "Johnson County" in county_labels
+    assert len([label for label in county_labels if label == "Johnson County"]) == 1
+    duck = next(animal for animal in johnson["animals"] if animal["label"] == "Duck")
+    assert duck["zone"] == "North Zone", duck["zone"]
+    assert any(
+        covers("2026-11-07", window["start"], window["end"])
+        for season in duck["seasons"]
+        for window in season["windows"]
+    ), "Johnson Duck North Zone should be open on youth weekend"
+
     # Oregon hunts should have at least one open window somewhere in the season year.
     hunts = json.loads((ROOT / "data" / "oregon" / "hunts.json").read_text())
     assert any(covers("2026-10-15", hunt["start"], hunt["end"]) for hunt in hunts)
