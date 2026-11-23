@@ -36,6 +36,7 @@ def main() -> int:
 
     ids = [a["id"] for a in areas]
     assert len(ids) == len(set(ids)), "duplicate area ids"
+    by_state: dict[str, int] = {}
     for area in areas:
         assert area["id"].startswith("usace-"), area["id"]
         assert area["name"], area["id"]
@@ -43,6 +44,9 @@ def main() -> int:
         assert area.get("counties"), area["id"]
         assert area.get("lon") is not None and area.get("lat") is not None, area["id"]
         assert area.get("species"), area["id"]
+        state = str(area.get("state") or "tx").lower()
+        assert state in {"tx", "la", "ar", "ok", "nm", "co", "or"}, (area["id"], state)
+        by_state[state] = by_state.get(state, 0) + 1
         for entry in area["species"]:
             assert entry["species"] in SPECIES, (area["id"], entry["species"])
             assert entry.get("methods"), (area["id"], entry["species"])
@@ -51,6 +55,10 @@ def main() -> int:
         for link in area.get("links", []):
             assert link["url"].startswith("https://"), link
             assert _host_allowed(link["url"]), link
+    assert by_state.get("tx", 0) >= 18, by_state
+    assert by_state.get("la", 0) >= 2, by_state
+    assert by_state.get("ar", 0) >= 2, by_state
+    assert by_state.get("ok", 0) >= 2, by_state
 
     # Lake Whitney example from the user request: deer, archery only.
     whitney = next(a for a in areas if a["id"] == "usace-whitney")
@@ -58,9 +66,10 @@ def main() -> int:
     assert deer["methods"] == ["archery"], deer
 
     county_index = load_counties(CACHE / "counties") if (CACHE / "counties").exists() else {}
+    tx_areas = [a for a in areas if str(a.get("state") or "tx").lower() == "tx"]
     units, opps, features = build_corps(county_index)
-    assert len(units) == len(areas), (len(units), len(areas))
-    assert len(features) == len(areas), (len(features), len(areas))
+    assert len(units) == len(tx_areas), (len(units), len(tx_areas), "build_corps should emit Texas only")
+    assert len(features) == len(tx_areas), (len(features), len(tx_areas))
 
     by_unit = {u["id"]: u for u in units}
     opp_by_unit: dict[str, list] = {}
@@ -96,7 +105,7 @@ def main() -> int:
     assert aquilla_dove, "Aquilla should keep a dove season"
     assert all(o["methods"] == ["shotgun"] for o in aquilla_dove), aquilla_dove
 
-    for area in areas:
+    for area in tx_areas:
         path = CORPS_DIR / f"{area['id']}.geojson"
         feat = next(f for f in features if f["id"] == area["id"])
         if path.exists():
@@ -104,7 +113,10 @@ def main() -> int:
             unit = by_unit[area["id"]]
             assert "PAD-US" in unit.get("boundaryNote", ""), area["id"]
 
-    print(f"ok: {len(areas)} Corps areas, {len(opps)} opportunities, {len(features)} features")
+    print(
+        f"ok: {len(areas)} Corps areas ({len(tx_areas)} tx), "
+        f"{len(opps)} opportunities, {len(features)} features"
+    )
     return 0
 
 

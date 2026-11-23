@@ -206,9 +206,9 @@ function tplh_admin_emails(): array
 
 function tplh_beta_catalog(): array
 {
-    return [
-        ['id' => 'oregon', 'label' => 'Oregon beta'],
-    ];
+    // Oregon and other states are public via the state picker; keep the catalog
+    // empty so admin Users no longer grants a state beta gate.
+    return [];
 }
 
 function tplh_beta_ids(): array

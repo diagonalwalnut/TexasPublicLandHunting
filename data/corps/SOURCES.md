@@ -68,3 +68,13 @@ Map polygons are Corps project land from the public USGS PAD-US 4.1 fee layer
 when its centroid is near the curated coordinate, and writes
 `data/corps/<id>.geojson`. These shapes are the project boundary, not the hunt
 compartments drawn in the lake PDF. A lake that does not match stays a point.
+
+
+## Multi-state extension
+
+`areas.json` entries now include a `state` field (`tx`, `la`, `ar`, `ok`, `nm`, `co`).
+Texas lakes remain the Fort Worth District set above. Additional published
+public-hunting Corps projects were added for Louisiana (Vicksburg), Arkansas
+(Little Rock / Vicksburg), Oklahoma (Tulsa District), plus Conchas Lake (NM)
+and John Martin / Trinidad (CO). Build with `scripts/corps_multi.py --state <code>`
+or via each state build script.

@@ -1,10 +1,11 @@
-# Texas Public Land Hunting
+# Public Land Hunting (multi-state)
 
-Unofficial 2026–27 explorer for Texas Parks and Wildlife Department **Annual Public Hunting (APH)** walk-in units and dove/small-game leases.
+Unofficial hunting planner for **Texas, Oregon, New Mexico, Colorado, Louisiana, Arkansas, and Oklahoma**. Pick a state in the header.
 
-Use the **map** to click hunt regions and units, or open the **report** for a filterable list of where and when a hunt is legal. Example: **Whitetail + rifle** lists matching regions and units with county season dates.
+- **Texas / Louisiana / Arkansas / Oklahoma** — public hunting areas (WMA/APH and Corps lakes), seasons, licenses, and an **In Season** page.
+- **Oregon / New Mexico / Colorado** — statewide management units (WMU/GMU), draw and OTC hunts, licenses, rules, public-land/Corps toggle, and **In Season**.
 
-**This is not an official TPWD product.** Dates, methods, and boundaries change. Confirm every hunt with the [current unit PDF / Map Booklet](https://tpwd.texas.gov/huntwild/hunt/public/annual_public_hunting/) and the [Outdoor Annual](https://tpwd.texas.gov/regulations/outdoor-annual/hunting/2026-2027-hunting-season-dates) before you go.
+**This is not an official wildlife-agency product.** Dates, methods, and boundaries change. Confirm every hunt with the agency sources linked in each state’s Licenses and Rules panes before you go.
 
 ## What’s in the data
 
@@ -93,12 +94,26 @@ There are no frontend auth secrets. Do not commit `api/data/*.sqlite` or `api/da
 - Unique on `(user_id, unit_id)`. Queries are scoped to the session user.
 - Star control on the unit drawer and hunt-report rows. **Saved** lists favorited units; a click opens the map.
 
-## Oregon beta
+## Multi-state data builds
 
-Accounts with the Oregon beta get an **Oregon beta** button. It maps ODFW wildlife management units and 2026 eastern deer hunt areas, filters by animal, season, and method (any legal weapon, centerfire, archery, muzzleloader, shotgun), and lists controlled hunts, general seasons, and game-bird dates. A licenses section covers over-the-counter, agent, internet, and draw purchases, plus preference points.
+```bash
+python3 scripts/oregon_build.py
+python3 scripts/nm_build.py
+python3 scripts/co_build.py
+python3 scripts/la_build.py
+python3 scripts/ar_build.py
+python3 scripts/ok_build.py
+python3 scripts/corps_multi.py --state la   # also ar, ok, nm, co, or
+python3 scripts/test_states.py
+python3 scripts/test_in_season.py
+```
 
-An account's stored `role` is the source of truth. Emails in `AUTH_ADMIN_EMAILS` (comma-separated) or, for local PHP, `api/data/admins.txt` are promoted to admin on the next sign-in and are never demoted by that list. Admins can open every beta. From the Users screen an admin can promote another account, grant the Oregon beta to a regular account, or delete another account. An admin cannot delete the account they are signed in with. Rebuild the dataset with `python3 scripts/oregon_build.py` after placing the 2026 regulations text or letting the script download the booklet PDF.
+Texas remains `scripts/fetch.py` + `scripts/build.py`. Each state folder under `data/<state>/` is mirrored to `web/public/data/<state>/`.
+
+## Accounts
+
+An account's stored `role` is the source of truth. Emails in `AUTH_ADMIN_EMAILS` (comma-separated) or, for local PHP, `api/data/admins.txt` are promoted to admin on the next sign-in. From the Users screen an admin can promote another account or delete another account. An admin cannot delete the account they are signed in with.
 
 ## License / attribution
 
-Hunt regulations and maps remain © Texas Parks and Wildlife Department and, for the Oregon beta, © Oregon Department of Fish and Wildlife. This repository only stores derived JSON/GeoJSON for an unofficial planning aid and links back to official publications.
+Hunt regulations and maps remain © the publishing wildlife agencies and USACE districts. This repository only stores derived JSON/GeoJSON for an unofficial planning aid and links back to official publications.

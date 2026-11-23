@@ -77,7 +77,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-bardwell",
@@ -147,7 +148,8 @@
         ],
         "notes": "Snipe and rails."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-belton",
@@ -234,7 +236,8 @@
         ],
         "notes": "Rails and snipe."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-benbrook",
@@ -316,7 +319,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-georgetown",
@@ -389,7 +393,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-grapevine",
@@ -465,7 +470,8 @@
         ],
         "notes": "500 permits by lottery; shooting ends at noon."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-lake-o-the-pines",
@@ -544,7 +550,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-lavon",
@@ -619,7 +626,8 @@
         ],
         "notes": "Snipe."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-lewisville",
@@ -714,7 +722,8 @@
         ],
         "notes": "Listed as legal game; shotgun #2 or smaller."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-navarro-mills",
@@ -785,7 +794,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-proctor",
@@ -849,7 +859,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-sam-rayburn",
@@ -932,7 +943,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-somerville",
@@ -983,7 +995,8 @@
         ],
         "notes": "Hunting compartments by permit."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-stillhouse-hollow",
@@ -1039,7 +1052,8 @@
         ],
         "notes": "Rails and snipe."
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-town-bluff",
@@ -1119,7 +1133,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-waco",
@@ -1199,7 +1214,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-whitney",
@@ -1280,7 +1296,8 @@
           "shotgun"
         ]
       }
-    ]
+    ],
+    "state": "tx"
   },
   {
     "id": "usace-wright-patman",
@@ -1356,6 +1373,1044 @@
           "shotgun"
         ]
       }
+    ],
+    "state": "tx"
+  },
+  {
+    "id": "usace-wallace-lake",
+    "state": "la",
+    "name": "Wallace Lake",
+    "managingAgency": "USACE Vicksburg District",
+    "counties": [
+      "Caddo",
+      "De Soto"
+    ],
+    "region": "Northwest Louisiana",
+    "lon": -93.68,
+    "lat": 32.27,
+    "acres": 108,
+    "permitRequired": true,
+    "permitInfo": "Public hunting on designated USACE lands; follow LDWF seasons and any lake-specific restrictions. Confirm current permit rules with the project office.",
+    "permitCost": "See project office / Recreation.gov if a permit is listed.",
+    "means": "Legal methods for the open season under LDWF regulations unless posted otherwise. No hunting in developed recreation areas.",
+    "legalGame": [
+      "White-tailed deer",
+      "Dove",
+      "Squirrel",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Wallace Lake (USACE)",
+        "url": "https://www.mvk.usace.army.mil/"
+      },
+      {
+        "label": "LDWF seasons",
+        "url": "https://www.wlf.louisiana.gov/page/seasons-and-regulations"
+      },
+      {
+        "label": "Recreation.gov",
+        "url": "https://www.recreation.gov/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ],
+        "notes": "Follow LDWF deer seasons."
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
     ]
+  },
+  {
+    "id": "usace-bayou-bodcau",
+    "state": "la",
+    "name": "Bayou Bodcau Reservoir",
+    "managingAgency": "USACE Vicksburg District / LDWF Bodcau WMA",
+    "counties": [
+      "Bossier",
+      "Webster"
+    ],
+    "region": "Northwest Louisiana",
+    "lon": -93.52,
+    "lat": 32.71,
+    "acres": 33766,
+    "permitRequired": true,
+    "permitInfo": "Bodcau WMA is USACE land managed with LDWF. WMA Access Permit and self-clearing required. Lottery hunts may apply.",
+    "permitCost": "LDWF WMA Access Permit ($20 annual / $5 five-day).",
+    "means": "Per LDWF Bodcau WMA schedule. Still-hunt rules common; confirm lottery vs open seasons.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Waterfowl",
+      "Squirrel"
+    ],
+    "links": [
+      {
+        "label": "LDWF Bodcau WMA",
+        "url": "https://www.wlf.louisiana.gov/"
+      },
+      {
+        "label": "USACE Vicksburg",
+        "url": "https://www.mvk.usace.army.mil/"
+      },
+      {
+        "label": "Louisiana Outdoors licenses",
+        "url": "https://louisianaoutdoors.com/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ],
+        "notes": "Open and lottery hunts per WMA schedule."
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ],
+        "notes": "Open on Bodcau where listed."
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-poverty-point-reservoir",
+    "state": "la",
+    "name": "Poverty Point Reservoir",
+    "managingAgency": "USACE / Louisiana State Parks coordination",
+    "counties": [
+      "Richland"
+    ],
+    "region": "Northeast Louisiana",
+    "lon": -91.58,
+    "lat": 32.53,
+    "acres": 2700,
+    "permitRequired": false,
+    "permitInfo": "Hunting limited to areas and seasons posted by the managing agencies. Confirm before hunting.",
+    "permitCost": "No separate Corps permit listed; LDWF licenses required.",
+    "means": "Follow posted area restrictions and LDWF seasons.",
+    "legalGame": [
+      "Dove",
+      "Waterfowl",
+      "Squirrel"
+    ],
+    "links": [
+      {
+        "label": "USACE Vicksburg District",
+        "url": "https://www.mvk.usace.army.mil/"
+      },
+      {
+        "label": "LDWF seasons",
+        "url": "https://www.wlf.louisiana.gov/page/seasons-and-regulations"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-lake-ouachita",
+    "state": "ar",
+    "name": "Lake Ouachita",
+    "managingAgency": "USACE Vicksburg District",
+    "counties": [
+      "Garland",
+      "Montgomery"
+    ],
+    "region": "Ouachita Mountains",
+    "lon": -93.3,
+    "lat": 34.6,
+    "acres": 20000,
+    "permitRequired": false,
+    "permitInfo": "Public hunting and trapping permitted on Corps property except developed recreation areas, near the dam, and posted no-hunting zones. Duck blind permits available at the field office.",
+    "permitCost": "Duck blind permit $15 (field office). No general hunting permit fee listed.",
+    "means": "AGFC seasons apply. Permanent blinds/stands prohibited. ATVs prohibited. Boundary marked with yellow paint blazes.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Squirrel",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Lake Ouachita hunting (USACE)",
+        "url": "https://www.mvk.usace.army.mil/Missions/Recreation/Lake-Ouachita/"
+      },
+      {
+        "label": "AGFC hunting",
+        "url": "https://www.agfc.com/hunting/"
+      },
+      {
+        "label": "Recreation.gov",
+        "url": "https://www.recreation.gov/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm",
+          "muzzleloader"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ],
+        "notes": "Duck blind permit may be required for blinds."
+      }
+    ]
+  },
+  {
+    "id": "usace-greers-ferry",
+    "state": "ar",
+    "name": "Greers Ferry Lake",
+    "managingAgency": "USACE Little Rock District",
+    "counties": [
+      "Cleburne",
+      "Van Buren"
+    ],
+    "region": "Ozarks",
+    "lon": -92.15,
+    "lat": 35.52,
+    "acres": 15000,
+    "permitRequired": false,
+    "permitInfo": "Public hunting on Corps land outside developed recreation areas under AGFC regulations.",
+    "permitCost": "No general Corps hunting permit listed.",
+    "means": "Follow AGFC seasons and posted closures around recreation areas and the dam.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Squirrel"
+    ],
+    "links": [
+      {
+        "label": "Greers Ferry Lake (USACE)",
+        "url": "https://www.swl.usace.army.mil/Missions/Recreation/Greers-Ferry-Lake/"
+      },
+      {
+        "label": "AGFC hunting",
+        "url": "https://www.agfc.com/hunting/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-bull-shoals",
+    "state": "ar",
+    "name": "Bull Shoals Lake",
+    "managingAgency": "USACE Little Rock District",
+    "counties": [
+      "Marion",
+      "Baxter"
+    ],
+    "region": "Ozarks",
+    "lon": -92.58,
+    "lat": 36.37,
+    "acres": 18000,
+    "permitRequired": false,
+    "permitInfo": "Public hunting on Corps lands outside closed recreation zones. Follow AGFC seasons.",
+    "permitCost": "No general Corps hunting permit listed.",
+    "means": "AGFC methods for open seasons; stay out of developed parks and dam areas.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Squirrel",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Bull Shoals Lake (USACE)",
+        "url": "https://www.swl.usace.army.mil/Missions/Recreation/Bull-Shoals-Lake/"
+      },
+      {
+        "label": "AGFC hunting",
+        "url": "https://www.agfc.com/hunting/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-norfork",
+    "state": "ar",
+    "name": "Norfork Lake",
+    "managingAgency": "USACE Little Rock District",
+    "counties": [
+      "Baxter",
+      "Fulton"
+    ],
+    "region": "Ozarks",
+    "lon": -92.24,
+    "lat": 36.25,
+    "acres": 12000,
+    "permitRequired": false,
+    "permitInfo": "Public hunting on project lands outside developed recreation areas under AGFC regulations.",
+    "permitCost": "No general Corps hunting permit listed.",
+    "means": "Follow AGFC seasons and posted no-hunting zones.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Squirrel"
+    ],
+    "links": [
+      {
+        "label": "Norfork Lake (USACE)",
+        "url": "https://www.swl.usace.army.mil/Missions/Recreation/Norfork-Lake/"
+      },
+      {
+        "label": "AGFC hunting",
+        "url": "https://www.agfc.com/hunting/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-fort-supply",
+    "state": "ok",
+    "name": "Fort Supply Lake",
+    "managingAgency": "USACE Tulsa District / ODWC",
+    "counties": [
+      "Woodward"
+    ],
+    "region": "Northwest Oklahoma",
+    "lon": -99.39,
+    "lat": 36.57,
+    "acres": 6000,
+    "permitRequired": false,
+    "permitInfo": "Approximately 6,000 acres of public hunting land managed with ODWC. Open year-round under ODWC regulations. No separate Corps hunting permit listed.",
+    "permitCost": "No Corps hunting permit required.",
+    "means": "Any legal weapon for the open ODWC season except in restricted areas. Quail and deer are primary attractions.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Quail",
+      "Waterfowl",
+      "Squirrel",
+      "Rabbit"
+    ],
+    "links": [
+      {
+        "label": "Tulsa District hunting maps",
+        "url": "https://www.swt.usace.army.mil/Missions/Recreation/Hunting-Information/"
+      },
+      {
+        "label": "Fort Supply (Recreation.gov)",
+        "url": "https://www.recreation.gov/gateways/557"
+      },
+      {
+        "label": "ODWC hunting",
+        "url": "https://www.wildlifedepartment.com/hunting"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "quail",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-hugo",
+    "state": "ok",
+    "name": "Hugo Lake",
+    "managingAgency": "USACE Tulsa District / ODWC",
+    "counties": [
+      "Choctaw"
+    ],
+    "region": "Southeast Oklahoma",
+    "lon": -95.38,
+    "lat": 34.02,
+    "acres": 26000,
+    "permitRequired": false,
+    "permitInfo": "ODWC manages over 18,000 acres open to hunting plus additional Corps acreage. Follow ODWC seasons and the Tulsa District hunting map.",
+    "permitCost": "No Corps hunting permit required.",
+    "means": "Legal methods per ODWC for deer, waterfowl, quail, dove, and other game.",
+    "legalGame": [
+      "White-tailed deer",
+      "Dove",
+      "Quail",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Tulsa District hunting maps",
+        "url": "https://www.swt.usace.army.mil/Missions/Recreation/Hunting-Information/"
+      },
+      {
+        "label": "Hugo Lake (Recreation.gov)",
+        "url": "https://www.recreation.gov/gateways/560"
+      },
+      {
+        "label": "ODWC hunting",
+        "url": "https://www.wildlifedepartment.com/hunting"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "quail",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-keystone",
+    "state": "ok",
+    "name": "Keystone Lake",
+    "managingAgency": "USACE Tulsa District",
+    "counties": [
+      "Tulsa",
+      "Osage",
+      "Pawnee",
+      "Creek"
+    ],
+    "region": "Northeast Oklahoma",
+    "lon": -96.25,
+    "lat": 36.15,
+    "acres": 20000,
+    "permitRequired": false,
+    "permitInfo": "Thousands of acres open to public hunting. Hunting prohibited in developed recreation areas and near the dam. ODWC licenses required.",
+    "permitCost": "No Corps hunting permit required.",
+    "means": "Any legal weapon for open ODWC seasons except in restricted zones. Waterfowl refuge and green-tree reservoirs have special rules.",
+    "legalGame": [
+      "White-tailed deer",
+      "Dove",
+      "Waterfowl",
+      "Squirrel",
+      "Rabbit"
+    ],
+    "links": [
+      {
+        "label": "Tulsa District hunting maps",
+        "url": "https://www.swt.usace.army.mil/Missions/Recreation/Hunting-Information/"
+      },
+      {
+        "label": "Keystone Lake (Recreation.gov)",
+        "url": "https://www.recreation.gov/gateways/564"
+      },
+      {
+        "label": "ODWC hunting",
+        "url": "https://www.wildlifedepartment.com/hunting"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "squirrel",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-eufaula-ok",
+    "state": "ok",
+    "name": "Eufaula Lake",
+    "managingAgency": "USACE Tulsa District / ODWC",
+    "counties": [
+      "McIntosh",
+      "Pittsburg",
+      "Haskell"
+    ],
+    "region": "East-central Oklahoma",
+    "lon": -95.55,
+    "lat": 35.3,
+    "acres": 30000,
+    "permitRequired": false,
+    "permitInfo": "Large public hunting acreage with a published Tulsa District hunting map for the 2026-27 season. Some hunts may be controlled through ODWC.",
+    "permitCost": "No general Corps hunting permit; controlled hunts use ODWC applications.",
+    "means": "Follow ODWC seasons and the lake hunting map for refuge and restricted zones.",
+    "legalGame": [
+      "White-tailed deer",
+      "Turkey",
+      "Dove",
+      "Waterfowl",
+      "Quail"
+    ],
+    "links": [
+      {
+        "label": "Tulsa District hunting maps",
+        "url": "https://www.swt.usace.army.mil/Missions/Recreation/Hunting-Information/"
+      },
+      {
+        "label": "ODWC hunting",
+        "url": "https://www.wildlifedepartment.com/hunting"
+      },
+      {
+        "label": "Go Outdoors Oklahoma",
+        "url": "https://gooutdoorsoklahoma.com/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "quail",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-conchas",
+    "state": "nm",
+    "name": "Conchas Lake",
+    "managingAgency": "USACE Albuquerque District",
+    "counties": [
+      "San Miguel"
+    ],
+    "region": "Northeast New Mexico",
+    "lon": -104.19,
+    "lat": 35.37,
+    "acres": 5000,
+    "permitRequired": true,
+    "permitInfo": "Hunting on designated project lands under NMDGF seasons where open. Confirm current public-hunting map and any permit with the project office.",
+    "permitCost": "See project office; NMDGF licenses required.",
+    "means": "Follow NMDGF methods for open seasons; no hunting in developed recreation areas.",
+    "legalGame": [
+      "Deer",
+      "Dove",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Conchas Lake (USACE)",
+        "url": "https://www.spa.usace.army.mil/Missions/Civil-Works/Recreation/Conchas-Lake/"
+      },
+      {
+        "label": "NMDGF hunting",
+        "url": "https://wildlife.dgf.nm.gov/hunting/"
+      },
+      {
+        "label": "Recreation.gov",
+        "url": "https://www.recreation.gov/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "mule_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ],
+        "notes": "Where public hunting is open on project land."
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-john-martin",
+    "state": "co",
+    "name": "John Martin Reservoir",
+    "managingAgency": "USACE Albuquerque District",
+    "counties": [
+      "Bent"
+    ],
+    "region": "Southeast Colorado",
+    "lon": -102.93,
+    "lat": 38.07,
+    "acres": 8000,
+    "permitRequired": false,
+    "permitInfo": "USACE wildlife areas around John Martin Reservoir allow hunting under CPW seasons in designated zones.",
+    "permitCost": "No general Corps hunting permit listed; CPW licenses required.",
+    "means": "Follow CPW plains seasons and posted refuge closures.",
+    "legalGame": [
+      "Deer",
+      "Dove",
+      "Waterfowl",
+      "Turkey"
+    ],
+    "links": [
+      {
+        "label": "John Martin Reservoir (USACE)",
+        "url": "https://www.spa.usace.army.mil/Missions/Civil-Works/Recreation/John-Martin-Reservoir/"
+      },
+      {
+        "label": "CPW hunting",
+        "url": "https://cpw.state.co.us/activities/hunting/big-game"
+      },
+      {
+        "label": "Recreation.gov",
+        "url": "https://www.recreation.gov/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "white_tailed_deer",
+        "methods": [
+          "archery",
+          "firearm"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-trinidad",
+    "state": "co",
+    "name": "Trinidad Lake",
+    "managingAgency": "USACE Albuquerque District",
+    "counties": [
+      "Las Animas"
+    ],
+    "region": "Southern Colorado",
+    "lon": -104.57,
+    "lat": 37.14,
+    "acres": 2000,
+    "permitRequired": false,
+    "permitInfo": "Small-game hunting in designated areas under CPW regulations. Confirm current map with the project office.",
+    "permitCost": "No general Corps hunting permit listed.",
+    "means": "Shotgun/small game in designated zones; stay out of recreation developments.",
+    "legalGame": [
+      "Dove",
+      "Turkey",
+      "Waterfowl"
+    ],
+    "links": [
+      {
+        "label": "Trinidad Lake (USACE)",
+        "url": "https://www.spa.usace.army.mil/Missions/Civil-Works/Recreation/Trinidad-Lake/"
+      },
+      {
+        "label": "CPW hunting",
+        "url": "https://cpw.state.co.us/activities/hunting/big-game"
+      }
+    ],
+    "mapPdfUrl": "",
+    "geometry": "point",
+    "tier": 0,
+    "species": [
+      {
+        "species": "dove",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "turkey",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "usace-bonneville",
+    "state": "or",
+    "name": "Bonneville Lock and Dam",
+    "counties": [
+      "Multnomah",
+      "Skamania"
+    ],
+    "region": "Northwest",
+    "lon": -121.9405,
+    "lat": 45.6446,
+    "acres": null,
+    "permitRequired": true,
+    "permitInfo": "Hunting on Corps land around Bonneville follows Oregon seasons and posted Corps rules. Confirm access and means with the Portland District project office before hunting.",
+    "permitCost": "See project office / Recreation.gov where required",
+    "means": "As posted; typically shotgun and archery for waterfowl/upland where allowed",
+    "links": [
+      {
+        "label": "Portland District",
+        "url": "https://www.nwp.usace.army.mil/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "boundaryNote": "Point fallback pending detailed Portland District hunt maps.",
+    "species": [
+      {
+        "species": "waterfowl",
+        "methods": [
+          "archery",
+          "shotgun"
+        ]
+      },
+      {
+        "species": "dove",
+        "methods": [
+          "archery",
+          "shotgun"
+        ]
+      },
+      {
+        "species": "quail",
+        "methods": [
+          "archery",
+          "shotgun"
+        ]
+      }
+    ],
+    "managingAgency": "USACE",
+    "geometry": "point",
+    "tier": 0
+  },
+  {
+    "id": "usace-the-dalles",
+    "state": "or",
+    "name": "The Dalles Lock and Dam",
+    "counties": [
+      "Wasco",
+      "Klickitat"
+    ],
+    "region": "North Central",
+    "lon": -121.1354,
+    "lat": 45.6071,
+    "acres": null,
+    "permitRequired": true,
+    "permitInfo": "Corps lands at The Dalles may allow limited hunting where posted. Oregon license required. Confirm with the Portland District.",
+    "permitCost": "See project office",
+    "means": "As posted by the Corps",
+    "links": [
+      {
+        "label": "Portland District",
+        "url": "https://www.nwp.usace.army.mil/"
+      }
+    ],
+    "mapPdfUrl": "",
+    "boundaryNote": "Point fallback pending detailed hunt maps.",
+    "species": [
+      {
+        "species": "waterfowl",
+        "methods": [
+          "shotgun"
+        ]
+      },
+      {
+        "species": "quail",
+        "methods": [
+          "shotgun"
+        ]
+      }
+    ],
+    "managingAgency": "USACE",
+    "geometry": "point",
+    "tier": 0
   }
 ]
