@@ -127,6 +127,12 @@ def build_licenses() -> dict:
             "Oklahoma controlled hunts use preference points for many deer, elk, antelope, and turkey hunts.",
             "Points are tracked in your Go Outdoors Oklahoma account.",
         ],
+        residency_rules=[
+            "Residents and nonresidents may apply for controlled deer, elk, antelope, and turkey hunts if they hold a valid Oklahoma hunting license for the draw year before applying.",
+            "Nonresidents do not need a separate nonresident deer license just to apply for a controlled deer hunt; they still need the proper deer/elk licenses to hunt if drawn.",
+            "Nonresident deer licenses bought after that deer season opens have a mandatory two-calendar-day waiting period before they are valid (does not apply if bought before opening day, or for some Department-exempted special hunts).",
+            "Nonresidents must check in and out when accessing certain Oklahoma public hunting areas (no extra fee).",
+        ],
     )
 
 

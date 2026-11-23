@@ -300,6 +300,7 @@ def license_guide(
     sources: list[dict[str, str]],
     hunt_series: list[dict[str, Any]] | None = None,
     preference_points: list[str] | None = None,
+    residency_rules: list[str] | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "title": title,
@@ -314,6 +315,8 @@ def license_guide(
         payload["huntSeries"] = hunt_series
     if preference_points is not None:
         payload["preferencePoints"] = preference_points
+    if residency_rules is not None:
+        payload["residencyRules"] = residency_rules
     return payload
 
 

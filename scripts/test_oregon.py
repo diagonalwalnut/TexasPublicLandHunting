@@ -43,6 +43,8 @@ def main() -> int:
     channels = {item["id"] for item in licenses["whereToBuy"]}
     assert {"internet", "agent", "mail", "otc", "draw"} <= channels
     assert any("preference" in line.lower() for line in licenses["preferencePoints"])
+    rules = licenses.get("residencyRules") or []
+    assert any("5%" in line and "deer" in line.lower() for line in rules), rules
     assert any(series["id"] == "100" and series["points"] for series in licenses["huntSeries"])
     assert any(series["id"] == "500" and not series["points"] for series in licenses["huntSeries"])
     print(f"oregon ok: {len(units)} areas, {len(hunts)} hunts")

@@ -24,6 +24,8 @@ export type LicenseGuide = {
   deadlines: LicenseDeadline[];
   huntSeries?: { id: string; label: string; points: boolean }[];
   preferencePoints?: string[];
+  /** Non-cost resident vs nonresident rules (quotas, resident-only hunts, etc.). */
+  residencyRules?: string[];
   fees: LicenseFeeRow[];
   sources: { name: string; url: string }[];
 };

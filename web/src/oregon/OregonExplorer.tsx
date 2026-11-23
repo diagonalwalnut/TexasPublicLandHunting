@@ -445,6 +445,16 @@ function LicensePanel({ guide }: { guide: LicenseGuide }) {
           <li key={point}>{point}</li>
         ))}
       </ul>
+      {guide.residencyRules && guide.residencyRules.length > 0 ? (
+        <>
+          <h4 className="mt-6 font-semibold">Resident vs nonresident (beyond fees)</h4>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed">
+            {guide.residencyRules.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
       <h4 className="mt-6 font-semibold">Hunt series</h4>
       <ul className="mt-2 flex flex-wrap gap-2 text-sm">
         {guide.huntSeries.map((series) => (

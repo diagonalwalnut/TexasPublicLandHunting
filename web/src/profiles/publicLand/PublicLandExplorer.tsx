@@ -320,6 +320,11 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
                     <div className="text-xs">
                       {opp.start} – {opp.end}
                     </div>
+                    {(opp.restrictions || []).map((line) => (
+                      <div key={line} className="text-xs text-pine">
+                        {line}
+                      </div>
+                    ))}
                   </li>
                 ))}
               </ul>
