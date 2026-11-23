@@ -568,7 +568,50 @@ export default function App() {
                   timezone={activeState.timezone}
                   stateName="Texas"
                   methodLabels={METHOD_LABEL}
+                  speciesLabels={speciesLabels}
                   placeFilterLabel="County / zone"
+                  shared={{
+                    species: filters.species,
+                    methods: filters.methods,
+                    access: filters.access,
+                    query: filters.query,
+                    place: filters.county
+                      ? countyPages.find((page) => page.county === filters.county)
+                        ? `${filters.county} County`
+                        : filters.county
+                      : filters.region,
+                    start: filters.start,
+                    end: filters.end,
+                    date: filters.start || undefined,
+                  }}
+                  onSharedChange={(next) => {
+                    const place = (next.place || "").trim();
+                    const countyMatch = countyPages.find(
+                      (page) =>
+                        place === page.county ||
+                        place === `${page.county} County` ||
+                        place.toLowerCase().startsWith(`${page.county.toLowerCase()} county`),
+                    );
+                    const regionMatch =
+                      place && (meta?.regions ?? []).includes(place) ? place : "";
+                    applyFilters({
+                      ...filters,
+                      species: next.species ?? [],
+                      methods: (next.methods ?? []) as Filters["methods"],
+                      access: (next.access ?? filters.access) as Filters["access"],
+                      query: next.query ?? filters.query,
+                      county: countyMatch?.county || "",
+                      region: countyMatch ? "" : regionMatch || (place ? filters.region : ""),
+                      start: next.date || next.start || "",
+                      end: next.date || next.end || "",
+                    });
+                    if (countyMatch) {
+                      setSelectedCounty(countyMatch.county);
+                      setShowCounties(true);
+                    } else if (!place) {
+                      setSelectedCounty(null);
+                    }
+                  }}
                 />
               </div>
               <div className={`absolute inset-0 ${view === "licenses" ? "z-10" : "hidden"}`}>

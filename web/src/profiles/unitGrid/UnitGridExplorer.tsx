@@ -278,7 +278,41 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
                 timezone={state.timezone}
                 stateName={state.name}
                 methodLabels={methodLabels}
+                speciesLabels={Object.fromEntries((meta?.species ?? []).map((row) => [row.id, row.label]))}
                 placeFilterLabel="Unit / region"
+                shared={{
+                  species: filters.species,
+                  methods: filters.methods,
+                  access: filters.access,
+                  query: filters.query,
+                  place: selected
+                    ? `${selected.code} ${selected.name}${selected.region ? ` (${selected.region})` : ""}`
+                    : "",
+                  start: filters.start,
+                  end: filters.end,
+                  date: filters.start || undefined,
+                }}
+                onSharedChange={(next) => {
+                  const place = (next.place || "").trim();
+                  const matched = place
+                    ? units.find((unit) => {
+                        const label = `${unit.code} ${unit.name}${unit.region ? ` (${unit.region})` : ""}`;
+                        return label === place || unit.name === place || unit.code === place;
+                      })
+                    : null;
+                  setFilters((current) => ({
+                    ...current,
+                    species: next.species ?? [],
+                    methods: next.methods ?? [],
+                    access: next.access ?? current.access,
+                    query: next.query ?? (matched ? "" : place || current.query),
+                    start: next.date || next.start || "",
+                    end: next.date || next.end || "",
+                    layer: matched?.kind || current.layer,
+                  }));
+                  if (matched) setSelectedId(matched.id);
+                  else if (place) setSelectedId(null);
+                }}
               />
             )}
             {pane === "licenses" && licenses && <LicenseGuideView guide={licenses} />}
