@@ -246,7 +246,31 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
                 timezone={state.timezone}
                 stateName={state.name}
                 methodLabels={METHOD_LABEL}
+                speciesLabels={Object.fromEntries((meta?.species ?? []).map((row) => [row.id, row.label]))}
                 placeFilterLabel={state.id === "ar" ? "Zone / area" : "Area / parish / county"}
+                shared={{
+                  species: species ? [species] : [],
+                  query,
+                  place: selected?.name || "",
+                }}
+                onSharedChange={(next) => {
+                  setSpecies(next.species?.[0] || "");
+                  const place = (next.place || "").trim();
+                  const matched = place
+                    ? units.find((unit) => unit.name === place || unit.id === place)
+                    : null;
+                  if (matched) {
+                    setSelectedId(matched.id);
+                    setQuery("");
+                  } else if (place) {
+                    setQuery(place);
+                    setSelectedId(null);
+                  } else if (next.place === "") {
+                    setQuery(next.query ?? "");
+                  } else if (next.query != null) {
+                    setQuery(next.query);
+                  }
+                }}
               />
             )}
             {pane === "licenses" && licenses && <LicenseGuideView guide={licenses} />}
