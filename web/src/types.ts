@@ -69,6 +69,8 @@ export type Opportunity = {
   notes: string;
   /** Extra eligibility notes (e.g. residents-only draws). */
   restrictions?: string[];
+  /** Who may hunt this opportunity; omit or "any" = both. */
+  eligibility?: "any" | "resident_only" | "nonresident_only";
 };
 
 export type CountySeason = {
@@ -124,6 +126,8 @@ export type Filters = {
   query: string;
   start: string;
   end: string;
+  /** Empty = Any; filters resident-only / nonresident-only rows when set. */
+  hunterResidency: "" | "resident" | "nonresident";
 };
 
 export type UnitFeatureProperties = Unit;

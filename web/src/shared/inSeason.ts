@@ -37,6 +37,10 @@ export type InSeasonSourceRow = {
   countyLabel?: string;
   /** Zone or portion text that applies to this row. */
   zoneNote?: string;
+  /** Who may hunt; omit or "any" = both. */
+  eligibility?: "any" | "resident_only" | "nonresident_only";
+  restrictions?: string[];
+  notes?: string;
 };
 
 function covers(date: string, start: string, end: string): boolean {

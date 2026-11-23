@@ -37,6 +37,7 @@ import InSeasonPage from "./shared/InSeasonPage";
 import LicenseGuideView from "./shared/LicenseGuideView";
 import type { LicenseGuide } from "./shared/licenseTypes";
 import type { InSeasonSourceRow } from "./shared/inSeason";
+import { datasetHasResidencyRestrictions } from "./shared/residency";
 
 function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
   if (season.access === "youth" || season.access === "youth_adult") return false;
@@ -150,6 +151,7 @@ const EMPTY_FILTERS: Filters = {
   query: "",
   start: "",
   end: "",
+  hunterResidency: "",
 };
 
 export default function App() {
@@ -429,6 +431,7 @@ export default function App() {
             meta={meta}
             countyNames={countyPages.map((page) => page.county)}
             onChange={applyFilters}
+            showHunterResidency={datasetHasResidencyRestrictions(viewOpps)}
           />
           <p className="mt-4 text-xs leading-relaxed text-muted">{meta?.disclaimer}</p>
         </aside>
@@ -585,6 +588,7 @@ export default function App() {
                     start: filters.start,
                     end: filters.end,
                     date: filters.start || undefined,
+                    hunterResidency: filters.hunterResidency,
                   }}
                   onSharedChange={(next) => {
                     const place = (next.place || "").trim();
@@ -605,6 +609,9 @@ export default function App() {
                       region: place ? "" : filters.region,
                       start: next.date || next.start || "",
                       end: next.date || next.end || "",
+                      hunterResidency:
+                        (next.hunterResidency as Filters["hunterResidency"] | undefined) ??
+                        filters.hunterResidency,
                     });
                     if (countyMatch) {
                       setSelectedCounty(countyMatch.slug || countyMatch.county.toLowerCase());

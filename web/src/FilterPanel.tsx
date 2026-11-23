@@ -17,6 +17,7 @@ const EMPTY: Filters = {
   query: "",
   start: "",
   end: "",
+  hunterResidency: "",
 };
 
 function toggleValue<T extends string>(list: T[], value: T): T[] {
@@ -29,9 +30,18 @@ type Props = {
   countyNames?: string[];
   onChange: (filters: Filters) => void;
   onPreset?: (filters: Filters) => void;
+  /** Show Hunter residency control when the state has resident-only / NR-only hunts. */
+  showHunterResidency?: boolean;
 };
 
-export default function FilterPanel({ filters, meta, countyNames, onChange, onPreset }: Props) {
+export default function FilterPanel({
+  filters,
+  meta,
+  countyNames,
+  onChange,
+  onPreset,
+  showHunterResidency = false,
+}: Props) {
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Quick reports</p>
@@ -150,6 +160,26 @@ export default function FilterPanel({ filters, meta, countyNames, onChange, onPr
           })}
         </div>
       </fieldset>
+
+      {showHunterResidency ? (
+        <label className="mb-3 block text-sm">
+          Hunter
+          <select
+            className="mt-1 w-full rounded-md border border-black/15 bg-white px-2 py-1.5"
+            value={filters.hunterResidency}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                hunterResidency: e.target.value as Filters["hunterResidency"],
+              })
+            }
+          >
+            <option value="">Any</option>
+            <option value="resident">Resident</option>
+            <option value="nonresident">Nonresident</option>
+          </select>
+        </label>
+      ) : null}
 
       <label className="mb-2 block text-sm">
         Region

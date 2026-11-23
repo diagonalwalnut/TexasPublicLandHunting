@@ -448,6 +448,7 @@ def build_opportunities(units: list[dict], zones: list[dict]) -> list[dict]:
                         "dateSource": "agfc_elk_public",
                         "county": (unit.get("counties") or [""])[0],
                         "notes": notes,
+                        "eligibility": "resident_only",
                         "restrictions": [
                             "Residents only — public-land elk draw",
                             "Drawn permit required; confirm bag/sex on the permit",

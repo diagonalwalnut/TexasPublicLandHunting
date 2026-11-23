@@ -1,3 +1,4 @@
+import { rowAllowedForHunter } from "../../shared/residency";
 import type { GridFilters, GridHunt, GridUnit } from "./types";
 
 const METHOD_EXPAND: Record<string, string[]> = {
@@ -23,6 +24,7 @@ export function huntMatches(hunt: GridHunt, filters: GridFilters): boolean {
     if (!hunt.methods.some((method) => allowed.has(method))) return false;
   }
   if (!overlaps(hunt.start, hunt.end, filters.start, filters.end)) return false;
+  if (!rowAllowedForHunter(hunt, filters.hunterResidency || "")) return false;
   const q = filters.query.trim().toLowerCase();
   if (q) {
     const hay = `${hunt.name} ${hunt.huntNumber ?? ""} ${hunt.speciesLabel} ${hunt.bagLimit} ${hunt.tag}`.toLowerCase();
@@ -39,7 +41,8 @@ export function matchingUnitIds(units: GridUnit[], hunts: GridHunt[], filters: G
     filters.access.length > 0 ||
     Boolean(filters.start) ||
     Boolean(filters.end) ||
-    Boolean(filters.query.trim());
+    Boolean(filters.query.trim()) ||
+    Boolean(filters.hunterResidency);
   const layerUnits = units.filter((unit) => !filters.layer || unit.kind === filters.layer);
   const ids = new Set<string>();
   if (!needsHunt) {
