@@ -38,6 +38,11 @@ import LicenseGuideView from "./shared/LicenseGuideView";
 import type { LicenseGuide } from "./shared/licenseTypes";
 import type { InSeasonSourceRow } from "./shared/inSeason";
 import { datasetHasResidencyRestrictions } from "./shared/residency";
+import {
+  isNavTabForState,
+  navTabsForState,
+  type StateViewId,
+} from "./shared/stateNav";
 
 function seasonFitsLake(season: CountySeason, allowed: Set<string>): boolean {
   if (season.access === "youth" || season.access === "youth_adult") return false;
@@ -170,11 +175,23 @@ export default function App() {
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
   const [showCounties, setShowCounties] = useState(true);
   const [satellite, setSatellite] = useState(false);
-  const [view, setView] = useState<"map" | "report" | "saved" | "users" | "in-season" | "licenses">("map");
+  const [view, setView] = useState<StateViewId>("map");
+  const [explorerStatus, setExplorerStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin && view === "users") setView("map");
   }, [isAdmin, view]);
+
+  useEffect(() => {
+    if (view !== "users" && !isNavTabForState(view, stateId, activeState.profile)) {
+      setView("map");
+    }
+  }, [stateId, activeState.profile, view]);
+
+  useEffect(() => {
+    setExplorerStatus(null);
+  }, [stateId]);
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -325,7 +342,14 @@ export default function App() {
     setView("map");
     setSelectedId(null);
     setSelectedCounty(null);
+    setExplorerStatus(null);
   };
+
+  const headerTabs = navTabsForState(stateId, activeState.profile);
+  const statusLabel =
+    stateId === "tx"
+      ? `${matchIds.size} of ${viewUnits.length} areas`
+      : explorerStatus;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sand text-ink">
@@ -363,31 +387,23 @@ export default function App() {
               ))}
             </select>
           </label>
-          {stateId === "tx" && (
+          {view !== "users" ? (
             <>
               <div className="flex rounded-full bg-black/20 p-0.5">
-                {(
-                  [
-                    ["map", "Map"],
-                    ["report", "Report"],
-                    ["in-season", "In Season"],
-                    ["licenses", "Licenses"],
-                    ["saved", "Saved"],
-                  ] as const
-                ).map(([id, label]) => (
+                {headerTabs.map((tab) => (
                   <button
-                    key={id}
+                    key={tab.id}
                     type="button"
-                    className={`rounded-full px-3 py-1 ${view === id ? "bg-gold text-pine" : "text-sand/80"}`}
-                    onClick={() => setView(id)}
+                    className={`rounded-full px-3 py-1 ${view === tab.id ? "bg-gold text-pine" : "text-sand/80"}`}
+                    onClick={() => setView(tab.id)}
                   >
-                    {label}
+                    {tab.label}
                   </button>
                 ))}
               </div>
-              <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">
-                {matchIds.size} of {viewUnits.length} areas
-              </span>
+              {statusLabel ? (
+                <span className="rounded-full bg-gold/20 px-3 py-1 text-gold">{statusLabel}</span>
+              ) : null}
               <ExternalLink
                 className="rounded-full border border-sand/30 px-3 py-1 hover:bg-white/10"
                 href={activeState.agencyUrl}
@@ -395,7 +411,7 @@ export default function App() {
                 {activeState.agencyLabel}
               </ExternalLink>
             </>
-          )}
+          ) : null}
           {isAdmin && (
             <button
               type="button"
@@ -415,10 +431,28 @@ export default function App() {
         </div>
       ) : null}
       {view !== "users" && stateId !== "tx" && activeState.profile === "unitGrid" && (
-        <UnitGridExplorer state={activeState} />
+        <UnitGridExplorer
+          state={activeState}
+          pane={
+            view === "hunts" || view === "rules" || view === "map" || view === "in-season" || view === "licenses"
+              ? view
+              : "map"
+          }
+          onPaneChange={(next) => setView(next)}
+          onStatusChange={setExplorerStatus}
+        />
       )}
       {view !== "users" && stateId !== "tx" && activeState.profile === "publicLand" && (
-        <PublicLandExplorer state={activeState} />
+        <PublicLandExplorer
+          state={activeState}
+          pane={
+            view === "report" || view === "rules" || view === "map" || view === "in-season" || view === "licenses"
+              ? view
+              : "map"
+          }
+          onPaneChange={(next) => setView(next)}
+          onStatusChange={setExplorerStatus}
+        />
       )}
       <div
         className={`flex min-h-0 flex-1 flex-col md:flex-row ${

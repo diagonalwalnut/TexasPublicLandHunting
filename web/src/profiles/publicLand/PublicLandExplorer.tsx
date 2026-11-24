@@ -17,6 +17,13 @@ import UnitGridMap from "../unitGrid/UnitGridMap";
 
 type Pane = "map" | "report" | "in-season" | "licenses" | "rules";
 
+type Props = {
+  state: StateInfo;
+  pane: Pane;
+  onPaneChange: (pane: Pane) => void;
+  onStatusChange?: (label: string | null) => void;
+};
+
 const ACCESS_LABEL: Record<string, string> = {
   wma_permit: "WMA / public-land permit",
   lottery: "Lottery / drawn hunt",
@@ -54,7 +61,7 @@ type ZonePage = {
   }[];
 };
 
-export default function PublicLandExplorer({ state }: { state: StateInfo }) {
+export default function PublicLandExplorer({ state, pane, onPaneChange, onStatusChange }: Props) {
   const [units, setUnits] = useState<Unit[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [meta, setMeta] = useState<{ seasonYear?: string; disclaimer?: string; species?: { id: string; label: string }[] } | null>(
@@ -64,7 +71,6 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
   const [rules, setRules] = useState<RegulationGuide | null>(null);
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [zones, setZones] = useState<ZonePage[]>([]);
-  const [pane, setPane] = useState<Pane>("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [species, setSpecies] = useState("");
@@ -74,7 +80,6 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPane("map");
     setSelectedId(null);
     setHunterResidency("");
     setSeasonDate("");
@@ -131,6 +136,11 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
   }, [units, query, species, hunterResidency, opportunities]);
 
   const matchIds = useMemo(() => new Set(filteredUnits.map((unit) => unit.id)), [filteredUnits]);
+
+  useEffect(() => {
+    onStatusChange?.(`${filteredUnits.length} of ${units.length} areas`);
+  }, [filteredUnits.length, units.length, onStatusChange]);
+
   const selected = units.find((unit) => unit.id === selectedId) ?? null;
   const selectedOpps = opportunities.filter(
     (opp) => opp.unitId === selectedId && rowAllowedForHunter(opp, hunterResidency),
@@ -174,25 +184,6 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
 
   return (
     <div className="relative z-10 flex min-h-0 flex-1 flex-col bg-sand text-ink">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-black/10 bg-white/40 px-4 py-2 text-sm">
-        {(["map", "report", "in-season", "licenses", "rules"] as Pane[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`rounded-full px-3 py-1 capitalize ${pane === item ? "bg-moss text-white" : "text-pine"}`}
-            onClick={() => setPane(item)}
-          >
-            {item === "in-season" ? "In Season" : item === "report" ? "Report" : item}
-          </button>
-        ))}
-        <span className="rounded-full bg-gold/20 px-3 py-1 text-pine">
-          {filteredUnits.length} of {units.length} areas
-        </span>
-        <ExternalLink className="rounded-full border border-pine/20 px-3 py-1 text-moss" href={state.agencyUrl}>
-          {state.agencyLabel}
-        </ExternalLink>
-      </div>
-
       {error ? (
         <p className="p-6 text-red-800">{error}</p>
       ) : (
@@ -262,7 +253,7 @@ export default function PublicLandExplorer({ state }: { state: StateInfo }) {
                         className="w-full rounded-md bg-white px-3 py-2 text-left text-sm shadow-sm"
                         onClick={() => {
                           setSelectedId(unit.id);
-                          setPane("map");
+                          onPaneChange("map");
                         }}
                       >
                         <div className="font-medium">{unit.name}</div>
