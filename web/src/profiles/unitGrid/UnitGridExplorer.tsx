@@ -13,6 +13,13 @@ import UnitGridMap from "./UnitGridMap";
 
 type Pane = "map" | "hunts" | "in-season" | "licenses" | "rules";
 
+type Props = {
+  state: StateInfo;
+  pane: Pane;
+  onPaneChange: (pane: Pane) => void;
+  onStatusChange?: (label: string | null) => void;
+};
+
 const ACCESS_LABEL: Record<string, string> = {
   general_otc: "Over the counter",
   controlled_draw: "Controlled / limited draw",
@@ -54,7 +61,7 @@ function defaultLayer(units: GridUnit[], layers?: { id: string }[]): string {
   return kinds[0] || "wmu";
 }
 
-export default function UnitGridExplorer({ state }: { state: StateInfo }) {
+export default function UnitGridExplorer({ state, pane, onPaneChange, onStatusChange }: Props) {
   const [units, setUnits] = useState<GridUnit[]>([]);
   const [hunts, setHunts] = useState<GridHunt[]>([]);
   const [meta, setMeta] = useState<GridMeta | null>(null);
@@ -72,13 +79,11 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
     layer: "gmu",
     hunterResidency: "",
   });
-  const [pane, setPane] = useState<Pane>("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPane("map");
     setSelectedId(null);
     setError(null);
     const load = async (path: string) => {
@@ -204,27 +209,15 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
 
   const showHunterResidency = useMemo(() => datasetHasResidencyRestrictions(hunts), [hunts]);
 
+  useEffect(() => {
+    onStatusChange?.(`${matchIds.size} of ${layerUnits.length} areas`);
+  }, [matchIds.size, layerUnits.length, onStatusChange]);
+
   const methodLabels = Object.fromEntries((meta?.methods ?? []).map((row) => [row.id, row.label]));
   const bounds = BOUNDS[state.id] ?? BOUNDS.nm;
 
   return (
     <div className="relative z-10 flex min-h-0 flex-1 flex-col bg-sand text-ink">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-black/10 bg-white/40 px-4 py-2 text-sm">
-        {(["map", "hunts", "in-season", "licenses", "rules"] as Pane[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`rounded-full px-3 py-1 capitalize ${pane === item ? "bg-moss text-white" : "text-pine"}`}
-            onClick={() => setPane(item)}
-          >
-            {item === "in-season" ? "In Season" : item === "hunts" ? "Hunts" : item}
-          </button>
-        ))}
-        <ExternalLink className="rounded-full border border-pine/20 px-3 py-1 text-moss" href={state.agencyUrl}>
-          {state.agencyLabel}
-        </ExternalLink>
-      </div>
-
       {error ? (
         <p className="p-6 text-red-800">{error}</p>
       ) : (
@@ -278,7 +271,7 @@ export default function UnitGridExplorer({ state }: { state: StateInfo }) {
                   const unit = units.find((item) => item.id === id);
                   if (unit) setFilters((current) => ({ ...current, layer: unit.kind }));
                   setSelectedId(id);
-                  setPane("map");
+                  onPaneChange("map");
                 }}
               />
             )}
